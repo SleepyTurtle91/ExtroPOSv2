@@ -1,0 +1,62 @@
+<resources>
+    <string name="app_name">ExtroPOS v2</string>
+
+    <!-- Navigation -->
+    <string name="nav_sales">Jualan</string>
+    <string name="nav_inventory">Inventori</string>
+    <string name="nav_staff">Kakitangan</string>
+    <string name="nav_settings">Tetapan</string>
+
+    <!-- Sales -->
+    <string name="sales_total">Jumlah</string>
+    <string name="sales_subtotal">Jumlah Kecil</string>
+    <string name="sales_sst">SST</string>
+    <string name="sales_rounding">Pembundaran</string>
+    <string name="sales_pay">Bayar</string>
+    <string name="sales_cart">Bakul</string>
+    <string name="sales_add_to_cart">Tambah ke Bakul</string>
+    <string name="sales_complete_sale">Selesaikan Jualan</string>
+    <string name="sales_payment_method">Kaedah Pembayaran</string>
+    <string name="sales_cash">Tunai</string>
+    <string name="sales_card">Kad</string>
+    <string name="sales_qr">DuitNow QR</string>
+    <string name="sales_staff_selection">Pilih Kakitangan</string>
+    <string name="sales_receipt_id">ID Resit</string>
+
+    <!-- Inventory -->
+    <string name="inv_products">Produk</string>
+    <string name="inv_categories">Kategori</string>
+    <string name="inv_stock">Stok</string>
+    <string name="inv_sku">SKU</string>
+    <string name="inv_barcode">Barkod</string>
+    <string name="inv_low_stock">Stok Rendah</string>
+    <string name="inv_add_product">Tambah Produk</string>
+
+    <!-- Staff -->
+    <string name="staff_management">Pengurusan Kakitangan</string>
+    <string name="staff_earnings">Jumlah Pendapatan</string>
+    <string name="staff_role">Peranan</string>
+    <string name="staff_phone">Telefon</string>
+    <string name="staff_add">Tambah Kakitangan</string>
+    <string name="staff_edit">Edit Kakitangan</string>
+
+    <!-- Settings & Printer -->
+    <string name="settings_printer">Tetapan Pencetak</string>
+    <string name="printer_bluetooth">Pencetak Bluetooth</string>
+    <string name="printer_usb">Pencetak USB</string>
+    <string name="printer_network">Pencetak Rangkaian (IP)</string>
+    <string name="printer_connect">Sambung</string>
+    <string name="printer_disconnect">Putus Sambungan</string>
+    <string name="printer_test_print">Cetak Ujian</string>
+    <string name="printer_address">Alamat</string>
+    <string name="printer_ip">Alamat IP</string>
+    <string name="printer_port">Port</string>
+    <string name="printer_current">Pencetak Semasa</string>
+    <string name="printer_none">Tiada pencetak dikonfigurasi</string>
+
+    <!-- General -->
+    <string name="btn_cancel">Batal</string>
+    <string name="btn_confirm">Sahkan</string>
+    <string name="btn_save">Simpan</string>
+    <string name="btn_delete">Padam</string>
+</resources>
