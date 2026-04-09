@@ -18,8 +18,13 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Staff : Screen("staff", "Staff", Icons.Default.Badge)
     object Tables : Screen("tables", "Tables", Icons.Default.TableBar)
     object Laundry : Screen("laundry", "Laundry", Icons.Default.LocalLaundryService)
+    object CarWash : Screen("carwash", "Car Wash", Icons.Default.LocalLaundryService) // Reusing icon or find a better one
     object Analytics : Screen("analytics", "Analytics", Icons.Default.Analytics)
     object Backup : Screen("backup", "Backup & Restore", Icons.Default.Backup)
     object ReceiptSettings : Screen("receipt_settings", "Receipt Layout", Icons.Default.ReceiptLong)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    
+    // Analytics Sub-screens
+    object InventoryAnalytics : Screen("inventory_analytics", "Low Stock", Icons.Default.Inventory)
+    object StaffEarnings : Screen("staff_earnings", "Staff Earnings", Icons.Default.Badge)
 }

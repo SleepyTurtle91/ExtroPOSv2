@@ -54,6 +54,18 @@ class InventoryViewModel @Inject constructor(
         _uiState.update { it.copy(selectedCategoryId = categoryId) }
     }
 
+    fun upsertProduct(product: Product) {
+        viewModelScope.launch {
+            productRepository.insertProduct(product)
+        }
+    }
+
+    fun deleteProduct(product: Product) {
+        viewModelScope.launch {
+            productRepository.deleteProduct(product)
+        }
+    }
+
     fun selectProduct(product: Product?) {
         _uiState.update { it.copy(selectedProduct = product) }
         if (product != null) {
@@ -69,7 +81,13 @@ class InventoryViewModel @Inject constructor(
         val product = uiState.value.selectedProduct ?: return
         viewModelScope.launch {
             inventoryRepository.adjustStock(product.id, quantity, type, note)
-            // Trigger UI update or state refresh if needed
+        }
+    }
+
+    fun setStock(quantity: BigDecimal, type: String, note: String? = null) {
+        val product = uiState.value.selectedProduct ?: return
+        viewModelScope.launch {
+            inventoryRepository.setStock(product.id, quantity, type, note)
         }
     }
 }

@@ -55,4 +55,16 @@ class TableViewModel @Inject constructor(
             tableRepository.updateTable(table.copy(status = status))
         }
     }
+
+    fun moveTable(fromTableId: String, toTableId: String) {
+        viewModelScope.launch {
+            tableRepository.moveTable(fromTableId, toTableId)
+        }
+    }
+
+    fun joinTable(sourceTableId: String, targetTableId: String) {
+        viewModelScope.launch {
+            tableRepository.joinTable(sourceTableId, targetTableId)
+        }
+    }
 }

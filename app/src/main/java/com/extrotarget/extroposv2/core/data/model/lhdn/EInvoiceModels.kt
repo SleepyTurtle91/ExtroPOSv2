@@ -16,7 +16,8 @@ data class SaleEInvoiceSubmission(
     val status: EInvoiceStatus = EInvoiceStatus.NOT_SUBMITTED,
     val lastResponse: String? = null,
     val lastAttemptTimestamp: Long = 0L,
-    val lhdnValidationMessage: String? = null
+    val lhdnValidationMessage: String? = null,
+    val digitalSignature: String? = null
 )
 
 /**
@@ -54,5 +55,19 @@ data class LhdnConfig(
     val sellerSstId: String? = null,
     val msicCode: String, // Malaysia Standard Industrial Classification
     val businessActivityDesc: String,
-    val isSandbox: Boolean = true
+    val clientId: String? = null,
+    val clientSecret: String? = null,
+    val isSandbox: Boolean = true,
+    val isEnabled: Boolean = false
+)
+
+/**
+ * Token storage for LHDN MyInvois API
+ */
+@Entity(tableName = "lhdn_tokens")
+data class LhdnToken(
+    @PrimaryKey val id: Int = 1,
+    val accessToken: String,
+    val expiryTimestamp: Long,
+    val tokenType: String
 )

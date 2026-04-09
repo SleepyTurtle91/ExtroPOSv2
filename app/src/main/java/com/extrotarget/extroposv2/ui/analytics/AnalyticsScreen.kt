@@ -8,19 +8,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
+import com.extrotarget.extroposv2.ui.analytics.components.SimpleBarChart
 import com.extrotarget.extroposv2.ui.analytics.viewmodel.AnalyticsViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+import androidx.hilt.navigation.compose.hiltViewModel
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
-    viewModel: AnalyticsViewModel = viewModel()
+    viewModel: AnalyticsViewModel = hiltViewModel(),
+    onNavigateToLowStock: () -> Unit,
+    onNavigateToStaffEarnings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
@@ -81,6 +87,23 @@ fun AnalyticsScreen(
                 }
             }
 
+            // Per-Rate SST Breakdown
+            if (uiState.taxReports.isNotEmpty()) {
+                item {
+                    Text(
+                        "SST Breakdown by Rate",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+                
+                items(uiState.taxReports.size) { index ->
+                    val report = uiState.taxReports[index]
+                    TaxBreakdownRow(report)
+                }
+            }
+
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -108,6 +131,102 @@ fun AnalyticsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer
                 )
+            }
+
+            // Sales Trend Chart
+            item {
+                Text(
+                    "Sales Trend (Today)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .padding(top = 8.dp)
+                ) {
+                    SimpleBarChart(
+                        data = uiState.salesTrend,
+                        modifier = Modifier.padding(16.dp),
+                        barColor = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // Top Products / Categories
+            item {
+                Text(
+                    "Top 5 Products by Sales",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        uiState.categorySplit.forEach { point ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(point.label, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    CurrencyUtils.format(java.math.BigDecimal(point.value.toDouble())),
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                            LinearProgressIndicator(
+                                progress = { if (uiState.totalSales.toFloat() > 0) point.value / uiState.totalSales.toFloat() else 0f },
+                                modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Industry Specific Reports
+            item {
+                Text(
+                    "Industry Specific Reports",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    ElevatedCard(
+                        onClick = onNavigateToLowStock,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Icon(androidx.compose.material.icons.Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Text("Inventory Alerts", fontWeight = FontWeight.Bold)
+                            Text("Low stock items", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                    ElevatedCard(
+                        onClick = onNavigateToStaffEarnings,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Icon(androidx.compose.material.icons.Icons.Default.Badge, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Text("Staff Earnings", fontWeight = FontWeight.Bold)
+                            Text("Commission report", style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
             }
 
             // SST Compliance Section
@@ -144,6 +263,31 @@ fun AnalyticsScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun TaxBreakdownRow(report: com.extrotarget.extroposv2.ui.analytics.viewmodel.TaxReportItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(report.categoryName, fontWeight = FontWeight.Bold)
+                Text("Net Sales: ${CurrencyUtils.format(report.netSales)}", style = MaterialTheme.typography.bodySmall)
+            }
+            Text(
+                CurrencyUtils.format(report.taxAmount),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
     }
 }

@@ -2,15 +2,20 @@ package com.extrotarget.extroposv2.core.network.api.lhdn
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface MyInvoisApi {
 
+    @FormUrlEncoded
     @POST("connect/token")
     suspend fun login(
-        @Header("Content-Type") contentType: String = "application/x-www-form-urlencoded",
-        @Body body: String
+        @Field("client_id") clientId: String,
+        @Field("client_secret") clientSecret: String,
+        @Field("grant_type") grantType: String = "client_credentials",
+        @Field("scope") scope: String = "InvoicingAPI"
     ): Response<TokenResponse>
 
     @POST("api/v1.0/documentsubmissions")

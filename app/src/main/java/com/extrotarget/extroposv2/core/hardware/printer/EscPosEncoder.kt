@@ -45,6 +45,10 @@ object EscPosEncoder {
                 is PrintCommand.Cut -> {
                     out.write(byteArrayOf(GS, 0x56, 0x01))
                 }
+                is PrintCommand.DrawerKick -> {
+                    // Standard ESC/POS drawer kick command for RJ11 (Pin 2)
+                    out.write(byteArrayOf(ESC, 0x70, 0x00, 0x19, 0xFA.toByte()))
+                }
                 is PrintCommand.QRCode -> {
                     // Simplified QR for common ESC/POS (HPRT/POSMAC)
                     out.write(setAlignment(Alignment.CENTER))

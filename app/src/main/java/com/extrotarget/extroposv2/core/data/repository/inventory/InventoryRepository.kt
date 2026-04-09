@@ -35,6 +35,22 @@ class InventoryRepository @Inject constructor(
         }
     }
 
+    suspend fun setStock(productId: String, quantity: BigDecimal, type: String, note: String? = null) {
+        db.withTransaction {
+            val currentStock = getCurrentStock(productId)
+            val diff = quantity.subtract(currentStock)
+            val movement = StockMovement(
+                id = UUID.randomUUID().toString(),
+                productId = productId,
+                quantity = diff,
+                type = type,
+                note = note
+            )
+            stockMovementDao.insertMovement(movement)
+            productDao.setStockQuantity(productId, quantity)
+        }
+    }
+
     suspend fun getCurrentStock(productId: String): BigDecimal {
         return stockMovementDao.getCurrentStock(productId) ?: BigDecimal.ZERO
     }

@@ -32,4 +32,7 @@ interface ProductDao {
 
     @Query("SELECT * FROM products WHERE stockQuantity <= minStockLevel AND minStockLevel > 0")
     fun getLowStockProducts(): Flow<List<Product>>
+
+    @Query("UPDATE products SET stockQuantity = :quantity WHERE id = :productId")
+    suspend fun setStockQuantity(productId: String, quantity: java.math.BigDecimal)
 }

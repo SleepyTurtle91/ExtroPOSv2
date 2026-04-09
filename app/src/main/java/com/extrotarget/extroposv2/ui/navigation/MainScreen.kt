@@ -15,8 +15,10 @@ fun MainScreen() {
     val navController = rememberNavController()
     val screens = listOf(
         Screen.Sales,
+        Screen.Tables,
+        Screen.CarWash,
+        Screen.Laundry,
         Screen.Inventory,
-        Screen.Staff,
         Screen.Settings
     )
 

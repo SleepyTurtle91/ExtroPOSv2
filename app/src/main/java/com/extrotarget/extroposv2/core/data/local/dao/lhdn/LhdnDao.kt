@@ -3,6 +3,7 @@ package com.extrotarget.extroposv2.core.data.local.dao.lhdn
 import androidx.room.*
 import com.extrotarget.extroposv2.core.data.model.lhdn.EInvoiceStatus
 import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnConfig
+import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnToken
 import com.extrotarget.extroposv2.core.data.model.lhdn.SaleEInvoiceSubmission
 import kotlinx.coroutines.flow.Flow
 
@@ -28,4 +29,13 @@ interface LhdnDao {
 
     @Query("SELECT * FROM sale_einvoice_submission WHERE status = :status")
     suspend fun getSubmissionsByStatus(status: EInvoiceStatus): List<SaleEInvoiceSubmission>
+
+    @Query("SELECT * FROM lhdn_tokens WHERE id = 1")
+    suspend fun getToken(): LhdnToken?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun saveToken(token: LhdnToken)
+
+    @Query("DELETE FROM lhdn_tokens")
+    suspend fun clearTokens()
 }

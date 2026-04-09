@@ -1,11 +1,14 @@
 package com.extrotarget.extroposv2.ui.settings.payment
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ChevronRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +22,8 @@ import com.extrotarget.extroposv2.ui.settings.payment.viewmodel.PaymentMethodVie
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentMethodSettingsScreen(
-    viewModel: PaymentMethodViewModel = hiltViewModel()
+    viewModel: PaymentMethodViewModel = hiltViewModel(),
+    onNavigateToDuitNow: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
@@ -40,6 +44,22 @@ fun PaymentMethodSettingsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth().clickable { onNavigateToDuitNow() },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                ) {
+                    ListItem(
+                        headlineContent = { Text("Configure DuitNow QR") },
+                        supportingContent = { Text("Set Merchant ID and Name for dynamic QR") },
+                        leadingContent = { Icon(Icons.Default.QrCode, contentDescription = null) },
+                        trailingContent = { Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null) },
+                        colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Other Payment Methods", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(bottom = 8.dp))
+            }
             items(uiState.paymentMethods) { method ->
                 PaymentMethodItem(
                     method = method,

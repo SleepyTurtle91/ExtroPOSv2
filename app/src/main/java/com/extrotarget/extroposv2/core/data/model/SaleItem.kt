@@ -39,5 +39,6 @@ data class SaleItem(
     val modifiers: String? = null, // Comma-separated or JSON string
     val assignedStaffId: String? = null,
     val assignedStaffName: String? = null,
-    val printerTag: String = "KITCHEN" // Default to KITCHEN for F&B
+    val printerTag: String = "KITCHEN", // Default to KITCHEN for F&B
+    val status: String = "PENDING" // e.g., PENDING, PREPARING, READY, SERVED
 )

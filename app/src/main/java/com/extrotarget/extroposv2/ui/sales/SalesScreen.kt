@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Discount
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.QrCode
@@ -204,9 +205,63 @@ fun SalesScreen(
                     shape = MaterialTheme.shapes.medium,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
                 ) {
-                    Icon(Icons.Default.QrCode, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("DuitNow QR")
+                    if (uiState.isCheckingOut) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onTertiary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(Icons.Default.QrCode, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("DuitNow QR")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (uiState.selectedTable != null) {
+                    Button(
+                        onClick = { viewModel.sendToKitchen() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = uiState.cartItems.isNotEmpty() && !uiState.isCheckingOut,
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        if (uiState.isCheckingOut) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onSecondary,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.Print, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Send to Kitchen")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                Button(
+                    onClick = { viewModel.completeSale("CARD") },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = uiState.cartItems.isNotEmpty() && !uiState.isCheckingOut,
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                ) {
+                    if (uiState.isCheckingOut) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onSecondary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(androidx.compose.material.icons.Icons.Default.CreditCard, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Card Terminal")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -281,8 +336,7 @@ fun SalesScreen(
             },
             dismissButton = {
                 OutlinedButton(onClick = { 
-                    // ViewModel already has reprint logic
-                    // viewModel.reprintLastReceipt(...) 
+                    viewModel.reprintLastReceipt()
                 }) {
                     Text("Reprint Receipt")
                 }
@@ -326,44 +380,38 @@ fun SalesScreen(
     }
 
     if (uiState.showStaffSelection && uiState.itemAwaitingStaff != null) {
+        // ... (existing staff selection dialog)
+    }
+
+    if (uiState.showTerminalProgress) {
         AlertDialog(
-            onDismissRequest = { viewModel.cancelStaffSelection() },
-            title = { Text("Assign Staff to ${uiState.itemAwaitingStaff!!.product.name}") },
+            onDismissRequest = { /* Prevent dismissal while processing */ },
+            properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+            title = { Text("Processing Card Payment") },
             text = {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 400.dp)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    items(uiState.staffList) { staff ->
-                        ListItem(
-                            headlineContent = { Text(staff.name) },
-                            supportingContent = { Text(staff.role) },
-                            modifier = Modifier.clickable { viewModel.assignStaffToItem(staff) },
-                            trailingContent = {
-                                RadioButton(
-                                    selected = false, // Not needed as it clicks and closes
-                                    onClick = { viewModel.assignStaffToItem(staff) }
-                                )
-                            }
-                        )
-                    }
-                    if (uiState.staffList.isEmpty()) {
-                        item {
-                            Text(
-                                "No active staff found. Please add staff in settings.",
-                                modifier = Modifier.padding(16.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
+                    CircularProgressIndicator(modifier = Modifier.size(48.dp))
+                    Spacer(Modifier.height(16.dp))
+                    Text(uiState.terminalStatus ?: "Communicating with terminal...", style = MaterialTheme.typography.bodyLarge)
+                    Spacer(Modifier.height(8.dp))
+                    Text("Total: ${CurrencyUtils.format(uiState.totalAmount)}", fontWeight = FontWeight.Bold)
                 }
             },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { viewModel.cancelStaffSelection() }) {
-                    Text("Cancel")
+            confirmButton = {}
+        )
+    }
+
+    if (uiState.terminalStatus != null && !uiState.showTerminalProgress) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissTerminalError() },
+            title = { Text("Terminal Status") },
+            text = { Text(uiState.terminalStatus!!) },
+            confirmButton = {
+                Button(onClick = { viewModel.dismissTerminalError() }) {
+                    Text("OK")
                 }
             }
         )

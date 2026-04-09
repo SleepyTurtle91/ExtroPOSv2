@@ -7,6 +7,7 @@ This file tracks the implementation status of features defined in the developmen
 - [x] **BNM 5-Sen Rounding**: Automated cash rounding for MYR transactions.
 - [x] **Currency Utilities**: Centralized formatting and calculation engine.
 - [x] **LHDN e-Invoicing (Baseline)**: QR code generation for receipts ready for MyInvois.
+- [x] **LHDN e-Invoicing (Compliance)**: SHA-256 Digital Signature and UUID tracking on receipt footers.
 
 ## Phase 2: Hardware & Infrastructure
 - [x] **Printer HAL**: Abstract layer for Bluetooth, USB, and Network (IP) printers.
@@ -19,16 +20,17 @@ This file tracks the implementation status of features defined in the developmen
 - [x] **Cart Management**: Real-time tax, subtotal, and discount calculations.
 - [x] **Dynamic DuitNow QR**: EMVCo compliant QR generation with dynamic amounts.
 - [x] **Checkout Flow**: Post-sale success dialog with on-screen QR and Reprint options.
-- [x] **Discount Engine**: Local item-level and cart-level discounts (Fixed/Percentage).
-- [x] **E-Wallet Direct Integration**: TNG/GrabPay via API or Manual Custom Payment Methods.
-- [ ] **Card Terminal Link**: Bluetooth/USB handshake with Pax/Ingenico terminals.
+- [x] **Discount Engine**: Real-time item-level and cart-level discounts (Fixed/Percentage).
+- [x] **Card Terminal Link**: Integrated Pax/Ingenico HAL with Simulated Terminal for development.
+- [x] **E-Wallet Direct Integration**: TNG/GrabPay via DuitNow dynamic QR.
 
 ## Phase 4: Industry-Specific Modules
 
 ### 🚗 Car Wash / Service Module
 - [x] **Staff Commission Engine**: assignment per line-item and earnings calculation.
 - [x] **Earnings Dashboard**: Real-time staff performance tracking.
-- [x] **Job Queue**: Visual dashboard for vehicle progress (Wash -> Polish -> Ready).
+- [x] **Job Queue**: Visual dashboard for vehicle progress (Wash -> Polish -> Ready) with Staff Assignment.
+- [x] **Integration**: Automatic job creation upon sales checkout for car wash services.
 
 ### ☕ F&B Module (Cafe / Restaurant)
 - [x] **Table Management**: Visual floor plan with order status.
@@ -57,4 +59,4 @@ This file tracks the implementation status of features defined in the developmen
 - [ ] **Multi-Outlet Support**: Data isolation and aggregation across multiple branches (Postponed).
 
 ---
-*Last Updated: Implementation of Local Discount Engine and BNM Rounding completed.*
+*Last Updated: Integrated Card Terminal HAL (Phase 3) and finalized Car Wash staff assignment workflow.*

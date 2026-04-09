@@ -13,6 +13,7 @@ sealed class PrintCommand {
     object Divider : PrintCommand()
     data class Feed(val lines: Int = 1) : PrintCommand()
     object Cut : PrintCommand()
+    object DrawerKick : PrintCommand()
     data class QRCode(val content: String) : PrintCommand()
     data class Raw(val bytes: ByteArray) : PrintCommand()
 }

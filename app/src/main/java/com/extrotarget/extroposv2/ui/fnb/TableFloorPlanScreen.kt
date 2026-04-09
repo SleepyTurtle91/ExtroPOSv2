@@ -16,6 +16,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import com.extrotarget.extroposv2.ui.fnb.components.TableActionDialog
+import com.extrotarget.extroposv2.ui.fnb.components.MoveJoinDialog
 import com.extrotarget.extroposv2.core.data.model.fnb.Table
 import com.extrotarget.extroposv2.core.data.model.fnb.TableStatus
 import com.extrotarget.extroposv2.ui.fnb.viewmodel.TableViewModel
@@ -31,6 +35,8 @@ fun TableFloorPlanScreen(
     val zones by viewModel.zones.collectAsState()
     val selectedZone by viewModel.selectedZone.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var selectedTableForActions by remember { mutableStateOf<Table?>(null) }
+    var showMoveJoinDialog by remember { mutableStateOf<Pair<Table, Boolean>?>(null) } // Table, isMove
 
     Scaffold(
         topBar = {
@@ -63,11 +69,50 @@ fun TableFloorPlanScreen(
                 items(tables) { table ->
                     TableCard(
                         table = table,
-                        onClick = { onTableClick(table) }
+                        onClick = { 
+                            if (table.status == TableStatus.AVAILABLE || table.status == TableStatus.OCCUPIED) {
+                                onTableClick(table) 
+                            } else {
+                                selectedTableForActions = table
+                            }
+                        },
+                        onLongClick = { selectedTableForActions = table }
                     )
                 }
             }
         }
+    }
+
+    selectedTableForActions?.let { table ->
+        TableActionDialog(
+            table = table,
+            onDismiss = { selectedTableForActions = null },
+            onAction = { action ->
+                when (action) {
+                    "MOVE" -> showMoveJoinDialog = table to true
+                    "JOIN" -> showMoveJoinDialog = table to false
+                    "DIRTY" -> viewModel.updateTableStatus(table, TableStatus.DIRTY)
+                    "CLEAN" -> viewModel.updateTableStatus(table, TableStatus.AVAILABLE)
+                    "OPEN" -> onTableClick(table)
+                }
+                selectedTableForActions = null
+            }
+        )
+    }
+
+    showMoveJoinDialog?.let { (table, isMove) ->
+        val availableTables = tables.filter { it.id != table.id }
+        MoveJoinDialog(
+            sourceTable = table,
+            isMove = isMove,
+            targetTables = availableTables,
+            onDismiss = { showMoveJoinDialog = null },
+            onConfirm = { targetTableId ->
+                if (isMove) viewModel.moveTable(table.id, targetTableId)
+                else viewModel.joinTable(table.id, targetTableId)
+                showMoveJoinDialog = null
+            }
+        )
     }
 
     if (showAddDialog) {
@@ -82,11 +127,11 @@ fun TableFloorPlanScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TableCard(
     table: Table,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     val backgroundColor = when (table.status) {
         TableStatus.AVAILABLE -> Color(0xFF4CAF50) // Green
@@ -96,8 +141,14 @@ fun TableCard(
     }
 
     Card(
-        onClick = onClick,
-        modifier = Modifier.size(140.dp),
+        modifier = Modifier
+            .size(140.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onTap = { onClick() },
+                    onLongPress = { onLongClick() }
+                )
+            },
         colors = CardDefaults.cardColors(containerColor = backgroundColor)
     ) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

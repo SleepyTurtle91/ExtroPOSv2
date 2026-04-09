@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+import java.util.UUID
+
 @HiltViewModel
 class PrinterSettingsViewModel @Inject constructor(
     private val printerDao: PrinterDao,
@@ -35,8 +37,8 @@ class PrinterSettingsViewModel @Inject constructor(
     private val _printStatus = MutableStateFlow<String?>(null)
     val printStatus: StateFlow<String?> = _printStatus.asStateFlow()
 
-    val currentConfig: StateFlow<PrinterConfig?> = printerDao.getDefaultPrinter()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val allPrinters: StateFlow<List<PrinterConfig>> = printerDao.getAllPrinters()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @SuppressLint("MissingPermission")
     fun discoverBluetoothDevices() {
@@ -51,21 +53,29 @@ class PrinterSettingsViewModel @Inject constructor(
         _availableUsbDevices.value = usbManager.deviceList.values.toList()
     }
 
-    fun savePrinterConfig(name: String, type: String, address: String, port: Int = 9100) {
+    fun savePrinterConfig(name: String, type: String, address: String, port: Int = 9100, tag: String? = null) {
         viewModelScope.launch {
             val config = PrinterConfig(
+                id = UUID.randomUUID().toString(),
                 name = name,
                 connectionType = type,
                 address = address,
-                port = port
+                port = port,
+                printerTag = tag,
+                isDefault = allPrinters.value.isEmpty()
             )
             printerDao.insertConfig(config)
         }
     }
 
-    fun testPrint() {
+    fun deletePrinter(id: String) {
         viewModelScope.launch {
-            val config = currentConfig.value ?: return@launch
+            printerDao.deleteConfig(id)
+        }
+    }
+
+    fun testPrint(config: PrinterConfig) {
+        viewModelScope.launch {
             _printStatus.value = "Connecting to ${config.name}..."
             
             val printer = when (config.connectionType) {

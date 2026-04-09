@@ -58,6 +58,12 @@ fun SettingsScreen(
                     icon = Icons.Default.Percent,
                     onClick = { onNavigateTo("tax_settings") }
                 )
+                SettingsItem(
+                    title = "LHDN MyInvois",
+                    subtitle = "Configure e-Invoicing (TIN, BRN, MSIC)",
+                    icon = Icons.Default.CloudUpload,
+                    onClick = { onNavigateTo("lhdn_settings") }
+                )
             }
 
             item {

@@ -30,4 +30,12 @@ class TableRepository @Inject constructor(
     suspend fun markTableDirty(tableId: String) {
         tableDao.updateTableStatus(tableId, TableStatus.DIRTY, null)
     }
+
+    suspend fun moveTable(fromTableId: String, toTableId: String) {
+        tableDao.moveTable(fromTableId, toTableId)
+    }
+
+    suspend fun joinTable(sourceTableId: String, targetTableId: String) {
+        tableDao.joinTable(sourceTableId, targetTableId)
+    }
 }

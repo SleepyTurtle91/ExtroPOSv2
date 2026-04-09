@@ -15,6 +15,10 @@ data class Sale(
     val discountLabel: String? = null,
     val roundingAdjustment: BigDecimal = BigDecimal.ZERO,
     val paymentMethod: String, // e.g., CASH, CARD
-    val status: String = "COMPLETED", // e.g., COMPLETED, VOIDED, REFUNDED
-    val note: String? = null
+    val status: String = "COMPLETED", // e.g., COMPLETED, VOIDED, REFUNDED, PENDING
+    val tableId: String? = null,
+    val note: String? = null,
+    val cardType: String? = null,
+    val maskedPan: String? = null,
+    val approvalCode: String? = null
 )

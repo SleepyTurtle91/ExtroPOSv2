@@ -15,8 +15,18 @@ data class LaundryOrder(
     val receivedTimestamp: Long = System.currentTimeMillis(),
     val readyTimestamp: Long? = null,
     val collectedTimestamp: Long? = null,
-    val note: String? = null
+    val note: String? = null,
+    val items: List<LaundryItem> = emptyList()
 )
+
+data class LaundryItem(
+    val name: String,
+    val quantity: BigDecimal,
+    val unitPrice: BigDecimal,
+    val isWeightBased: Boolean
+) {
+    val totalPrice: BigDecimal = quantity.multiply(unitPrice)
+}
 
 enum class LaundryStatus {
     RECEIVED,

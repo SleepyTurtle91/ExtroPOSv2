@@ -1,6 +1,7 @@
 package com.extrotarget.extroposv2.ui.carwash
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -29,6 +30,7 @@ fun CarWashJobQueueScreen(
     viewModel: CarWashViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var selectedJobForStaff by remember { mutableStateOf<CarWashJob?>(null) }
 
     Scaffold(
         topBar = {
@@ -55,8 +57,7 @@ fun CarWashJobQueueScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ) { job ->
                     JobCard(job, onAction = { 
-                        // In a real app, show staff selection dialog
-                        viewModel.assignStaff(job.id, "STAFF_001", "Ali (Lead)") 
+                        selectedJobForStaff = job
                     }, actionLabel = "START WASH")
                 }
 
@@ -83,6 +84,36 @@ fun CarWashJobQueueScreen(
                 }
             }
         }
+    }
+
+    if (selectedJobForStaff != null) {
+        AlertDialog(
+            onDismissRequest = { selectedJobForStaff = null },
+            title = { Text("Assign Staff for ${selectedJobForStaff!!.plateNumber}") },
+            text = {
+                Column {
+                    if (uiState.staffList.isEmpty()) {
+                        Text("No active staff available. Please add staff in settings.")
+                    } else {
+                        uiState.staffList.forEach { staff ->
+                            ListItem(
+                                headlineContent = { Text(staff.name) },
+                                supportingContent = { Text(staff.role) },
+                                modifier = Modifier.clickable {
+                                    viewModel.assignStaff(selectedJobForStaff!!.id, staff.id, staff.name)
+                                    selectedJobForStaff = null
+                                }
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { selectedJobForStaff = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

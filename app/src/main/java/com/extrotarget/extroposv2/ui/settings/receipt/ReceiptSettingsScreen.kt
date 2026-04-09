@@ -72,6 +72,13 @@ fun ReceiptSettingsScreen(
             )
 
             OutlinedTextField(
+                value = editableConfig.brn ?: "",
+                onValueChange = { editableConfig = editableConfig.copy(brn = it) },
+                label = { Text("Business Registration Number (BRN)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
                 value = editableConfig.sstId ?: "",
                 onValueChange = { editableConfig = editableConfig.copy(sstId = it) },
                 label = { Text("SST ID (Tax Number)") },
@@ -115,6 +122,17 @@ fun ReceiptSettingsScreen(
                     Switch(
                         checked = editableConfig.showRounding,
                         onCheckedChange = { editableConfig = editableConfig.copy(showRounding = it) }
+                    )
+                }
+            )
+
+            ListItem(
+                headlineContent = { Text("Show LHDN QR Code") },
+                supportingContent = { Text("Include e-Invoice validation QR on receipt") },
+                trailingContent = {
+                    Switch(
+                        checked = editableConfig.showLhdnQr,
+                        onCheckedChange = { editableConfig = editableConfig.copy(showLhdnQr = it) }
                     )
                 }
             )

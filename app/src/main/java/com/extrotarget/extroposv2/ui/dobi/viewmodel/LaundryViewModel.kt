@@ -21,14 +21,15 @@ import javax.inject.Inject
 
 data class LaundryUiState(
     val orders: List<LaundryOrder> = emptyList(),
+    val availableProducts: List<com.extrotarget.extroposv2.core.data.model.Product> = emptyList(),
     val isLoading: Boolean = false,
-    val pricePerKg: BigDecimal = BigDecimal("3.50"), // Standard MYR rate
     val liveWeight: BigDecimal = BigDecimal.ZERO
 )
 
 @HiltViewModel
 class LaundryViewModel @Inject constructor(
     private val laundryRepository: LaundryRepository,
+    private val productRepository: com.extrotarget.extroposv2.core.data.repository.ProductRepository,
     private val scale: ScaleInterface,
     private val whatsAppManager: com.extrotarget.extroposv2.core.util.notification.WhatsAppManager
 ) : ViewModel() {
@@ -36,9 +37,13 @@ class LaundryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LaundryUiState())
     val uiState: StateFlow<LaundryUiState> = combine(
         _uiState,
-        scale.getWeightFlow()
-    ) { state, weight ->
-        state.copy(liveWeight = weight)
+        scale.getWeightFlow(),
+        productRepository.getAllProducts()
+    ) { state, weight, products ->
+        state.copy(
+            liveWeight = weight,
+            availableProducts = products.filter { it.categoryId == "LAUNDRY" }
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LaundryUiState())
 
     init {
@@ -63,16 +68,25 @@ class LaundryViewModel @Inject constructor(
     val orders: StateFlow<List<LaundryOrder>> = laundryRepository.allOrders
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun createOrder(name: String, phone: String, weight: BigDecimal, note: String?) {
+    fun createOrder(
+        name: String,
+        phone: String,
+        weight: BigDecimal,
+        note: String?,
+        selectedItems: List<com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem>
+    ) {
         viewModelScope.launch {
-            val totalPrice = weight.multiply(_uiState.value.pricePerKg)
+            val totalPrice = selectedItems.fold(BigDecimal.ZERO) { acc, item ->
+                acc.add(item.totalPrice)
+            }
             val newOrder = LaundryOrder(
                 id = UUID.randomUUID().toString(),
                 customerName = name,
                 customerPhone = phone,
                 weightKg = weight,
                 totalPrice = totalPrice,
-                note = note
+                note = note,
+                items = selectedItems
             )
             laundryRepository.createOrder(newOrder)
         }

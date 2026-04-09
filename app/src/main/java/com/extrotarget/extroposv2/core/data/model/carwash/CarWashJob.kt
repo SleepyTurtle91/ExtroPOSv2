@@ -23,5 +23,6 @@ enum class CarWashStatus {
     QUEUED,
     IN_PROGRESS,
     COMPLETED,
-    CANCELLED
+    CANCELLED,
+    ARCHIVED
 }

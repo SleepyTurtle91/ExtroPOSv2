@@ -8,28 +8,46 @@ import com.extrotarget.extroposv2.core.data.repository.carwash.CarWashRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import javax.inject.Inject
 
 data class CarWashUiState(
     val queuedJobs: List<CarWashJob> = emptyList(),
     val inProgressJobs: List<CarWashJob> = emptyList(),
-    val completedJobs: List<CarWashJob> = emptyList()
+    val completedJobs: List<CarWashJob> = emptyList(),
+    val staffList: List<com.extrotarget.extroposv2.core.data.model.carwash.Staff> = emptyList()
 )
 
 @HiltViewModel
 class CarWashViewModel @Inject constructor(
-    private val repository: CarWashRepository
+    private val repository: CarWashRepository,
+    private val staffRepository: com.extrotarget.extroposv2.core.data.repository.carwash.StaffRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<CarWashUiState> = repository.allJobs
-        .map { jobs ->
-            CarWashUiState(
-                queuedJobs = jobs.filter { it.status == CarWashStatus.QUEUED },
-                inProgressJobs = jobs.filter { it.status == CarWashStatus.IN_PROGRESS },
-                completedJobs = jobs.filter { it.status == CarWashStatus.COMPLETED }
+    val uiState: StateFlow<CarWashUiState> = combine(
+        repository.allJobs,
+        staffRepository.getAllActiveStaff()
+    ) { jobs, staff ->
+        CarWashUiState(
+            queuedJobs = jobs.filter { it.status == CarWashStatus.QUEUED },
+            inProgressJobs = jobs.filter { it.status == CarWashStatus.IN_PROGRESS },
+            completedJobs = jobs.filter { it.status == CarWashStatus.COMPLETED },
+            staffList = staff
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CarWashUiState())
+
+    fun addJob(plate: String, model: String?, service: String, price: BigDecimal) {
+        viewModelScope.launch {
+            val job = CarWashJob(
+                id = java.util.UUID.randomUUID().toString(),
+                plateNumber = plate,
+                carModel = model,
+                serviceName = service,
+                price = price
             )
+            repository.createJob(job)
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), CarWashUiState())
+    }
 
     fun updateJobStatus(jobId: String, status: CarWashStatus) {
         viewModelScope.launch {

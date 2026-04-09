@@ -3,6 +3,7 @@ package com.extrotarget.extroposv2.ui.dobi
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -67,12 +68,12 @@ fun LaundryOrderScreen(
 
     if (showAddDialog) {
         AddLaundryOrderDialog(
-            pricePerKg = uiState.pricePerKg,
+            availableProducts = uiState.availableProducts,
             liveWeight = uiState.liveWeight,
             onTare = viewModel::tareScale,
             onDismiss = { showAddDialog = false },
-            onConfirm = { name, phone, weight, note ->
-                viewModel.createOrder(name, phone, weight, note)
+            onConfirm = { name, phone, weight, note, items ->
+                viewModel.createOrder(name, phone, weight, note, items)
                 showAddDialog = false
             }
         )
@@ -185,20 +186,21 @@ fun LaundryOrderCard(
 
 @Composable
 fun AddLaundryOrderDialog(
-    pricePerKg: BigDecimal,
+    availableProducts: List<com.extrotarget.extroposv2.core.data.model.Product>,
     liveWeight: BigDecimal = BigDecimal.ZERO,
     onTare: () -> Unit = {},
     onDismiss: () -> Unit,
-    onConfirm: (String, String, BigDecimal, String?) -> Unit
+    onConfirm: (String, String, BigDecimal, String?, List<com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem>) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
+    
+    val selectedItems = remember { mutableStateListOf<com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem>() }
 
-    val calculatedTotal = remember(weight) {
-        val w = weight.toBigDecimalOrNull() ?: BigDecimal.ZERO
-        w.multiply(pricePerKg)
+    val calculatedTotal = remember(selectedItems.toList()) {
+        selectedItems.fold(BigDecimal.ZERO) { acc, item -> acc.add(item.totalPrice) }
     }
 
     AlertDialog(
@@ -257,6 +259,44 @@ fun AddLaundryOrderDialog(
                     modifier = Modifier.fillMaxWidth(),
                     trailingIcon = { Text("KG", modifier = Modifier.padding(end = 8.dp)) }
                 )
+
+                Text("Items", style = MaterialTheme.typography.titleMedium)
+                availableProducts.forEach { product ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val weightVal = if (product.isWeightBased) weight.toBigDecimalOrNull() ?: BigDecimal.ZERO else BigDecimal.ONE
+                                if (weightVal > BigDecimal.ZERO) {
+                                    selectedItems.add(com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem(
+                                        name = product.name,
+                                        quantity = weightVal,
+                                        unitPrice = product.price,
+                                        isWeightBased = product.isWeightBased
+                                    ))
+                                }
+                            }
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(product.name)
+                        Text(CurrencyUtils.format(product.price) + if (product.isWeightBased) "/KG" else "/pc")
+                    }
+                }
+
+                if (selectedItems.isNotEmpty()) {
+                    Divider()
+                    selectedItems.forEach { item ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("${item.quantity} x ${item.name}", style = MaterialTheme.typography.bodySmall)
+                            Text(CurrencyUtils.format(item.totalPrice), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
@@ -286,8 +326,8 @@ fun AddLaundryOrderDialog(
             Button(
                 onClick = { 
                     val w = weight.toBigDecimalOrNull() ?: BigDecimal.ZERO
-                    if (name.isNotBlank() && w > BigDecimal.ZERO) {
-                        onConfirm(name, phone, w, note)
+                    if (name.isNotBlank() && selectedItems.isNotEmpty()) {
+                        onConfirm(name, phone, w, note, selectedItems.toList())
                     }
                 }
             ) {

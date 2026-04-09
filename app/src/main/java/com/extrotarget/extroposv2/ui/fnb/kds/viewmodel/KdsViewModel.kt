@@ -36,10 +36,12 @@ class KdsViewModel @Inject constructor(
         val filteredOrders = salesWithItems.mapNotNull { saleWithItems ->
             val sale = saleWithItems.sale
             val items = saleWithItems.items
-            // Filter items that match the current station tag
-            val stationItems = items.filter { it.printerTag.equals(tag, ignoreCase = true) }
+            // Filter items that match the current station tag and are not yet ready
+            val stationItems = items.filter { 
+                it.printerTag.equals(tag, ignoreCase = true) && it.status != "READY" 
+            }
             
-            if (stationItems.isNotEmpty() && sale.status == "COMPLETED") {
+            if (stationItems.isNotEmpty() && (sale.status == "COMPLETED" || sale.status == "PENDING")) {
                 KdsOrder(sale, stationItems)
             } else null
         }.sortedBy { it.sale.timestamp }
@@ -55,7 +57,8 @@ class KdsViewModel @Inject constructor(
     }
 
     fun markOrderDone(orderId: String) {
-        // In a real app, we might update a 'kdsStatus' column in SaleItem
-        // For now, we'll just acknowledge the action
+        viewModelScope.launch {
+            saleRepository.updateItemsStatusByTag(orderId, _selectedTag.value, "READY")
+        }
     }
 }

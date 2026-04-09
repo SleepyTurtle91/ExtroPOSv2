@@ -20,8 +20,22 @@ class SaleRepository @Inject constructor(
 
     suspend fun getSaleById(saleId: String): Sale? = saleDao.getSaleById(saleId)
 
+    suspend fun getPendingSaleForTable(tableId: String): Sale? = 
+        saleDao.getPendingSaleForTable(tableId)
+
+    fun getPendingSaleWithItemsForTable(tableId: String): Flow<SaleWithItems?> =
+        saleDao.getPendingSaleWithItemsForTable(tableId)
+
+    suspend fun updateSale(sale: Sale) = saleDao.updateSale(sale)
+
     suspend fun getItemsBySaleId(saleId: String): List<SaleItem> = 
         saleDao.getItemsBySaleId(saleId)
+
+    suspend fun updateItemStatus(itemId: String, status: String) =
+        saleDao.updateItemStatus(itemId, status)
+
+    suspend fun updateItemsStatusByTag(saleId: String, tag: String, status: String) =
+        saleDao.updateItemsStatusByTag(saleId, tag, status)
 
     fun getSalesInRange(start: Long, end: Long): Flow<List<Sale>> =
         saleDao.getSalesInRange(start, end)

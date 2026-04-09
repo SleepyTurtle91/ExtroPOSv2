@@ -9,11 +9,13 @@ data class ReceiptConfig(
     val storeName: String = "ExtroPOS Store",
     val address: String? = null,
     val phone: String? = null,
+    val brn: String? = null, // Business Registration Number
     val sstId: String? = null, // Malaysian SST ID
     val headerMessage: String? = null,
     val footerMessage: String? = "Thank you! Please come again.",
     val showLogo: Boolean = false,
     val logoPath: String? = null,
     val showTaxSummary: Boolean = true,
-    val showRounding: Boolean = true
+    val showRounding: Boolean = true,
+    val showLhdnQr: Boolean = true
 )

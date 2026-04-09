@@ -20,5 +20,6 @@ data class Product(
     val description: String? = null,
     val imageUrl: String? = null,
     val isAvailable: Boolean = true,
-    val printerTag: String? = null // e.g., "KITCHEN", "BAR", "GENERAL"
+    val printerTag: String? = null, // e.g., "KITCHEN", "BAR", "GENERAL"
+    val isWeightBased: Boolean = false // If true, price is per KG, else per piece
 )

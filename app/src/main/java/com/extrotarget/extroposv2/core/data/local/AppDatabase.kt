@@ -18,6 +18,7 @@ import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.PaymentMethodDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.TaxDao
+import com.extrotarget.extroposv2.core.data.local.dao.settings.DuitNowDao
 import com.extrotarget.extroposv2.core.data.local.dao.lhdn.LhdnDao
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.CarWashDao
 import com.extrotarget.extroposv2.core.data.local.dao.dobi.LaundryDao
@@ -29,11 +30,13 @@ import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
 import com.extrotarget.extroposv2.core.data.model.carwash.Staff
 import com.extrotarget.extroposv2.core.data.model.hardware.PrinterConfig
 import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnConfig
+import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnToken
 import com.extrotarget.extroposv2.core.data.model.lhdn.SaleEInvoiceSubmission
 import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
 import com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig
 import com.extrotarget.extroposv2.core.data.model.settings.PaymentMethod
 import com.extrotarget.extroposv2.core.data.model.settings.TaxConfig
+import com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig
 
 @Database(
     entities = [
@@ -52,9 +55,11 @@ import com.extrotarget.extroposv2.core.data.model.settings.TaxConfig
         PaymentMethod::class,
         TaxConfig::class,
         LhdnConfig::class,
-        SaleEInvoiceSubmission::class
+        SaleEInvoiceSubmission::class,
+        LhdnToken::class,
+        DuitNowConfig::class
     ],
-    version = 13,
+    version = 15,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -73,6 +78,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun paymentMethodDao(): PaymentMethodDao
     abstract fun taxDao(): TaxDao
     abstract fun lhdnDao(): LhdnDao
+    abstract fun duitNowDao(): DuitNowDao
 
     companion object {
         const val DATABASE_NAME = "extro_pos_db"

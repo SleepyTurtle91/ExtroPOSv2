@@ -10,5 +10,6 @@ data class PrinterConfig(
     val connectionType: String, // BLUETOOTH, USB, NETWORK
     val address: String, // MAC address, IP, or USB device ID
     val port: Int = 9100, // For Network
-    val isDefault: Boolean = true
+    val isDefault: Boolean = true,
+    val printerTag: String? = null // e.g., "KITCHEN", "BAR", "RECEIPT"
 )

@@ -22,7 +22,9 @@ data class SalesUiState(
     val availableModifiers: List<String> = listOf("Bungkus", "Ikat Tepi", "Kurang Manis", "Tambah Pedas", "No Veggie"),
     val cartDiscount: Discount? = null,
     val showDiscountDialog: Boolean = false,
-    val itemAwaitingDiscount: CartItem? = null
+    val itemAwaitingDiscount: CartItem? = null,
+    val showTerminalProgress: Boolean = false,
+    val terminalStatus: String? = null
 ) {
     val subtotal: BigDecimal = cartItems.fold(BigDecimal.ZERO) { acc, item ->
         acc.add(item.totalBeforeDiscount)
@@ -44,7 +46,8 @@ data class SalesUiState(
     
     val roundingAdjustment: BigDecimal = com.extrotarget.extroposv2.core.util.CurrencyUtils.calculateRoundingAdjustment(amountBeforeRounding)
     
-    val totalAmount: BigDecimal = amountBeforeRounding.add(roundingAdjustment)
+    val totalAmount: BigDecimal = amountBeforeRounding
+    val totalAmountCash: BigDecimal = amountBeforeRounding.add(roundingAdjustment)
 }
 
 data class Discount(

@@ -1,7 +1,11 @@
 package com.extrotarget.extroposv2.core.util.importer
 
+import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
+import com.extrotarget.extroposv2.core.data.local.dao.StockMovementDao
 import com.extrotarget.extroposv2.core.data.model.Product
+import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import androidx.room.withTransaction
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
@@ -12,11 +16,14 @@ import javax.inject.Singleton
 
 @Singleton
 class ProductImportManager @Inject constructor(
-    private val productDao: ProductDao
+    private val productDao: ProductDao,
+    private val stockMovementDao: StockMovementDao,
+    private val db: AppDatabase
 ) {
     suspend fun importFromCsv(inputStream: InputStream): Result<Int> {
         return try {
             val products = mutableListOf<Product>()
+            val movements = mutableListOf<StockMovement>()
             val reader = BufferedReader(InputStreamReader(inputStream))
             
             // Skip header
@@ -46,8 +53,9 @@ class ProductImportManager @Inject constructor(
                             productDao.getProductByBarcode(sku) // Dao handles SKU or Barcode
                         } else null
 
+                        val productId = existingProduct?.id ?: UUID.randomUUID().toString()
                         val product = Product(
-                            id = existingProduct?.id ?: UUID.randomUUID().toString(),
+                            id = productId,
                             name = name,
                             sku = sku,
                             barcode = barcode,
@@ -60,13 +68,30 @@ class ProductImportManager @Inject constructor(
                             printerTag = printerTag
                         )
                         products.add(product)
+
+                        // If stock is specified in CSV, record it as an ADJUSTMENT if it changed
+                        if (stock != BigDecimal.ZERO && stock != (existingProduct?.stockQuantity ?: BigDecimal.ZERO)) {
+                            val diff = if (existingProduct != null) stock.subtract(existingProduct.stockQuantity) else stock
+                            movements.add(
+                                StockMovement(
+                                    id = UUID.randomUUID().toString(),
+                                    productId = productId,
+                                    quantity = diff,
+                                    type = "IMPORT",
+                                    note = "CSV Import"
+                                )
+                            )
+                        }
                     }
                 }
                 line = reader.readLine()
             }
 
             if (products.isNotEmpty()) {
-                productDao.upsertProducts(products)
+                db.withTransaction {
+                    productDao.upsertProducts(products)
+                    movements.forEach { stockMovementDao.insertMovement(it) }
+                }
                 Result.success(products.size)
             } else {
                 Result.failure(Exception("No valid products found in CSV"))
