@@ -69,8 +69,8 @@ See `PROGRESSION.md` for the latest implementation milestones.
 - ✅ Phase 1: Core Engine & Compliance
 - ✅ Phase 2: Hardware & Infrastructure
 - ✅ Phase 3: Sales & Payments
-- ✅ Phase 4: Industry Modules (Car Wash, F&B, Dobi)
-- 🚧 Phase 7: Cloud Sync & Multi-Terminal (Upcoming)
+- ✅ Phase 1-7: Core Engine, Hardware, Sales, Industry Modules, UI, Analytics, and Security.
+- 🚧 Phase 8: Data Portability & Advanced Offline (Standalone Focus)
 
 ---
 

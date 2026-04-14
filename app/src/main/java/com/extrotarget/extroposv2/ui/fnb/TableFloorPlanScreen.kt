@@ -136,6 +136,7 @@ fun TableCard(
     val backgroundColor = when (table.status) {
         TableStatus.AVAILABLE -> Color(0xFF4CAF50) // Green
         TableStatus.OCCUPIED -> Color(0xFFF44336) // Red
+        TableStatus.BILLING -> Color(0xFF2196F3)  // Blue
         TableStatus.RESERVED -> Color(0xFFFF9800) // Orange
         TableStatus.DIRTY -> Color(0xFF795548)    // Brown
     }
@@ -177,6 +178,22 @@ fun TableCard(
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.ExtraBold
                 )
+                
+                if (table.status == TableStatus.OCCUPIED) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Surface(
+                        color = if (table.hasUnsentItems) Color(0xFFFFEB3B) else Color(0xFFE8F5E9), // Yellow for unsent, Light Green for sent
+                        shape = MaterialTheme.shapes.extraSmall
+                    ) {
+                        Text(
+                            text = if (table.hasUnsentItems) "PENDING ORDER" else "ORDER SENT",
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (table.hasUnsentItems) Color.Black else Color(0xFF2E7D32),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         }
     }

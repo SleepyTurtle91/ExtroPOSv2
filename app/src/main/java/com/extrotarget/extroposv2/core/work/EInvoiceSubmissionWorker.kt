@@ -21,15 +21,14 @@ class EInvoiceSubmissionWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val saleId = inputData.getString(KEY_SALE_ID) ?: return Result.failure()
+        val isConsolidated = inputData.getBoolean(KEY_IS_CONSOLIDATED, false)
 
         val sale = saleRepository.getSaleById(saleId) ?: return Result.failure()
         val items = saleRepository.getItemsBySaleId(saleId)
         
-        // For background retry, we assume General Public if buyer info not stored separately yet
-        // In a full implementation, we'd fetch the specific buyer linked to this sale
         val buyer = BuyerInfo() 
 
-        val result = lhdnRepository.submitEInvoice(sale, items, buyer)
+        val result = lhdnRepository.submitEInvoice(sale, items, buyer, isConsolidated)
 
         return if (result.isSuccess) {
             Result.success()
@@ -44,5 +43,6 @@ class EInvoiceSubmissionWorker @AssistedInject constructor(
 
     companion object {
         const val KEY_SALE_ID = "sale_id"
+        const val KEY_IS_CONSOLIDATED = "is_consolidated"
     }
 }

@@ -16,6 +16,7 @@ import com.extrotarget.extroposv2.core.data.local.dao.fnb.TableDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.PaymentMethodDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.TaxDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
+import com.extrotarget.extroposv2.core.data.local.dao.settings.DuitNowDao
 import com.extrotarget.extroposv2.core.data.local.dao.lhdn.LhdnDao
 import dagger.Module
 import dagger.Provides
@@ -35,7 +36,9 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
-        ).build()
+        )
+        .fallbackToDestructiveMigration()
+        .build()
     }
 
     @Provides
@@ -79,4 +82,10 @@ object DatabaseModule {
 
     @Provides
     fun provideLhdnDao(database: AppDatabase): LhdnDao = database.lhdnDao()
+
+    @Provides
+    fun provideDuitNowDao(database: AppDatabase): DuitNowDao = database.duitNowDao()
+
+    @Provides
+    fun provideAuditDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.AuditDao = database.auditDao()
 }

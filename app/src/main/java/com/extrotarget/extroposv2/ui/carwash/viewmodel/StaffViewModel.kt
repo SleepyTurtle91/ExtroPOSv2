@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
 import com.extrotarget.extroposv2.core.data.model.carwash.Staff
 import com.extrotarget.extroposv2.core.data.repository.carwash.StaffRepository
+import com.extrotarget.extroposv2.core.util.audit.AuditManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -19,7 +20,8 @@ data class StaffWithEarnings(
 
 @HiltViewModel
 class StaffViewModel @Inject constructor(
-    private val staffRepository: StaffRepository
+    private val staffRepository: StaffRepository,
+    private val auditManager: AuditManager
 ) : ViewModel() {
 
     private val _staffWithEarningsList = MutableStateFlow<List<StaffWithEarnings>>(emptyList())
@@ -49,27 +51,46 @@ class StaffViewModel @Inject constructor(
         }
     }
 
-    fun addStaff(name: String, role: String, phone: String?) {
+    fun addStaff(name: String, role: String, phone: String?, pin: String?) {
         viewModelScope.launch {
             val newStaff = Staff(
                 id = UUID.randomUUID().toString(),
                 name = name,
                 role = role,
-                phone = phone
+                phone = phone,
+                pin = pin
             )
             staffRepository.saveStaff(newStaff)
+            auditManager.logAction(
+                action = "ADD_STAFF",
+                details = "Added new staff member: $name with role: $role",
+                module = "STAFF",
+                severity = "INFO"
+            )
         }
     }
 
     fun updateStaff(staff: Staff) {
         viewModelScope.launch {
             staffRepository.saveStaff(staff)
+            auditManager.logAction(
+                action = "UPDATE_STAFF",
+                details = "Updated staff member: ${staff.name} (ID: ${staff.id})",
+                module = "STAFF",
+                severity = "INFO"
+            )
         }
     }
 
     fun deleteStaff(staff: Staff) {
         viewModelScope.launch {
             staffRepository.deleteStaff(staff)
+            auditManager.logAction(
+                action = "DELETE_STAFF",
+                details = "Deleted staff member: ${staff.name} (ID: ${staff.id})",
+                module = "STAFF",
+                severity = "WARNING"
+            )
         }
     }
 }

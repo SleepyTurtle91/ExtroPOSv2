@@ -64,6 +64,12 @@ fun SettingsScreen(
                     icon = Icons.Default.CloudUpload,
                     onClick = { onNavigateTo("lhdn_settings") }
                 )
+                SettingsItem(
+                    title = "AutoCount Sync",
+                    subtitle = "Automated accounting data synchronization",
+                    icon = Icons.Default.Sync,
+                    onClick = { onNavigateTo(Screen.AutoCountSettings.route) }
+                )
             }
 
             item {
@@ -95,6 +101,18 @@ fun SettingsScreen(
                     subtitle = "Export or import database backups",
                     icon = Icons.Default.Backup,
                     onClick = { onNavigateTo(Screen.Backup.route) }
+                )
+                SettingsItem(
+                    title = "Security & Audit Logs",
+                    subtitle = "Monitor sensitive actions and user changes",
+                    icon = Icons.Default.Security,
+                    onClick = { onNavigateTo(Screen.SecurityAudit.route) }
+                )
+                SettingsItem(
+                    title = "Multi-Terminal Sync",
+                    subtitle = "Sync data between Master and Slave devices",
+                    icon = Icons.Default.CastConnected,
+                    onClick = { onNavigateTo(Screen.TerminalSync.route) }
                 )
             }
         }

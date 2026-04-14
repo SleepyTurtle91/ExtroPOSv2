@@ -26,6 +26,10 @@ class TableRepository @Inject constructor(
     suspend fun releaseTable(tableId: String) {
         tableDao.updateTableStatus(tableId, TableStatus.AVAILABLE, null)
     }
+
+    suspend fun setTableBilling(tableId: String) {
+        tableDao.updateTableStatus(tableId, TableStatus.BILLING, null)
+    }
     
     suspend fun markTableDirty(tableId: String) {
         tableDao.updateTableStatus(tableId, TableStatus.DIRTY, null)

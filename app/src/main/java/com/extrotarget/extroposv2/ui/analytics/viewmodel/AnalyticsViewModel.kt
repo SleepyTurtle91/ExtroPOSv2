@@ -6,8 +6,10 @@ import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.core.data.repository.SaleRepository
+import com.extrotarget.extroposv2.core.util.exporter.SstReportManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
+import java.io.OutputStream
 import java.math.BigDecimal
 import java.text.SimpleDateFormat
 import java.util.*
@@ -40,7 +42,8 @@ data class AnalyticsUiState(
 
 @HiltViewModel
 class AnalyticsViewModel @Inject constructor(
-    private val saleRepository: SaleRepository
+    private val saleRepository: SaleRepository,
+    private val sstReportManager: SstReportManager
 ) : ViewModel() {
 
     private val _dateRange = MutableStateFlow(Pair(
@@ -94,6 +97,14 @@ class AnalyticsViewModel @Inject constructor(
 
     fun setDateRange(start: Long, end: Long) {
         _dateRange.value = Pair(start, end)
+    }
+
+    suspend fun exportSstReport(outputStream: OutputStream): Result<Int> {
+        return sstReportManager.generateSstCsvReport(
+            _dateRange.value.first,
+            _dateRange.value.second,
+            outputStream
+        )
     }
 
     private fun Iterable<Sale>.sumOfSales(selector: (Sale) -> BigDecimal): BigDecimal {

@@ -44,7 +44,7 @@ fun ImportCsvDialog(
                     shape = MaterialTheme.shapes.small
                 ) {
                     Text(
-                        "Name, SKU, Barcode, Price, TaxRate, Stock, MinStock, CategoryID, Description, PrinterTag",
+                        "Name, SKU, Barcode, Price, TaxRate, Stock, MinStock, CategoryID, Description, PrinterTag, CommRate, FixedComm, ImageUrl, Available, WeightBased",
                         modifier = Modifier.padding(8.dp),
                         style = MaterialTheme.typography.labelSmall
                     )

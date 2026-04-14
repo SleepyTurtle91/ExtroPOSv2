@@ -67,6 +67,10 @@ interface SaleDao {
     @Query("UPDATE sale_items SET status = :status WHERE saleId = :saleId AND printerTag = :tag")
     suspend fun updateItemsStatusByTag(saleId: String, tag: String, status: String)
 
-    @Query("SELECT * FROM sales WHERE timestamp >= :start AND timestamp <= :end")
+    @Transaction
+    @Query("SELECT * FROM sales WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp DESC")
+    fun getSalesWithItemsInRange(start: Long, end: Long): Flow<List<SaleWithItems>>
+
+    @Query("SELECT * FROM sales WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp DESC")
     fun getSalesInRange(start: Long, end: Long): Flow<List<Sale>>
 }

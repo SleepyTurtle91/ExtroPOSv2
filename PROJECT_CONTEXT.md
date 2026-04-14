@@ -48,5 +48,14 @@ This document provides a technical summary of implemented features and architect
 - **Navigation**: Typed `Screen` sealed class with `NavGraph` integration.
 - **Database**: Room v7 includes `printer_configs`, `staff`, `commission_records`, `products`, `sales`, `laundry_orders`, and `car_wash_jobs`.
 
+## 9. Next Priority: AutoCount Accounting Integration
+- **Objective**: Automate sales data synchronization to AutoCount Accounting software via REST API.
+- **Scope**: Mapping `Sale` and `SaleItem` to AutoCount `CashSale` or `SalesInvoice` objects.
+- **Authentication**: OAuth2 or API Key based authentication.
+
+## 10. Security & Multi-User (Planned)
+- **Licensing**: Implementation of SSAID-bound license keys for device activation.
+- **User Management**: PIN-based screen lock and role-based permissions (RBAC).
+
 ---
-*Last Updated: Phase 8 Milestone*
+*Last Updated: Phase 7 Initialization (Security & Licensing Focus)*

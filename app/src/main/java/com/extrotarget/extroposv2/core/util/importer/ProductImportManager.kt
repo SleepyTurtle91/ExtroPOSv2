@@ -24,14 +24,14 @@ class ProductImportManager @Inject constructor(
         return try {
             val products = mutableListOf<Product>()
             val movements = mutableListOf<StockMovement>()
-            val reader = BufferedReader(InputStreamReader(inputStream))
+            val reader = BufferedReader(InputStreamReader(inputStream, Charsets.UTF_8))
             
             // Skip header
             val header = reader.readLine()
             
             var line: String? = reader.readLine()
             while (line != null) {
-                val parts = line.split(",").map { it.trim() }
+                val parts = parseCsvLine(line)
                 if (parts.size >= 5) { // Name, SKU, Barcode, Price, TaxRate are minimum
                     val name = parts.getOrNull(0) ?: ""
                     val sku = parts.getOrNull(1) ?: ""
@@ -43,6 +43,13 @@ class ProductImportManager @Inject constructor(
                     val categoryId = parts.getOrNull(7).takeIf { it?.isNotEmpty() == true }
                     val description = parts.getOrNull(8)
                     val printerTag = parts.getOrNull(9)
+                    
+                    // New fields
+                    val commissionRate = parts.getOrNull(10)?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+                    val fixedCommission = parts.getOrNull(11)?.toBigDecimalOrNull() ?: BigDecimal.ZERO
+                    val imageUrl = parts.getOrNull(12)
+                    val isAvailable = parts.getOrNull(13)?.toBoolean() ?: true
+                    val isWeightBased = parts.getOrNull(14)?.toBoolean() ?: false
 
                     // Basic validation
                     if (name.isNotEmpty()) {
@@ -65,19 +72,26 @@ class ProductImportManager @Inject constructor(
                             minStockLevel = minStock,
                             categoryId = categoryId,
                             description = description,
-                            printerTag = printerTag
+                            printerTag = printerTag,
+                            commissionRate = commissionRate,
+                            fixedCommission = fixedCommission,
+                            imageUrl = imageUrl,
+                            isAvailable = isAvailable,
+                            isWeightBased = isWeightBased
                         )
                         products.add(product)
 
-                        // If stock is specified in CSV, record it as an ADJUSTMENT if it changed
-                        if (stock != BigDecimal.ZERO && stock != (existingProduct?.stockQuantity ?: BigDecimal.ZERO)) {
-                            val diff = if (existingProduct != null) stock.subtract(existingProduct.stockQuantity) else stock
+                        // Record stock movement if there's a change or it's a new product with stock
+                        val currentStock = existingProduct?.stockQuantity ?: BigDecimal.ZERO
+                        if (stock != currentStock) {
+                            val diff = stock.subtract(currentStock)
                             movements.add(
                                 StockMovement(
                                     id = UUID.randomUUID().toString(),
                                     productId = productId,
                                     quantity = diff,
                                     type = "IMPORT",
+                                    timestamp = System.currentTimeMillis(),
                                     note = "CSV Import"
                                 )
                             )
@@ -99,5 +113,39 @@ class ProductImportManager @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun parseCsvLine(line: String): List<String> {
+        val result = mutableListOf<String>()
+        var curVal = StringBuilder()
+        var inQuotes = false
+        var i = 0
+        while (i < line.length) {
+            val ch = line[i]
+            if (inQuotes) {
+                if (ch == '\"') {
+                    if (i + 1 < line.length && line[i + 1] == '\"') {
+                        curVal.append('\"')
+                        i++
+                    } else {
+                        inQuotes = false
+                    }
+                } else {
+                    curVal.append(ch)
+                }
+            } else {
+                if (ch == '\"') {
+                    inQuotes = true
+                } else if (ch == ',') {
+                    result.add(curVal.toString().trim())
+                    curVal = StringBuilder()
+                } else {
+                    curVal.append(ch)
+                }
+            }
+            i++
+        }
+        result.add(curVal.toString().trim())
+        return result
     }
 }

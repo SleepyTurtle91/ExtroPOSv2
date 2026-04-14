@@ -25,6 +25,9 @@ interface LhdnDao {
     suspend fun updateSubmission(submission: SaleEInvoiceSubmission)
 
     @Query("SELECT * FROM sale_einvoice_submission WHERE saleId = :saleId")
+    fun getSubmissionFlowBySaleId(saleId: String): Flow<SaleEInvoiceSubmission?>
+
+    @Query("SELECT * FROM sale_einvoice_submission WHERE saleId = :saleId")
     suspend fun getSubmissionBySaleId(saleId: String): SaleEInvoiceSubmission?
 
     @Query("SELECT * FROM sale_einvoice_submission WHERE status = :status")

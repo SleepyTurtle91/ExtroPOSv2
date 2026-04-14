@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ChevronRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.QrCode
@@ -53,7 +53,7 @@ fun PaymentMethodSettingsScreen(
                         headlineContent = { Text("Configure DuitNow QR") },
                         supportingContent = { Text("Set Merchant ID and Name for dynamic QR") },
                         leadingContent = { Icon(Icons.Default.QrCode, contentDescription = null) },
-                        trailingContent = { Icon(Icons.AutoMirrored.Filled.ChevronRight, contentDescription = null) },
+                        trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
                         colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
                     )
                 }

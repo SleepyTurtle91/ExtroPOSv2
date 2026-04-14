@@ -6,7 +6,9 @@ import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.repository.CategoryRepository
 import com.extrotarget.extroposv2.core.data.repository.ProductRepository
 import com.extrotarget.extroposv2.core.data.repository.inventory.InventoryRepository
+import com.extrotarget.extroposv2.core.util.exporter.ProductExportManager
 import com.extrotarget.extroposv2.ui.inventory.InventoryUiState
+import java.io.OutputStream
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,7 +19,8 @@ import javax.inject.Inject
 class InventoryViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val categoryRepository: CategoryRepository,
-    private val inventoryRepository: InventoryRepository
+    private val inventoryRepository: InventoryRepository,
+    private val exportManager: ProductExportManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InventoryUiState())
@@ -89,5 +92,9 @@ class InventoryViewModel @Inject constructor(
         viewModelScope.launch {
             inventoryRepository.setStock(product.id, quantity, type, note)
         }
+    }
+
+    suspend fun exportProducts(outputStream: OutputStream): Result<Int> {
+        return exportManager.exportToCsv(outputStream)
     }
 }

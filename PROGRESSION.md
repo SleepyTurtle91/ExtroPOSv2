@@ -45,18 +45,44 @@ This file tracks the implementation status of features defined in the developmen
 ## Phase 5: UI & Localization
 - [x] **Multi-Language Support**: English (EN), Bahasa Melayu (BM), Mandarin (ZH).
 - [x] **Material 3 Design**: "Fat-Finger" touch targets for high-speed POS environments.
+- [x] **Experimental API Opt-In**: Standardized `@OptIn(ExperimentalMaterial3Api::class)` across Sales, Inventory, and Dialog components to resolve Compose Material 3 stability warnings.
 - [x] **Dark Mode**: Standardizing themes for night-time operations.
 
 ## Phase 6: Analytics & Inventory
-- [x] **Inventory Management**: Manual stock adjustments and barcode tracking.
+- [x] **Inventory Management**: Manual stock adjustments and barcode tracking with CSV Import/Export.
 - [x] **Low Stock Alerts**: Real-time visual warnings for threshold-breached items.
 - [x] **Business Analytics**: Gross sales, transaction counts, and period filtering.
-- [x] **SST Reporting**: Automated calculation of 6%/8% tax for Malaysian filing.
-- [x] **Backup & Restore**: Manual database export/import for offline data safety.
+- [x] **SST Reporting**: Automated calculation of 6%/8%/10% tax for Malaysian filing with CSV Export.
+- [x] **Backup & Restore**: Secure database export/import via Storage Access Framework (SAF) with automatic checkpointing and app restart.
 
-## Phase 7: Cloud & Multi-Terminal (Coming Soon)
-- [ ] **Cloud Sync**: WorkManager-based background sync with centralized dashboard (Postponed).
-- [ ] **Multi-Outlet Support**: Data isolation and aggregation across multiple branches (Postponed).
+## Phase 7: Security, Licensing & Multi-User
+- [x] **Software Licensing**: Device-bound encrypted license activation and hardware ID (SSAID) binding.
+- [x] **Trial Management**: Automated 14-day trial logic with offline grace periods.
+- [x] **POS Screen Lock**: PIN-based high-speed user switching for shared terminals.
+- [x] **Role-Based Access Control (RBAC)**: Permission enforcement for Voids, Discounts, and Settings.
+
+## Phase 8: Genius POS UI/UX Refactor
+- [x] **Professional Aesthetic**: Slate 800/900 theme with primary blue accents.
+- [x] **High-Density Layouts**: Optimized sidebar, header, and cart sidebar for 10-inch tablets.
+- [x] **Performance Tracking**: New Staff Earnings dashboard with formula visualization.
+- [x] **Inventory Overhaul**: Streamlined product list with status chips and fat-finger actions.
+
+## Phase 9: Standalone Excellence & Advanced Sync
+- [x] **Excel/CSV Master Export**: Comprehensive export of all transaction and tax data for external accounting with AES-256 encryption.
+- [x] **Local Network Sync (P2P)**: Real-time sync between terminals (Master/Slave) using Ktor WebSockets and NSD.
+- [x] **Scheduled Auto-Backup**: Automated database protection using WorkManager.
+- [x] **Conflict Management**: "Dirty Sync" detection for data integrity.
+
+## Phase 10: Final Hardening & LHDN Sandbox
+- [x] **LHDN MyInvois Sandbox**: Real-time API submission of e-Invoices to LHDN sandbox environment with encrypted credential storage and consolidated invoice support.
+- [x] **Edge Case Hardening**: Implemented safer database sync with backup/restore and exponential backoff for P2P WebSocket connections.
+- [x] **Production Readiness**: Code obfuscation (ProGuard/R8) and final security audit.
+
+## Phase 11: Enterprise & Cloud Ecosystem
+- [ ] **AutoCount Accounting Integration**: Automated sync of daily sales and payments to AutoCount via API.
+- [ ] **Cloud Management Portal**: Remote dashboard for multi-outlet inventory and sales tracking.
+- [ ] **Customer Loyalty System**: Points-based rewards and member purchase history.
+- [ ] **Branch-to-Branch Sync**: Stock transfer and centralized membership data.
 
 ---
-*Last Updated: Integrated Card Terminal HAL (Phase 3) and finalized Car Wash staff assignment workflow.*
+*Last Updated: Completed Phase 9 and initiated Phase 10: Final Hardening & LHDN Sandbox.*

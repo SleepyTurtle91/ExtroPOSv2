@@ -3,7 +3,7 @@ package com.extrotarget.extroposv2.ui.analytics
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,6 +18,11 @@ import com.extrotarget.extroposv2.ui.analytics.components.SimpleBarChart
 import com.extrotarget.extroposv2.ui.analytics.viewmodel.AnalyticsViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 import androidx.hilt.navigation.compose.hiltViewModel
 
@@ -30,10 +35,40 @@ fun AnalyticsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
+    val scope = rememberCoroutineScope()
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
+        onResult = { uri ->
+            uri?.let {
+                scope.launch {
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        val result = viewModel.exportSstReport(outputStream)
+                        if (result.isSuccess) {
+                            android.widget.Toast.makeText(context, "SST Report exported", android.widget.Toast.LENGTH_SHORT).show()
+                        } else {
+                            android.widget.Toast.makeText(context, "Export failed: ${result.exceptionOrNull()?.message}", android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+        }
+    )
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Business Analytics & SST") })
+            TopAppBar(
+                title = { Text("Business Analytics & SST") },
+                actions = {
+                    IconButton(onClick = {
+                        val fileName = "SST_Report_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.startDate))}_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.endDate))}.csv"
+                        exportLauncher.launch(fileName)
+                    }) {
+                        Icon(Icons.Default.Download, contentDescription = "Export SST CSV")
+                    }
+                }
+            )
         }
     ) { padding ->
         LazyColumn(
@@ -211,7 +246,7 @@ fun AnalyticsScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Icon(androidx.compose.material.icons.Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                             Text("Inventory Alerts", fontWeight = FontWeight.Bold)
                             Text("Low stock items", style = MaterialTheme.typography.bodySmall)
                         }
@@ -221,7 +256,7 @@ fun AnalyticsScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Icon(androidx.compose.material.icons.Icons.Default.Badge, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             Text("Staff Earnings", fontWeight = FontWeight.Bold)
                             Text("Commission report", style = MaterialTheme.typography.bodySmall)
                         }

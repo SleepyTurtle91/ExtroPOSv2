@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.TableBar
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -23,6 +24,9 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Backup : Screen("backup", "Backup & Restore", Icons.Default.Backup)
     object ReceiptSettings : Screen("receipt_settings", "Receipt Layout", Icons.Default.ReceiptLong)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    object SecurityAudit : Screen("security_audit", "Security Logs", Icons.Default.ReceiptLong) // Reusing icon for now
+    object TerminalSync : Screen("terminal_sync", "Multi-Terminal Sync", Icons.Default.Sync)
+    object AutoCountSettings : Screen("autocount_settings", "AutoCount Sync", Icons.Default.Sync)
     
     // Analytics Sub-screens
     object InventoryAnalytics : Screen("inventory_analytics", "Low Stock", Icons.Default.Inventory)

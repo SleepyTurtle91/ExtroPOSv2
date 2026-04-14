@@ -1,18 +1,11 @@
 package com.extrotarget.extroposv2.ui.sales.viewmodel
 
 import android.content.Context
-import android.hardware.usb.UsbManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
-import androidx.work.workDataOf
-import com.extrotarget.extroposv2.core.data.local.dao.PrinterDao
-import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
-import com.extrotarget.extroposv2.core.data.model.hardware.PrinterConfig
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
 import com.extrotarget.extroposv2.core.data.repository.CategoryRepository
 import com.extrotarget.extroposv2.core.data.repository.ProductRepository
@@ -21,14 +14,15 @@ import com.extrotarget.extroposv2.core.data.repository.carwash.StaffRepository
 import com.extrotarget.extroposv2.core.data.repository.fnb.TableRepository
 import com.extrotarget.extroposv2.core.data.repository.lhdn.LhdnRepository
 import com.extrotarget.extroposv2.core.data.repository.settings.DuitNowRepository
-import com.extrotarget.extroposv2.core.hardware.printer.*
-import com.extrotarget.extroposv2.core.util.printer.ReceiptGenerator
-import com.extrotarget.extroposv2.core.work.EInvoiceSubmissionWorker
+import com.extrotarget.extroposv2.core.domain.usecase.CartUseCase
+import com.extrotarget.extroposv2.core.domain.usecase.PrintReceiptUseCase
+import com.extrotarget.extroposv2.core.domain.usecase.ProcessSaleUseCase
+import com.extrotarget.extroposv2.core.util.audit.AuditManager
+import com.extrotarget.extroposv2.ui.sales.AdminAuthAction
+import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.CartItem
 import com.extrotarget.extroposv2.ui.sales.SalesUiState
-import com.extrotarget.extroposv2.core.data.repository.carwash.CarWashRepository
-import com.extrotarget.extroposv2.core.data.model.carwash.CarWashJob
-import com.extrotarget.extroposv2.core.data.model.carwash.CarWashStatus
+import com.extrotarget.extroposv2.core.network.SyncClient
 import com.extrotarget.extroposv2.core.data.repository.hardware.TerminalRepository
 import com.extrotarget.extroposv2.core.hardware.terminal.TerminalResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -46,12 +40,15 @@ class SalesViewModel @Inject constructor(
     private val saleRepository: SaleRepository,
     private val staffRepository: StaffRepository,
     private val tableRepository: TableRepository,
+    private val auditManager: AuditManager,
     private val lhdnRepository: LhdnRepository,
-    private val carWashRepository: CarWashRepository,
     private val terminalRepository: TerminalRepository,
-    private val printerDao: PrinterDao,
-    private val receiptDao: ReceiptDao,
     private val duitNowRepository: DuitNowRepository,
+    private val securityManager: com.extrotarget.extroposv2.core.util.security.SecurityManager,
+    private val syncClient: SyncClient,
+    private val processSaleUseCase: ProcessSaleUseCase,
+    private val printReceiptUseCase: PrintReceiptUseCase,
+    private val cartUseCase: CartUseCase,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -67,26 +64,88 @@ class SalesViewModel @Inject constructor(
             combine(
                 productRepository.getAllProducts(),
                 categoryRepository.getAllCategories(),
-                staffRepository.getAllActiveStaff()
-            ) { products, categories, staff ->
+                staffRepository.getAllActiveStaff(),
+                tableRepository.allTables,
+                syncClient.syncStatus
+            ) { products, categories, staff, tables, syncStatus ->
                 _uiState.update { 
                     it.copy(
                         products = products, 
                         categories = categories,
-                        staffList = staff
+                        staffList = staff,
+                        tables = tables,
+                        syncStatus = syncStatus
                     ) 
                 }
             }.collect()
         }
     }
 
-    fun selectCategory(categoryId: String?) {
-        _uiState.update { it.copy(selectedCategoryId = categoryId) }
+    fun unlock(pin: String) {
+        viewModelScope.launch {
+            val staff = staffRepository.getStaffByPin(pin)
+            if (staff != null) {
+                _uiState.update { it.copy(isLocked = false, adminAuthError = null) }
+                auditManager.logAction("LOGIN", "Staff ${staff.name} logged in", "AUTH")
+            } else {
+                _uiState.update { it.copy(adminAuthError = "Invalid PIN") }
+            }
+        }
+    }
+
+    fun lock() {
+        _uiState.update { it.copy(isLocked = true) }
+    }
+
+    fun setActiveTab(tab: String) {
+        _uiState.update { it.copy(activeTab = tab) }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun clearCartWithConfirm() {
+        if (_uiState.value.cartItems.isNotEmpty()) {
+            _uiState.update { it.copy(showConfirmClearCart = true) }
+        }
+    }
+
+    fun executeClearCart() {
+        _uiState.update { it.copy(cartItems = emptyList(), showConfirmClearCart = false, selectedTable = null) }
+        viewModelScope.launch {
+            auditManager.logAction("CLEAR_CART", "Cart cleared by user", "SALES")
+        }
+    }
+
+    fun cancelClearCart() {
+        _uiState.update { it.copy(showConfirmClearCart = false) }
+    }
+
+    fun setBusinessMode(mode: BusinessMode) {
+        _uiState.update { 
+            it.copy(
+                activeMode = mode, 
+                cartItems = emptyList(), 
+                selectedCategoryId = null,
+                selectedTable = null,
+                activeTab = "pos"
+            ) 
+        }
+    }
+
+    fun toggleSettingsModal(show: Boolean) {
+        _uiState.update { it.copy(showSettingsModal = show) }
     }
 
     fun selectTable(table: com.extrotarget.extroposv2.core.data.model.fnb.Table) {
         _uiState.update { it.copy(selectedTable = table) }
-        loadPendingSaleForTable(table.id)
+        if (table.status == com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.OCCUPIED || 
+            table.status == com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.BILLING) {
+            loadPendingSaleForTable(table.id)
+        } else {
+            _uiState.update { it.copy(cartItems = emptyList()) }
+        }
     }
 
     private fun loadPendingSaleForTable(tableId: String) {
@@ -95,6 +154,7 @@ class SalesViewModel @Inject constructor(
                 if (saleWithItems != null) {
                     val cartItems = saleWithItems.items.map { item ->
                         CartItem(
+                            id = item.id,
                             product = productRepository.getProductById(item.productId) ?: Product(
                                 id = item.productId,
                                 name = item.productName,
@@ -117,7 +177,8 @@ class SalesViewModel @Inject constructor(
                                     value = item.discountAmount,
                                     label = label
                                 )
-                            }
+                            },
+                            isSentToKitchen = item.status == "SENT"
                         )
                     }
                     _uiState.update { it.copy(cartItems = cartItems) }
@@ -131,12 +192,12 @@ class SalesViewModel @Inject constructor(
     fun sendToKitchen() {
         val currentState = _uiState.value
         val table = currentState.selectedTable ?: return
-        if (currentState.cartItems.isEmpty()) return
+        val unsentItems = currentState.cartItems.filter { !it.isSentToKitchen }
+        if (unsentItems.isEmpty()) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isCheckingOut = true) }
             
-            // 1. Create or update PENDING sale
             val existingSale = saleRepository.getPendingSaleForTable(table.id)
             val saleId = existingSale?.id ?: UUID.randomUUID().toString()
             
@@ -150,9 +211,9 @@ class SalesViewModel @Inject constructor(
                 tableId = table.id
             )
 
-            val saleItems = currentState.cartItems.map { cartItem ->
+            val allSaleItems = currentState.cartItems.map { cartItem ->
                 SaleItem(
-                    id = UUID.randomUUID().toString(),
+                    id = cartItem.id,
                     saleId = saleId,
                     productId = cartItem.product.id,
                     productName = cartItem.product.name,
@@ -164,36 +225,21 @@ class SalesViewModel @Inject constructor(
                     discountLabel = cartItem.discount?.label,
                     totalAmount = cartItem.totalPrice.add(cartItem.taxAmount),
                     modifiers = cartItem.modifiers.joinToString(", ").takeIf { it.isNotEmpty() },
-                    printerTag = cartItem.product.printerTag ?: "KITCHEN"
+                    printerTag = cartItem.product.printerTag ?: "KITCHEN",
+                    status = if (cartItem.isSentToKitchen) "SENT" else "PENDING"
                 )
             }
 
-            if (existingSale != null) {
-                saleRepository.updateSale(sale)
-                // For simplicity, we'll replace items. In a full system, we'd track new vs sent items.
-                // saleRepository.replaceItems(saleId, saleItems) 
-            } else {
-                saleRepository.completeSale(sale, saleItems)
-                tableRepository.updateTable(table.copy(status = com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.OCCUPIED, currentSaleId = saleId))
-            }
+            saleRepository.completeSale(sale, allSaleItems)
 
-            // 2. Print Order Slips
-            val itemsByTag = saleItems.groupBy { it.printerTag }
-            val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
-            
-            allPrinters.filter { it.printerTag != null && it.printerTag != "RECEIPT" }.forEach { printerConfig ->
-                val itemsForThisPrinter = itemsByTag[printerConfig.printerTag] ?: emptyList()
-                if (itemsForThisPrinter.isNotEmpty()) {
-                    printToPrinter(printerConfig) {
-                        ReceiptGenerator.generateOrderSlip(
-                            saleId = saleId,
-                            tableName = table.name,
-                            items = itemsForThisPrinter,
-                            tag = printerConfig.printerTag ?: "ORDER"
-                        )
-                    }
-                }
-            }
+            val itemsToPrint = allSaleItems.filter { it.status == "PENDING" }
+            printReceiptUseCase.printOrderSlip(saleId, table.name, itemsToPrint)
+
+            tableRepository.updateTable(table.copy(
+                status = com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.OCCUPIED, 
+                currentSaleId = saleId,
+                hasUnsentItems = false
+            ))
 
             _uiState.update { it.copy(isCheckingOut = false, cartItems = emptyList(), selectedTable = null) }
         }
@@ -207,7 +253,11 @@ class SalesViewModel @Inject constructor(
     }
 
     fun addToCart(product: Product) {
-        // If it's a car wash service (has commission potential), show staff selection
+        if (product.isWeightBased) {
+            _uiState.update { it.copy(showWeightInput = true, productAwaitingWeight = product) }
+            return
+        }
+
         if (product.commissionRate > BigDecimal.ZERO || product.fixedCommission > BigDecimal.ZERO) {
             _uiState.update { it.copy(showStaffSelection = true, itemAwaitingStaff = CartItem(
                 product = product,
@@ -219,37 +269,41 @@ class SalesViewModel @Inject constructor(
         }
         
         _uiState.update { state ->
-            val existingItem = state.cartItems.find { it.product.id == product.id && it.assignedStaffId == null }
-            val updatedItems = if (existingItem != null) {
-                state.cartItems.map {
-                    if (it.product.id == product.id && it.assignedStaffId == null) {
-                        it.copy(quantity = it.quantity.add(BigDecimal.ONE))
-                    } else it
+            val updatedItems = cartUseCase.addItem(state.cartItems, product)
+            
+            state.selectedTable?.let { table ->
+                viewModelScope.launch {
+                    tableRepository.updateTable(table.copy(hasUnsentItems = true, status = com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.OCCUPIED))
                 }
-            } else {
-                state.cartItems + CartItem(
-                    product = product,
-                    quantity = BigDecimal.ONE,
-                    unitPrice = product.price,
-                    taxRate = product.taxRate
-                )
             }
-            state.copy(cartItems = updatedItems)
+            
+            state.copy(
+                cartItems = updatedItems, 
+                selectedTable = state.selectedTable?.copy(
+                    hasUnsentItems = true, 
+                    status = com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.OCCUPIED
+                )
+            )
         }
+    }
+
+    fun addWeightBasedItem(weight: BigDecimal) {
+        val product = _uiState.value.productAwaitingWeight ?: return
+        _uiState.update { state ->
+            val updatedItems = cartUseCase.addWeightBasedItem(state.cartItems, product, weight)
+            state.copy(cartItems = updatedItems, showWeightInput = false, productAwaitingWeight = null)
+        }
+    }
+
+    fun cancelWeightInput() {
+        _uiState.update { it.copy(showWeightInput = false, productAwaitingWeight = null) }
     }
 
     fun assignStaffToItem(staff: com.extrotarget.extroposv2.core.data.model.carwash.Staff) {
         val item = _uiState.value.itemAwaitingStaff ?: return
         _uiState.update { state ->
-            val updatedItem = item.copy(
-                assignedStaffId = staff.id,
-                assignedStaffName = staff.name
-            )
-            state.copy(
-                cartItems = state.cartItems + updatedItem,
-                showStaffSelection = false,
-                itemAwaitingStaff = null
-            )
+            val updatedItems = cartUseCase.addItem(state.cartItems, item.product, staff.id, staff.name)
+            state.copy(cartItems = updatedItems, showStaffSelection = false, itemAwaitingStaff = null)
         }
     }
 
@@ -258,9 +312,20 @@ class SalesViewModel @Inject constructor(
     }
 
     fun removeFromCart(cartItem: CartItem) {
-        _uiState.update { state ->
-            val updatedItems = state.cartItems.filter { it.product.id != cartItem.product.id }
-            state.copy(cartItems = updatedItems)
+        if (!staffRepository.isCurrentUserAdmin()) {
+            _uiState.update { it.copy(showAdminAuthDialog = true, adminAuthAction = AdminAuthAction.RemoveItem(cartItem)) }
+            return
+        }
+        executeRemoveFromCart(cartItem)
+    }
+
+    private fun executeRemoveFromCart(cartItem: CartItem) {
+        _uiState.update { state -> 
+            val updatedItems = cartUseCase.removeItem(state.cartItems, cartItem)
+            state.copy(cartItems = updatedItems) 
+        }
+        viewModelScope.launch {
+            auditManager.logAction("REMOVE_ITEM", "Removed ${cartItem.product.name} (Qty: ${cartItem.quantity})", "SALES", "WARNING")
         }
     }
 
@@ -274,36 +339,16 @@ class SalesViewModel @Inject constructor(
 
     fun toggleModifier(modifier: String) {
         val item = _uiState.value.itemAwaitingModifiers ?: return
-        val currentModifiers = item.modifiers
-        val newModifiers = if (currentModifiers.contains(modifier)) {
-            currentModifiers - modifier
-        } else {
-            currentModifiers + modifier
-        }
-        
-        val updatedItem = item.copy(modifiers = newModifiers)
-        _uiState.update { currentState ->
-            val newCartItems = currentState.cartItems.map { 
-                if (it.product.id == item.product.id) updatedItem else it 
-            }
-            currentState.copy(
-                cartItems = newCartItems,
-                itemAwaitingModifiers = updatedItem
-            )
+        _uiState.update { state ->
+            val updatedItems = cartUseCase.toggleModifier(state.cartItems, item, modifier)
+            val updatedItem = updatedItems.find { it.id == item.id }
+            state.copy(cartItems = updatedItems, itemAwaitingModifiers = updatedItem)
         }
     }
 
     fun updateQuantity(cartItem: CartItem, newQuantity: BigDecimal) {
-        if (newQuantity <= BigDecimal.ZERO) {
-            removeFromCart(cartItem)
-            return
-        }
         _uiState.update { state ->
-            val updatedItems = state.cartItems.map {
-                if (it.product.id == cartItem.product.id) {
-                    it.copy(quantity = newQuantity)
-                } else it
-            }
+            val updatedItems = cartUseCase.updateQuantity(state.cartItems, cartItem, newQuantity)
             state.copy(cartItems = updatedItems)
         }
     }
@@ -321,19 +366,54 @@ class SalesViewModel @Inject constructor(
     }
 
     fun applyDiscount(discount: com.extrotarget.extroposv2.ui.sales.Discount?) {
+        if (!staffRepository.isCurrentUserAdmin()) {
+            _uiState.update { it.copy(showAdminAuthDialog = true, adminAuthAction = AdminAuthAction.ApplyDiscount(_uiState.value.itemAwaitingDiscount, discount)) }
+            return
+        }
+        executeApplyDiscount(discount)
+    }
+
+    private fun executeApplyDiscount(discount: com.extrotarget.extroposv2.ui.sales.Discount?) {
         val itemToDiscount = _uiState.value.itemAwaitingDiscount
         if (itemToDiscount != null) {
             _uiState.update { state ->
-                val updatedItems = state.cartItems.map {
-                    if (it == itemToDiscount) {
-                        it.copy(discount = discount)
-                    } else it
-                }
+                val updatedItems = cartUseCase.applyItemDiscount(state.cartItems, itemToDiscount, discount)
                 state.copy(cartItems = updatedItems, showDiscountDialog = false, itemAwaitingDiscount = null)
+            }
+            viewModelScope.launch {
+                auditManager.logAction("ITEM_DISCOUNT", "Applied ${discount?.label ?: "None"} to ${itemToDiscount.product.name}", "SALES")
             }
         } else {
             _uiState.update { it.copy(cartDiscount = discount, showDiscountDialog = false) }
+            viewModelScope.launch {
+                auditManager.logAction("CART_DISCOUNT", "Applied ${discount?.label ?: "None"} to entire cart", "SALES")
+            }
         }
+    }
+
+    fun authenticateAdmin(pin: String) {
+        viewModelScope.launch {
+            val admin = staffRepository.getStaffByPin(pin)
+            if (admin != null && (admin.role == "ADMIN" || admin.role == "SUPERVISOR")) {
+                val action = _uiState.value.adminAuthAction
+                _uiState.update { it.copy(showAdminAuthDialog = false, adminAuthAction = null, adminAuthError = null) }
+                
+                when (action) {
+                    is AdminAuthAction.RemoveItem -> executeRemoveFromCart(action.item)
+                    is AdminAuthAction.ApplyDiscount -> {
+                        _uiState.update { it.copy(itemAwaitingDiscount = action.item) }
+                        executeApplyDiscount(action.discount)
+                    }
+                    else -> {}
+                }
+            } else {
+                _uiState.update { it.copy(adminAuthError = "Invalid Admin PIN") }
+            }
+        }
+    }
+
+    fun dismissAdminAuth() {
+        _uiState.update { it.copy(showAdminAuthDialog = false, adminAuthAction = null, adminAuthError = null) }
     }
 
     fun completeSale(paymentMethod: String) {
@@ -343,19 +423,14 @@ class SalesViewModel @Inject constructor(
         viewModelScope.launch {
             val saleId = UUID.randomUUID().toString()
 
-            // Handle Card Terminal Payment
             if (paymentMethod == "CARD") {
                 _uiState.update { it.copy(showTerminalProgress = true, terminalStatus = "Awaiting Terminal Response...") }
                 val response = terminalRepository.processPayment(currentState.totalAmount, saleId)
                 _uiState.update { it.copy(showTerminalProgress = false) }
 
                 when (response) {
-                    is TerminalResponse.Success -> {
-                        // Continue to finalize sale with card details
-                        finalizeSale(paymentMethod, saleId, response)
-                    }
+                    is TerminalResponse.Success -> finalizeSale(paymentMethod, saleId, response)
                     is TerminalResponse.Error -> {
-                        // Show error and don't complete sale
                         _uiState.update { it.copy(terminalStatus = "Terminal Error: ${response.message}") }
                         return@launch
                     }
@@ -414,16 +489,10 @@ class SalesViewModel @Inject constructor(
             )
         }
 
-        // Calculate commissions for Car Wash services
         val commissionRecords = currentState.cartItems.filter { it.assignedStaffId != null }.map { cartItem ->
-            val p = cartItem.unitPrice
-            val c = cartItem.product.commissionRate
-            val f = cartItem.product.fixedCommission
-            
-            // Formula: (Pi * Ci) + Fi
-            val calculatedCommission = p.multiply(c)
+            val calculatedCommission = cartItem.unitPrice.multiply(cartItem.product.commissionRate)
                 .divide(BigDecimal("100"), 2, java.math.RoundingMode.HALF_EVEN)
-                .add(f)
+                .add(cartItem.product.fixedCommission)
                 .multiply(cartItem.quantity)
 
             CommissionRecord(
@@ -431,52 +500,27 @@ class SalesViewModel @Inject constructor(
                 staffId = cartItem.assignedStaffId!!,
                 saleId = saleId,
                 serviceName = cartItem.product.name,
-                servicePrice = p,
-                commissionRate = c,
-                fixedAllowance = f,
+                servicePrice = cartItem.unitPrice,
+                commissionRate = cartItem.product.commissionRate,
+                fixedAllowance = cartItem.product.fixedCommission,
                 calculatedCommission = calculatedCommission
             )
         }
 
-        saleRepository.completeSale(sale, saleItems)
-        if (commissionRecords.isNotEmpty()) {
-            staffRepository.addCommissionRecords(commissionRecords)
-        }
+        processSaleUseCase(
+            sale = sale,
+            saleItems = saleItems,
+            commissionRecords = commissionRecords,
+            selectedTableId = currentState.selectedTable?.id,
+            buyerInfo = null // Placeholder for future buyer selection
+        )
 
-        // Trigger LHDN e-Invoice Submission if configured
-        val lhdnConfig = lhdnRepository.getConfig().firstOrNull()
-        if (lhdnConfig != null && lhdnConfig.isEnabled) {
-            enqueueEInvoiceSubmission(saleId)
-        }
-
-        // Car Wash: Create jobs for any car wash items
-        currentState.cartItems.filter { it.product.commissionRate > BigDecimal.ZERO || it.product.fixedCommission > BigDecimal.ZERO }.forEach { item ->
-            // Note: In a real app, we'd prompt for plate number. 
-            // For now, we'll use a placeholder or check if one was provided in modifiers/notes.
-            val plateNumber = item.modifiers.find { it.startsWith("Plate:") }?.removePrefix("Plate:") ?: "WALK-IN"
-            
-            carWashRepository.createJob(CarWashJob(
-                id = UUID.randomUUID().toString(),
-                plateNumber = plateNumber,
-                serviceName = item.product.name,
-                price = item.totalPrice,
-                assignedStaffId = item.assignedStaffId,
-                assignedStaffName = item.assignedStaffName,
-                status = CarWashStatus.QUEUED
-            ))
-        }
-
-        // F&B: Release Table if associated
-        currentState.selectedTable?.let { table ->
-            tableRepository.releaseTable(table.id)
-        }
-        
-        // Generate QR for DuitNow if payment method is QR
         val qrContent = if (paymentMethod == "QR" || paymentMethod == "DUITNOW") {
             val duitNowConfig = duitNowRepository.getConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig()
             if (duitNowConfig.isEnabled) {
+                val merchantId = securityManager.getString(com.extrotarget.extroposv2.core.util.security.SecurityManager.KEY_DUITNOW_MERCHANT_ID) ?: duitNowConfig.merchantId
                 com.extrotarget.extroposv2.core.util.payment.DuitNowQrGenerator.generateDynamicQr(
-                    merchantId = duitNowConfig.merchantId,
+                    merchantId = merchantId,
                     amount = currentState.totalAmount,
                     merchantName = duitNowConfig.merchantName,
                     city = duitNowConfig.city
@@ -484,8 +528,7 @@ class SalesViewModel @Inject constructor(
             } else null
         } else null
 
-        // Print Receipt and Kick Drawer
-        printReceiptAndKickDrawer(sale, saleItems)
+        printReceiptUseCase(sale, saleItems, currentState.selectedTable?.name)
         
         _uiState.update { it.copy(
             cartItems = emptyList(), 
@@ -510,84 +553,7 @@ class SalesViewModel @Inject constructor(
         viewModelScope.launch {
             val sale = saleRepository.getSaleById(saleId) ?: return@launch
             val items = saleRepository.getItemsBySaleId(saleId)
-            printReceiptAndKickDrawer(sale, items)
+            printReceiptUseCase(sale, items, _uiState.value.selectedTable?.name)
         }
-    }
-
-    private fun printReceiptAndKickDrawer(sale: Sale, items: List<SaleItem>) {
-        viewModelScope.launch {
-            val receiptConfig = receiptDao.getReceiptConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig()
-            val lhdnSubmission = lhdnRepository.getSubmission(sale.id)
-            val lhdnConfig = lhdnRepository.getConfig().firstOrNull()
-            
-            val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
-            val defaultPrinter = allPrinters.find { it.isDefault } ?: allPrinters.firstOrNull()
-
-            // 1. Print Main Receipt
-            defaultPrinter?.let { config ->
-                printToPrinter(config) {
-                    ReceiptGenerator.generateSaleReceipt(
-                        sale = sale,
-                        items = items,
-                        config = receiptConfig,
-                        lhdnSubmission = lhdnSubmission,
-                        isSandbox = lhdnConfig?.isSandbox ?: true
-                    )
-                }
-            }
-
-            // 2. Print Order Slips (Kitchen/Bar/etc) grouped by printerTag
-            val itemsByTag = items.groupBy { it.printerTag }
-            
-            allPrinters.filter { it.printerTag != null && it.printerTag != "RECEIPT" }.forEach { printerConfig ->
-                val itemsForThisPrinter = itemsByTag[printerConfig.printerTag] ?: emptyList()
-                if (itemsForThisPrinter.isNotEmpty()) {
-                    printToPrinter(printerConfig) {
-                        ReceiptGenerator.generateOrderSlip(
-                            saleId = sale.id,
-                            tableName = _uiState.value.selectedTable?.name,
-                            items = itemsForThisPrinter,
-                            tag = printerConfig.printerTag ?: "ORDER"
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private suspend fun printToPrinter(config: PrinterConfig, generateCommands: () -> List<PrintCommand>) {
-        val printer: PrinterInterface? = when (config.connectionType) {
-            "BLUETOOTH" -> BluetoothPrinter(config.address)
-            "NETWORK" -> NetworkPrinter(config.address, config.port)
-            "USB" -> {
-                val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-                val device = usbManager.deviceList.values.find { it.deviceName == config.address }
-                device?.let { UsbPrinter(context, it) }
-            }
-            else -> null
-        }
-
-        printer?.let {
-            if (it.connect()) {
-                val commands = generateCommands()
-                if (config.id == "default_printer" || config.printerTag == "RECEIPT") {
-                    it.printReceipt(listOf(PrintCommand.DrawerKick) + commands)
-                } else {
-                    it.printReceipt(commands)
-                }
-                it.disconnect()
-            }
-        }
-    }
-
-    fun reprintLastReceipt(sale: Sale, items: List<SaleItem>) {
-        printReceiptAndKickDrawer(sale, items)
-    }
-
-    private fun enqueueEInvoiceSubmission(saleId: String) {
-        val workRequest = OneTimeWorkRequestBuilder<EInvoiceSubmissionWorker>()
-            .setInputData(workDataOf(EInvoiceSubmissionWorker.KEY_SALE_ID to saleId))
-            .build()
-        WorkManager.getInstance(context).enqueue(workRequest)
     }
 }

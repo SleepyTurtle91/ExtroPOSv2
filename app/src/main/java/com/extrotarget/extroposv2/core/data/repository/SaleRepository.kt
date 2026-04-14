@@ -6,17 +6,23 @@ import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import com.extrotarget.extroposv2.core.network.SyncServer
 import javax.inject.Singleton
 
 @Singleton
 class SaleRepository @Inject constructor(
-    private val saleDao: SaleDao
+    private val saleDao: SaleDao,
+    private val syncServer: SyncServer
 ) {
     fun getAllSalesWithItems(): Flow<List<SaleWithItems>> =
         saleDao.getAllSalesWithItems()
 
-    suspend fun completeSale(sale: Sale, items: List<SaleItem>) = 
+    suspend fun completeSale(sale: Sale, items: List<SaleItem>) {
         saleDao.completeSale(sale, items)
+        if (syncServer.isRunning()) {
+            syncServer.broadcastUpdate("SALE_COMPLETED", SaleWithItems(sale, items))
+        }
+    }
 
     suspend fun getSaleById(saleId: String): Sale? = saleDao.getSaleById(saleId)
 

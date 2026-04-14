@@ -27,8 +27,6 @@ import com.extrotarget.extroposv2.core.data.model.hardware.PrinterConfig
 import com.extrotarget.extroposv2.ui.settings.viewmodel.PrinterSettingsViewModel
 
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.ui.text.font.FontWeight
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 
 @OptIn(ExperimentalMaterial3Api::class)

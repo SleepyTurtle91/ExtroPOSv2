@@ -3,6 +3,7 @@ package com.extrotarget.extroposv2.ui.carwash.staff
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -11,10 +12,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.extrotarget.extroposv2.core.data.model.carwash.Staff
-import androidx.compose.ui.text.font.FontWeight
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.ui.carwash.viewmodel.StaffViewModel
 
@@ -58,8 +60,8 @@ fun StaffManagementScreen(
     if (showAddDialog) {
         StaffDialog(
             onDismiss = { showAddDialog = false },
-            onConfirm = { name, role, phone ->
-                viewModel.addStaff(name, role, phone)
+            onConfirm = { name, role, phone, pin ->
+                viewModel.addStaff(name, role, phone, pin)
                 showAddDialog = false
             }
         )
@@ -69,8 +71,8 @@ fun StaffManagementScreen(
         StaffDialog(
             staff = staffToEdit,
             onDismiss = { staffToEdit = null },
-            onConfirm = { name, role, phone ->
-                viewModel.updateStaff(staffToEdit!!.copy(name = name, role = role, phone = phone))
+            onConfirm = { name, role, phone, pin ->
+                viewModel.updateStaff(staffToEdit!!.copy(name = name, role = role, phone = phone, pin = pin))
                 staffToEdit = null
             }
         )
@@ -124,11 +126,12 @@ fun StaffItem(
 fun StaffDialog(
     staff: Staff? = null,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String?) -> Unit
+    onConfirm: (String, String, String?, String?) -> Unit
 ) {
     var name by remember { mutableStateOf(staff?.name ?: "") }
     var role by remember { mutableStateOf(staff?.role ?: "WASHER") }
     var phone by remember { mutableStateOf(staff?.phone ?: "") }
+    var pin by remember { mutableStateOf(staff?.pin ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -144,7 +147,7 @@ fun StaffDialog(
                 OutlinedTextField(
                     value = role,
                     onValueChange = { role = it },
-                    label = { Text("Role (e.g. WASHER, SUPERVISOR)") },
+                    label = { Text("Role (e.g. WASHER, SUPERVISOR, ADMIN, CASHIER)") },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
@@ -153,11 +156,18 @@ fun StaffDialog(
                     label = { Text("Phone (Optional)") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = { if (it.length <= 6) pin = it },
+                    label = { Text("PIN (4-6 digits)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
+                )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(name, role, phone.ifBlank { null }) },
+                onClick = { onConfirm(name, role, phone.ifBlank { null }, pin.ifBlank { null }) },
                 enabled = name.isNotBlank() && role.isNotBlank()
             ) {
                 Text("Confirm")

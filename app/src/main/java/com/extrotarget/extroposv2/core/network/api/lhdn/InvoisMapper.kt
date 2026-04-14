@@ -10,7 +10,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Maps POS data to LHDN MyInvois JSON Schema (Simplified for Sandbox validation)
+ * Maps POS data to LHDN MyInvois JSON Schema (V1.0)
+ * Reference: https://sdk.myinvois.lhdn.gov.my/docs/billing-pipeline/
  */
 object InvoisMapper {
 
@@ -18,55 +19,83 @@ object InvoisMapper {
         sale: Sale,
         items: List<SaleItem>,
         config: LhdnConfig,
-        buyer: BuyerInfo = BuyerInfo()
+        buyer: BuyerInfo = BuyerInfo(),
+        isConsolidated: Boolean = false
     ): Map<String, Any> {
         val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        // LHDN requires Z (UTC) or specific offset. Using UTC for sandbox simplicity.
         val sdfTime = SimpleDateFormat("HH:mm:ss'Z'", Locale.getDefault())
         val now = Date(sale.timestamp)
 
-        return mapOf(
-            "issuer" to mapOf(
-                "tin" to config.sellerTin,
-                "idn" to config.sellerBrn,
-                "msic" to config.msicCode,
-                "name" to "Your Merchant Name", // Should come from a Business Profile entity
+        val receiver = if (isConsolidated) {
+            mapOf(
+                "tin" to "EI00000000010",
+                "idn" to "NA",
+                "idType" to "NRIC",
+                "name" to "Consolidated Buyer",
                 "address" to mapOf(
-                    "line0" to "Merchant Address Line 1",
-                    "city" to "Kuala Lumpur",
-                    "postalCode" to "50000",
+                    "line0" to "NA",
+                    "city" to "NA",
+                    "postalCode" to "00000",
                     "country" to "MYS"
                 )
-            ),
-            "receiver" to mapOf(
+            )
+        } else {
+            mapOf(
                 "tin" to (buyer.tin ?: "EI00000000010"),
                 "idn" to (buyer.idValue ?: "NA"),
-                "idType" to (buyer.idType ?: "BRN"),
+                "idType" to (buyer.idType ?: "NRIC"),
                 "name" to (buyer.name ?: "General Public"),
                 "address" to mapOf(
                     "line0" to (buyer.address ?: "NA"),
                     "city" to "NA",
                     "postalCode" to "00000",
                     "country" to "MYS"
-                )
+                ),
+                "contactNumber" to (buyer.contact ?: "0000000000")
+            )
+        }
+
+        return mapOf(
+            "issuer" to mapOf(
+                "tin" to config.sellerTin,
+                "idn" to config.sellerBrn,
+                "idType" to "BRN",
+                "name" to "EXTRO TARGET SDN BHD", // In production, this should be configurable
+                "address" to mapOf(
+                    "line0" to "No 1, Jalan Teknologi",
+                    "city" to "Petaling Jaya",
+                    "postalCode" to "47810",
+                    "country" to "MYS",
+                    "state" to "10" // Selangor
+                ),
+                "contactNumber" to "03-12345678",
+                "email" to "support@extrotarget.com"
             ),
+            "receiver" to receiver,
             "dateTimeIssued" to sdfDate.format(now) + "T" + sdfTime.format(now),
-            "documentType" to "01", // Invoice
-            "documentVersion" to "1.0",
-            "internalId" to LhdnInvoicingUtils.generateInternalId(sale, config.sellerSstId ?: "NA"),
+            "documentType" to if (isConsolidated) "11" else "01", // 11 = Consolidated Invoice
+            "documentVersion" to "1.1",
+            "internalId" to (sale.id.take(50)), // LHDN Internal ID limit
             "documentItems" to items.map { item ->
                 mapOf(
                     "description" to item.productName,
-                    "quantity" to item.quantity,
-                    "unitPrice" to item.unitPrice,
-                    "taxType" to "01", // Default to SST
-                    "taxRate" to item.taxRate,
-                    "taxAmount" to item.taxAmount,
-                    "subtotal" to item.totalAmount
+                    "quantity" to item.quantity.toDouble(),
+                    "unitPrice" to item.unitPrice.toDouble(),
+                    "taxType" to "01", // 01 = SST
+                    "taxRate" to item.taxRate.toDouble(),
+                    "taxAmount" to item.taxAmount.toDouble(),
+                    "taxCategory" to "S", // S = Standard Rated
+                    "subtotal" to item.totalAmount.toDouble(),
+                    "classification" to "022" // 022 = Retail
                 )
             },
-            "totalExcludingTax" to (sale.totalAmount - sale.taxAmount),
-            "totalTaxAmount" to sale.taxAmount,
-            "totalPayableAmount" to sale.totalAmount
+            "totalExcludingTax" to (sale.totalAmount - sale.taxAmount).toDouble(),
+            "totalTaxAmount" to sale.taxAmount.toDouble(),
+            "totalPayableAmount" to sale.totalAmount.toDouble(),
+            "totalDiscountAmount" to sale.discountAmount.toDouble(),
+            "netAmount" to sale.totalAmount.toDouble(),
+            "invoiceCurrencyCode" to "MYR"
         )
     }
 }

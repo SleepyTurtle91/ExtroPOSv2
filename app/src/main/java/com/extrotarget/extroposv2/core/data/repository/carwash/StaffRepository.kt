@@ -1,5 +1,6 @@
 package com.extrotarget.extroposv2.core.data.repository.carwash
 
+import com.extrotarget.extroposv2.core.auth.SessionManager
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.CommissionRecordDao
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.StaffDao
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
@@ -12,11 +13,18 @@ import javax.inject.Singleton
 @Singleton
 class StaffRepository @Inject constructor(
     private val staffDao: StaffDao,
-    private val commissionRecordDao: CommissionRecordDao
+    private val commissionRecordDao: CommissionRecordDao,
+    private val sessionManager: SessionManager
 ) {
     fun getAllActiveStaff(): Flow<List<Staff>> = staffDao.getAllActiveStaff()
 
+    fun isCurrentUserAdmin(): Boolean {
+        return sessionManager.hasRole("ADMIN") || sessionManager.hasRole("SUPERVISOR")
+    }
+
     suspend fun getStaffById(id: String): Staff? = staffDao.getStaffById(id)
+
+    suspend fun getStaffByPin(pin: String): Staff? = staffDao.getStaffByPin(pin)
 
     suspend fun saveStaff(staff: Staff) = staffDao.insertStaff(staff)
 

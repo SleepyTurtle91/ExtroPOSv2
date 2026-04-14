@@ -19,15 +19,18 @@ fun LhdnSettingsScreen(
     viewModel: LhdnSettingsViewModel = hiltViewModel()
 ) {
     val config by viewModel.config.collectAsState()
+    val secureClientId by viewModel.clientId.collectAsState()
+    val secureClientSecret by viewModel.clientSecret.collectAsState()
 
     var sellerTin by remember(config) { mutableStateOf(config?.sellerTin ?: "") }
     var sellerBrn by remember(config) { mutableStateOf(config?.sellerBrn ?: "") }
     var sellerSstId by remember(config) { mutableStateOf(config?.sellerSstId ?: "") }
     var msicCode by remember(config) { mutableStateOf(config?.msicCode ?: "") }
     var businessDesc by remember(config) { mutableStateOf(config?.businessActivityDesc ?: "") }
-    var clientId by remember(config) { mutableStateOf(config?.clientId ?: "") }
-    var clientSecret by remember(config) { mutableStateOf(config?.clientSecret ?: "") }
+    var clientId by remember(secureClientId) { mutableStateOf(secureClientId) }
+    var clientSecret by remember(secureClientSecret) { mutableStateOf(secureClientSecret) }
     var isSandbox by remember(config) { mutableStateOf(config?.isSandbox ?: true) }
+    var isEnabled by remember(config) { mutableStateOf(config?.isEnabled ?: false) }
 
     Scaffold(
         topBar = {
@@ -40,7 +43,10 @@ fun LhdnSettingsScreen(
                 },
                 actions = {
                     IconButton(onClick = {
-                        viewModel.saveConfig(sellerTin, sellerBrn, sellerSstId, msicCode, businessDesc, clientId, clientSecret, isSandbox)
+                        viewModel.saveConfig(
+                            sellerTin, sellerBrn, sellerSstId, msicCode, businessDesc, 
+                            clientId, clientSecret, isSandbox, isEnabled
+                        )
                         onNavigateBack()
                     }) {
                         Icon(Icons.Default.Save, contentDescription = "Save")
@@ -56,6 +62,14 @@ fun LhdnSettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Switch(checked = isEnabled, onCheckedChange = { isEnabled = it })
+                Spacer(Modifier.width(8.dp))
+                Text("Enable LHDN MyInvois Submission")
+            }
+
+            Divider()
+
             Text("Merchant Information", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             
             OutlinedTextField(

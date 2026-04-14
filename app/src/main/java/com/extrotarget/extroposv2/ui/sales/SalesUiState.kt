@@ -2,9 +2,13 @@ package com.extrotarget.extroposv2.ui.sales
 
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.model.SaleItem
+import com.extrotarget.extroposv2.core.util.RoundingUtils
 import java.math.BigDecimal
 
+import java.util.UUID
+
 data class SalesUiState(
+    val activeMode: BusinessMode = BusinessMode.RETAIL,
     val products: List<Product> = emptyList(),
     val categories: List<com.extrotarget.extroposv2.core.data.model.Category> = emptyList(),
     val staffList: List<com.extrotarget.extroposv2.core.data.model.carwash.Staff> = emptyList(),
@@ -14,6 +18,8 @@ data class SalesUiState(
     val isCheckingOut: Boolean = false,
     val showStaffSelection: Boolean = false,
     val itemAwaitingStaff: CartItem? = null,
+    val showWeightInput: Boolean = false,
+    val productAwaitingWeight: Product? = null,
     val showPaymentSuccess: Boolean = false,
     val lastSaleQrContent: String? = null,
     val lastSaleId: String? = null,
@@ -24,8 +30,23 @@ data class SalesUiState(
     val showDiscountDialog: Boolean = false,
     val itemAwaitingDiscount: CartItem? = null,
     val showTerminalProgress: Boolean = false,
-    val terminalStatus: String? = null
+    val terminalStatus: String? = null,
+    val showAdminAuthDialog: Boolean = false,
+    val adminAuthAction: AdminAuthAction? = null,
+    val adminAuthError: String? = null,
+    val showSettingsModal: Boolean = false,
+    val showConfirmClearCart: Boolean = false,
+    val isLocked: Boolean = true,
+    val activeTab: String = "pos",
+    val tables: List<com.extrotarget.extroposv2.core.data.model.fnb.Table> = emptyList(),
+    val syncStatus: com.extrotarget.extroposv2.core.network.SyncStatus = com.extrotarget.extroposv2.core.network.SyncStatus.IDLE
 ) {
+    val filteredProducts: List<Product> = products.filter { product ->
+        (product.businessMode == null || product.businessMode == activeMode.id) &&
+        (searchQuery.isEmpty() || product.name.contains(searchQuery, ignoreCase = true)) &&
+        (selectedCategoryId == null || product.categoryId == selectedCategoryId)
+    }
+
     val subtotal: BigDecimal = cartItems.fold(BigDecimal.ZERO) { acc, item ->
         acc.add(item.totalBeforeDiscount)
     }
@@ -44,10 +65,11 @@ data class SalesUiState(
 
     val amountBeforeRounding: BigDecimal = subtotal.subtract(totalDiscount).add(totalTax)
     
-    val roundingAdjustment: BigDecimal = com.extrotarget.extroposv2.core.util.CurrencyUtils.calculateRoundingAdjustment(amountBeforeRounding)
+    private val roundingResult = RoundingUtils.calculateBNMRounding(amountBeforeRounding)
     
+    val roundingAdjustment: BigDecimal = roundingResult.adjustment
     val totalAmount: BigDecimal = amountBeforeRounding
-    val totalAmountCash: BigDecimal = amountBeforeRounding.add(roundingAdjustment)
+    val totalAmountCash: BigDecimal = roundingResult.finalTotal
 }
 
 data class Discount(
@@ -68,7 +90,13 @@ enum class DiscountType {
     FIXED, PERCENTAGE
 }
 
+sealed class AdminAuthAction {
+    data class RemoveItem(val item: CartItem) : AdminAuthAction()
+    data class ApplyDiscount(val item: CartItem?, val discount: Discount?) : AdminAuthAction()
+}
+
 data class CartItem(
+    val id: String = UUID.randomUUID().toString(),
     val product: Product,
     val quantity: BigDecimal,
     val unitPrice: BigDecimal,
@@ -76,7 +104,8 @@ data class CartItem(
     val assignedStaffId: String? = null,
     val assignedStaffName: String? = null,
     val modifiers: List<String> = emptyList(),
-    val discount: Discount? = null
+    val discount: Discount? = null,
+    val isSentToKitchen: Boolean = false
 ) {
     val totalBeforeDiscount: BigDecimal = unitPrice.multiply(quantity)
     

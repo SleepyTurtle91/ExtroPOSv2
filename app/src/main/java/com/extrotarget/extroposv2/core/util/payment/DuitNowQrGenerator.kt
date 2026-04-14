@@ -23,29 +23,30 @@ object DuitNowQrGenerator {
     ): String {
         val sb = StringBuilder()
 
-        // 00: Payload Format Indicator
+        // 00: Payload Format Indicator (01)
         sb.append(formatTag("00", "01"))
 
-        // 01: Point of Initiation Method (11 for static, 12 for dynamic)
+        // 01: Point of Initiation Method (12 for Dynamic)
         sb.append(formatTag("01", "12"))
 
-        // 26: Merchant Account Information - DuitNow
+        // 26: Merchant Account Information - DuitNow (Reversed logic for BNM Spec)
         val merchantData = StringBuilder()
         merchantData.append(formatTag("00", "my.com.duitnow"))
-        merchantData.append(formatTag("01", merchantId))
+        merchantData.append(formatTag("01", "00000000000000000000")) // Merchant ID Placeholder
+        merchantData.append(formatTag("02", merchantId)) // ID Type 02/03 for Merchant ID
         sb.append(formatTag("26", merchantData.toString()))
 
-        // 52: Merchant Category Code
-        sb.append(formatTag("52", "0000"))
+        // 52: Merchant Category Code (5812 for Eating Places/Restaurants)
+        sb.append(formatTag("52", "5812"))
 
         // 53: Transaction Currency (458 for MYR)
         sb.append(formatTag("53", "458"))
 
         // 54: Transaction Amount
-        val df = DecimalFormat("0.00")
+        val df = java.text.DecimalFormat("0.00")
         sb.append(formatTag("54", df.format(amount)))
 
-        // 58: Country Code
+        // 58: Country Code (MY)
         sb.append(formatTag("58", "MY"))
 
         // 59: Merchant Name
@@ -54,12 +55,14 @@ object DuitNowQrGenerator {
         // 60: Merchant City
         sb.append(formatTag("60", city.take(15)))
 
+        // 62: Additional Data Field Template (Unique Reference)
+        val reference = "REF${System.currentTimeMillis() % 1000000}"
+        sb.append(formatTag("62", formatTag("01", reference)))
+
         // 63: CRC (Checksum)
         val partialQr = sb.toString() + "6304"
         val crc = calculateCrc16(partialQr)
-        sb.append(formatTag("63", crc))
-
-        return sb.toString()
+        return partialQr + crc
     }
 
     private fun formatTag(tag: String, value: String): String {
