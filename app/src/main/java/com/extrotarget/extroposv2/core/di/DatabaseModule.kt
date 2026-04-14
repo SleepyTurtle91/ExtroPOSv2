@@ -18,6 +18,7 @@ import com.extrotarget.extroposv2.core.data.local.dao.settings.TaxDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.DuitNowDao
 import com.extrotarget.extroposv2.core.data.local.dao.lhdn.LhdnDao
+import com.extrotarget.extroposv2.core.data.local.dao.AutoCountDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -87,5 +88,11 @@ object DatabaseModule {
     fun provideDuitNowDao(database: AppDatabase): DuitNowDao = database.duitNowDao()
 
     @Provides
+    fun provideAutoCountDao(database: AppDatabase): AutoCountDao = database.autoCountDao()
+
+    @Provides
     fun provideAuditDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.AuditDao = database.auditDao()
+
+    @Provides
+    fun provideLoyaltyDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.loyalty.LoyaltyDao = database.loyaltyDao()
 }

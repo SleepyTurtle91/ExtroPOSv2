@@ -2,10 +2,13 @@ package com.extrotarget.extroposv2.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.extrotarget.extroposv2.core.auth.BiometricHelper
 import com.extrotarget.extroposv2.core.auth.SessionManager
 import com.extrotarget.extroposv2.core.license.LicenseInfo
 import com.extrotarget.extroposv2.core.license.LicenseManager
 import com.extrotarget.extroposv2.core.license.LicenseStatus
+import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
+import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +20,9 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     val sessionManager: SessionManager,
-    private val licenseManager: LicenseManager
+    private val licenseManager: LicenseManager,
+    private val settingsRepository: SettingsRepository,
+    val biometricHelper: BiometricHelper
 ) : ViewModel() {
     
     val licenseInfo: StateFlow<LicenseInfo?> = licenseManager.licenseInfo
@@ -26,6 +31,9 @@ class MainViewModel @Inject constructor(
     val licenseStatus: StateFlow<LicenseStatus> = licenseManager.licenseInfo
         .map { licenseManager.getLicenseStatus(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LicenseStatus.Invalid)
+
+    val activeBusinessMode: StateFlow<BusinessMode> = settingsRepository.activeBusinessMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), BusinessMode.RETAIL)
 
     init {
         viewModelScope.launch {

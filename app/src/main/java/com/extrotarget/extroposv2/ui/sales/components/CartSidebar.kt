@@ -33,7 +33,9 @@ fun CartSidebar(
     onRemoveFromCart: (CartItem) -> Unit,
     onClearCart: () -> Unit,
     onSendToKitchen: () -> Unit,
-    onCompleteSale: (String) -> Unit
+    onCompleteSale: (String) -> Unit,
+    onAddCustomer: () -> Unit = {},
+    onRedeemPoints: (BigDecimal) -> Unit = {}
 ) {
     Surface(
         modifier = Modifier
@@ -70,13 +72,25 @@ fun CartSidebar(
                 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     IconButton(
-                        onClick = { /* Add Customer logic */ },
+                        onClick = onAddCustomer,
                         modifier = Modifier
                             .size(44.dp)
-                            .background(Color.White, RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+                            .background(
+                                if (uiState.selectedMember != null) Color(0xFFEFF6FF) else Color.White,
+                                RoundedCornerShape(12.dp)
+                            )
+                            .border(
+                                1.dp,
+                                if (uiState.selectedMember != null) Color(0xFF3B82F6) else Color(0xFFE2E8F0),
+                                RoundedCornerShape(12.dp)
+                            )
                     ) {
-                        Icon(Icons.Default.PersonAdd, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(20.dp))
+                        Icon(
+                            if (uiState.selectedMember != null) Icons.Default.Person else Icons.Default.PersonAdd,
+                            contentDescription = null,
+                            tint = if (uiState.selectedMember != null) Color(0xFF3B82F6) else Color(0xFF64748B),
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                     
                     IconButton(
@@ -132,6 +146,44 @@ fun CartSidebar(
                     modifier = Modifier.padding(24.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        if (uiState.selectedMember != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp)
+                                    .background(Color(0xFFF1F5F9), RoundedCornerShape(8.dp))
+                                    .padding(8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(16.dp))
+                                    Column {
+                                        Text(uiState.selectedMember.name.uppercase(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
+                                        Text("${uiState.selectedMember.totalPoints.toInt()} pts", style = MaterialTheme.typography.labelSmall)
+                                    }
+                                }
+                                IconButton(onClick = { onAddCustomer() }, modifier = Modifier.size(24.dp)) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Change", modifier = Modifier.size(14.dp), tint = Color(0xFF64748B))
+                                }
+                            }
+                            if (uiState.selectedMember.totalPoints >= BigDecimal("100")) {
+                                Button(
+                                    onClick = { onRedeemPoints(if (uiState.redeemedPoints > BigDecimal.ZERO) BigDecimal.ZERO else uiState.selectedMember.totalPoints) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (uiState.redeemedPoints > BigDecimal.ZERO) Color(0xFF10B981) else Color(0xFFF59E0B)
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        if (uiState.redeemedPoints > BigDecimal.ZERO) "REDEEMED RM${uiState.redeemedAmount}" else "REDEEM POINTS",
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                        }
                         SummaryRow("SUBTOTAL", CurrencyUtils.format(uiState.subtotal))
                         SummaryRow("TAX (SST 6%)", CurrencyUtils.format(uiState.totalTax), valueColor = Color(0xFF10B981))
                         if (uiState.totalDiscount > BigDecimal.ZERO) {

@@ -28,9 +28,9 @@ data class BuyerInfo(
     val name: String? = "General Public",
     val tin: String? = "EI00000000010", // Default for local buyers without TIN
     val idType: String? = "NRIC",        // NRIC, PASSPORT, BRN, etc.
-    val idValue: String? = null,
-    val address: String? = null,
-    val contact: String? = null
+    val idValue: String? = "000000000000",
+    val address: String? = "KUALA LUMPUR",
+    val contact: String? = "0000000000"
 )
 
 /**

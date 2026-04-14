@@ -7,6 +7,8 @@ import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
+import com.extrotarget.extroposv2.core.data.model.lhdn.BuyerInfo
+import com.extrotarget.extroposv2.core.data.model.loyalty.Member
 import com.extrotarget.extroposv2.core.data.repository.CategoryRepository
 import com.extrotarget.extroposv2.core.data.repository.ProductRepository
 import com.extrotarget.extroposv2.core.data.repository.SaleRepository
@@ -22,6 +24,7 @@ import com.extrotarget.extroposv2.ui.sales.AdminAuthAction
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.CartItem
 import com.extrotarget.extroposv2.ui.sales.SalesUiState
+import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
 import com.extrotarget.extroposv2.core.network.SyncClient
 import com.extrotarget.extroposv2.core.data.repository.hardware.TerminalRepository
 import com.extrotarget.extroposv2.core.hardware.terminal.TerminalResponse
@@ -49,6 +52,8 @@ class SalesViewModel @Inject constructor(
     private val processSaleUseCase: ProcessSaleUseCase,
     private val printReceiptUseCase: PrintReceiptUseCase,
     private val cartUseCase: CartUseCase,
+    private val loyaltyRepository: com.extrotarget.extroposv2.core.data.repository.loyalty.LoyaltyRepository,
+    private val settingsRepository: SettingsRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -61,23 +66,34 @@ class SalesViewModel @Inject constructor(
 
     private fun loadInitialData() {
         viewModelScope.launch {
-            combine(
-                productRepository.getAllProducts(),
-                categoryRepository.getAllCategories(),
-                staffRepository.getAllActiveStaff(),
-                tableRepository.allTables,
-                syncClient.syncStatus
-            ) { products, categories, staff, tables, syncStatus ->
-                _uiState.update { 
-                    it.copy(
-                        products = products, 
-                        categories = categories,
-                        staffList = staff,
-                        tables = tables,
-                        syncStatus = syncStatus
-                    ) 
-                }
-            }.collect()
+            productRepository.getAllProducts().collect { products ->
+                _uiState.update { it.copy(products = products) }
+            }
+        }
+        viewModelScope.launch {
+            categoryRepository.getAllCategories().collect { categories ->
+                _uiState.update { it.copy(categories = categories) }
+            }
+        }
+        viewModelScope.launch {
+            staffRepository.getAllActiveStaff().collect { staff ->
+                _uiState.update { it.copy(staffList = staff) }
+            }
+        }
+        viewModelScope.launch {
+            tableRepository.allTables.collect { tables ->
+                _uiState.update { it.copy(tables = tables) }
+            }
+        }
+        viewModelScope.launch {
+            syncClient.syncStatus.collect { syncStatus ->
+                _uiState.update { it.copy(syncStatus = syncStatus) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.activeBusinessMode.collect { activeMode ->
+                _uiState.update { it.copy(activeMode = activeMode) }
+            }
         }
     }
 
@@ -123,14 +139,17 @@ class SalesViewModel @Inject constructor(
     }
 
     fun setBusinessMode(mode: BusinessMode) {
-        _uiState.update { 
-            it.copy(
-                activeMode = mode, 
-                cartItems = emptyList(), 
-                selectedCategoryId = null,
-                selectedTable = null,
-                activeTab = "pos"
-            ) 
+        viewModelScope.launch {
+            settingsRepository.updateBusinessMode(mode)
+            _uiState.update { 
+                it.copy(
+                    cartItems = emptyList(), 
+                    selectedCategoryId = null,
+                    selectedTable = null,
+                    activeTab = "pos"
+                )
+            }
+            auditManager.logAction("SETTINGS", "Changed business mode to ${mode.displayName}", "SYSTEM")
         }
     }
 
@@ -512,8 +531,22 @@ class SalesViewModel @Inject constructor(
             saleItems = saleItems,
             commissionRecords = commissionRecords,
             selectedTableId = currentState.selectedTable?.id,
-            buyerInfo = null // Placeholder for future buyer selection
+            buyerInfo = currentState.selectedMember?.let { BuyerInfo(name = it.name, contact = it.phoneNumber) }
         )
+
+        currentState.selectedMember?.let { member ->
+            val loyaltyConfig = loyaltyRepository.getConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.loyalty.LoyaltyConfig()
+            if (loyaltyConfig.isEnabled) {
+                if (currentState.redeemedPoints > BigDecimal.ZERO) {
+                    loyaltyRepository.redeemPoints(member.id, currentState.redeemedPoints, saleId, "Points redeemed for Sale $saleId")
+                }
+                val earnedPoints = currentState.totalAmount.multiply(loyaltyConfig.pointsPerCurrencyUnit)
+                    .setScale(0, java.math.RoundingMode.DOWN)
+                if (earnedPoints > BigDecimal.ZERO) {
+                    loyaltyRepository.addPoints(member.id, earnedPoints, saleId, "Points earned from Sale $saleId")
+                }
+            }
+        }
 
         val qrContent = if (paymentMethod == "QR" || paymentMethod == "DUITNOW") {
             val duitNowConfig = duitNowRepository.getConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig()
@@ -555,5 +588,17 @@ class SalesViewModel @Inject constructor(
             val items = saleRepository.getItemsBySaleId(saleId)
             printReceiptUseCase(sale, items, _uiState.value.selectedTable?.name)
         }
+    }
+
+    fun selectMember(member: Member?) {
+        _uiState.update { it.copy(selectedMember = member, redeemedPoints = BigDecimal.ZERO, showMemberSelection = false) }
+    }
+
+    fun setRedeemedPoints(points: BigDecimal) {
+        _uiState.update { it.copy(redeemedPoints = points) }
+    }
+
+    fun setShowMemberSelection(show: Boolean) {
+        _uiState.update { it.copy(showMemberSelection = show) }
     }
 }

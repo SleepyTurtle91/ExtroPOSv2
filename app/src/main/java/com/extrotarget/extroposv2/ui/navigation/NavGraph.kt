@@ -29,6 +29,8 @@ import com.extrotarget.extroposv2.ui.settings.lhdn.LhdnSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.autocount.AutoCountSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.audit.AuditScreen
 import com.extrotarget.extroposv2.ui.settings.sync.SyncScreen
+import com.extrotarget.extroposv2.ui.loyalty.MemberManagementScreen
+import com.extrotarget.extroposv2.ui.loyalty.LoyaltySettingsScreen
 import com.extrotarget.extroposv2.ui.inventory.viewmodel.InventoryViewModel
 
 @Composable
@@ -97,7 +99,8 @@ fun NavGraph(
         
         composable(Screen.Settings.route) {
             SettingsScreen(
-                onNavigateTo = { route -> navController.navigate(route) }
+                onNavigateTo = { route -> navController.navigate(route) },
+                viewModel = hiltViewModel()
             )
         }
 
@@ -151,6 +154,14 @@ fun NavGraph(
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = hiltViewModel()
             )
+        }
+
+        composable(Screen.MemberManagement.route) {
+            MemberManagementScreen(viewModel = hiltViewModel())
+        }
+
+        composable(Screen.LoyaltySettings.route) {
+            LoyaltySettingsScreen(viewModel = hiltViewModel())
         }
     }
 }

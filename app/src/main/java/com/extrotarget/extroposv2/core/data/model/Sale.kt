@@ -16,9 +16,13 @@ data class Sale(
     val roundingAdjustment: BigDecimal = BigDecimal.ZERO,
     val paymentMethod: String, // e.g., CASH, CARD
     val status: String = "COMPLETED", // e.g., COMPLETED, VOIDED, REFUNDED, PENDING
+    val memberId: String? = null,
+    val staffId: String? = null,
     val tableId: String? = null,
     val note: String? = null,
     val cardType: String? = null,
     val maskedPan: String? = null,
-    val approvalCode: String? = null
+    val approvalCode: String? = null,
+    val autoCountSyncStatus: String = "NOT_SYNCED", // NOT_SYNCED, SYNCED, FAILED
+    val autoCountDocNo: String? = null
 )

@@ -2,6 +2,7 @@ package com.extrotarget.extroposv2.ui.sales
 
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.model.SaleItem
+import com.extrotarget.extroposv2.core.data.model.loyalty.Member
 import com.extrotarget.extroposv2.core.util.RoundingUtils
 import java.math.BigDecimal
 
@@ -36,8 +37,11 @@ data class SalesUiState(
     val adminAuthError: String? = null,
     val showSettingsModal: Boolean = false,
     val showConfirmClearCart: Boolean = false,
-    val isLocked: Boolean = true,
+    val isLocked: Boolean = false,
     val activeTab: String = "pos",
+    val selectedMember: Member? = null,
+    val redeemedPoints: BigDecimal = BigDecimal.ZERO,
+    val showMemberSelection: Boolean = false,
     val tables: List<com.extrotarget.extroposv2.core.data.model.fnb.Table> = emptyList(),
     val syncStatus: com.extrotarget.extroposv2.core.network.SyncStatus = com.extrotarget.extroposv2.core.network.SyncStatus.IDLE
 ) {
@@ -57,7 +61,11 @@ data class SalesUiState(
 
     val cartDiscountAmount: BigDecimal = cartDiscount?.calculateDiscount(subtotal.subtract(itemDiscounts)) ?: BigDecimal.ZERO
 
-    val totalDiscount: BigDecimal = itemDiscounts.add(cartDiscountAmount)
+    val redeemedAmount: BigDecimal = if (selectedMember != null) {
+        redeemedPoints.multiply(BigDecimal("0.01")) // Hardcoded default, should ideally come from config
+    } else BigDecimal.ZERO
+
+    val totalDiscount: BigDecimal = itemDiscounts.add(cartDiscountAmount).add(redeemedAmount)
     
     val totalTax: BigDecimal = cartItems.fold(BigDecimal.ZERO) { acc, item ->
         acc.add(item.taxAmount)

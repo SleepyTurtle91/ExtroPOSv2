@@ -12,6 +12,9 @@ interface StaffDao {
     @Query("SELECT * FROM staff WHERE id = :id")
     suspend fun getStaffById(id: String): Staff?
 
+    @Query("SELECT * FROM staff")
+    suspend fun getAllStaff(): List<Staff>
+
     @Query("SELECT * FROM staff WHERE pin = :pin AND isActive = 1")
     suspend fun getStaffByPin(pin: String): Staff?
 

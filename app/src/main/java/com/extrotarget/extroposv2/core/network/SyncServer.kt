@@ -10,6 +10,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.response.*
+import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import java.util.Collections
@@ -56,10 +57,11 @@ class SyncServer @Inject constructor(
                         database.openHelper.writableDatabase.query("PRAGMA wal_checkpoint(FULL)").close()
                         call.respondFile(dbFile)
                         
+                        val remoteAddr = call.request.local.remoteAddress
                         scope.launch {
                             auditManager.logAction(
                                 action = "SYNC_EXPORT",
-                                details = "Database exported to terminal: ${call.request.local.remoteAddress}",
+                                details = "Database exported to terminal: $remoteAddr",
                                 module = "SYSTEM"
                             )
                         }

@@ -2,15 +2,15 @@ package com.extrotarget.extroposv2.ui.navigation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -20,6 +20,12 @@ import androidx.navigation.compose.rememberNavController
 import com.extrotarget.extroposv2.core.license.LicenseStatus
 import com.extrotarget.extroposv2.ui.auth.LoginScreen
 import com.extrotarget.extroposv2.ui.auth.MainViewModel
+import com.extrotarget.extroposv2.ui.sales.BusinessMode
+import com.extrotarget.extroposv2.ui.sales.components.NavButton
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +40,10 @@ fun MainScreen(
     var showActivationDialog by remember { mutableStateOf(false) }
     
     if (currentUser == null) {
-        LoginScreen(onLoginSuccess = { /* SessionManager handles state */ })
+        LoginScreen(
+            biometricHelper = viewModel.biometricHelper,
+            onLoginSuccess = { /* SessionManager handles state */ }
+        )
         return
     }
 
@@ -58,57 +67,122 @@ fun MainScreen(
         Screen.Settings
     )
 
+    val activeBusinessMode by viewModel.activeBusinessMode.collectAsState()
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Text("ExtroPOS - ${currentUser?.name ?: ""}") 
-                },
-                actions = {
-                    IconButton(onClick = { sessionManager.logout() }) {
-                        Icon(Icons.Default.Lock, contentDescription = "Lock Screen")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        },
-        bottomBar = {
-            NavigationBar {
+        containerColor = Color(0xFF0F172A) // Slate 900
+    ) { innerPadding ->
+        Row(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            // New Sidebar Implementation
+            Surface(
+                modifier = Modifier.width(100.dp).fillMaxHeight(),
+                color = Color(0xFF1E293B),
+                tonalElevation = 8.dp
+            ) {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
-                
-                screens.filter { it !is Screen.InventoryAnalytics && it !is Screen.StaffEarnings && it !is Screen.Backup && it !is Screen.ReceiptSettings }.forEach { screen ->
-                    // RBAC check for specific screens
-                    val canAccess = when (screen) {
-                        is Screen.Settings, is Screen.Analytics, is Screen.Staff, is Screen.Inventory -> sessionManager.hasRole("ADMIN")
-                        else -> true
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(vertical = 24.dp)
+                ) {
+                    // Logo / Business Mode Icon
+                    Surface(
+                        modifier = Modifier.size(64.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color.White.copy(alpha = 0.1f)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(activeBusinessMode.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                        }
                     }
 
-                    if (canAccess) {
-                        NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = null) },
-                            label = { Text(screen.title) },
-                            selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                    Spacer(Modifier.height(48.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        val mainScreens = listOf(
+                            Screen.Sales,
+                            Screen.Tables,
+                            Screen.CarWash,
+                            Screen.Laundry,
+                            Screen.Inventory,
+                            Screen.Analytics,
+                            Screen.Staff
+                        )
+
+                        mainScreens.forEach { screen ->
+                            val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                            
+                            // Industry Specific Visibility Logic
+                            val isVisible = when(screen) {
+                                Screen.Tables -> activeBusinessMode.hasTables
+                                Screen.CarWash -> activeBusinessMode == BusinessMode.CARWASH
+                                Screen.Laundry -> activeBusinessMode == BusinessMode.LAUNDRY
+                                Screen.Staff -> activeBusinessMode.hasStaffAssignment
+                                else -> true
+                            }
+
+                            if (isVisible) {
+                                NavButton(
+                                    icon = if (screen == Screen.Sales && activeBusinessMode.hasTables) Icons.Default.Restaurant else screen.icon,
+                                    label = if (screen == Screen.Sales && activeBusinessMode.hasTables) "FLOOR" else screen.title.uppercase(),
+                                    isSelected = isSelected,
+                                    onClick = {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
                                     }
+                                )
+                            }
+                        }
+                    }
+
+                    // Bottom Sidebar Actions (Settings & Lock)
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                        val isSettingsSelected = currentDestination?.hierarchy?.any { it.route == Screen.Settings.route } == true
+                        
+                        IconButton(
+                            onClick = { 
+                                navController.navigate(Screen.Settings.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            }
-                        )
+                            },
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(
+                                    if (isSettingsSelected) Color(0xFF0F172A) else Color.White.copy(alpha = 0.05f), 
+                                    RoundedCornerShape(16.dp)
+                                )
+                        ) {
+                            Icon(
+                                Icons.Default.Settings, 
+                                contentDescription = "Settings", 
+                                tint = if (isSettingsSelected) Color.White else Color.White.copy(alpha = 0.7f)
+                            )
+                        }
+                        
+                        IconButton(
+                            onClick = { sessionManager.logout() },
+                            modifier = Modifier.size(56.dp).background(Color(0xFFEF4444).copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                        ) {
+                            Icon(Icons.Default.PowerSettingsNew, contentDescription = "Logout", tint = Color(0xFFEF4444))
+                        }
                     }
                 }
             }
-        }
-    ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding)) {
-            if (licenseStatus is LicenseStatus.Trial) {
+
+            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                if (licenseStatus is LicenseStatus.Trial) {
                 Surface(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -147,6 +221,7 @@ fun MainScreen(
             )
         }
     }
+}
 
     if (showActivationDialog) {
         ActivationDialog(

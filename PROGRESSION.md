@@ -59,6 +59,7 @@ This file tracks the implementation status of features defined in the developmen
 - [x] **Software Licensing**: Device-bound encrypted license activation and hardware ID (SSAID) binding.
 - [x] **Trial Management**: Automated 14-day trial logic with offline grace periods.
 - [x] **POS Screen Lock**: PIN-based high-speed user switching for shared terminals.
+- [x] **Biometric Authentication**: Fingerprint/Face unlock for high-speed terminal switching.
 - [x] **Role-Based Access Control (RBAC)**: Permission enforcement for Voids, Discounts, and Settings.
 
 ## Phase 8: Genius POS UI/UX Refactor
@@ -66,6 +67,9 @@ This file tracks the implementation status of features defined in the developmen
 - [x] **High-Density Layouts**: Optimized sidebar, header, and cart sidebar for 10-inch tablets.
 - [x] **Performance Tracking**: New Staff Earnings dashboard with formula visualization.
 - [x] **Inventory Overhaul**: Streamlined product list with status chips and fat-finger actions.
+- [x] **Z-Report (EOD)**: Tablet-optimized "Shift Closeout" screen with real-time cash reconciliation (Expected vs. Actual) and Malaysian rounding/SST summaries.
+- [x] **Onboarding Wizard**: 4-step animated setup flow (Business Type -> Store -> Admin -> License) for new enterprise deployments with Slate 800/900 Material 3 design.
+- [x] **Business Mode Isolation**: Dynamic UI adaptation (Retail, F&B, Car Wash, Dobi) with persistent settings and automated module filtering (e.g., hiding Table Management in Retail mode).
 
 ## Phase 9: Standalone Excellence & Advanced Sync
 - [x] **Excel/CSV Master Export**: Comprehensive export of all transaction and tax data for external accounting with AES-256 encryption.
@@ -79,9 +83,9 @@ This file tracks the implementation status of features defined in the developmen
 - [x] **Production Readiness**: Code obfuscation (ProGuard/R8) and final security audit.
 
 ## Phase 11: Enterprise & Cloud Ecosystem
-- [ ] **AutoCount Accounting Integration**: Automated sync of daily sales and payments to AutoCount via API.
+- [x] **AutoCount Accounting Integration**: Automated sync of daily sales and payments to AutoCount via API.
 - [ ] **Cloud Management Portal**: Remote dashboard for multi-outlet inventory and sales tracking.
-- [ ] **Customer Loyalty System**: Points-based rewards and member purchase history.
+- [x] **Customer Loyalty System**: Points-based rewards with Tiered Rewards (Bronze/Silver/Gold) and detailed member purchase/transaction history.
 - [ ] **Branch-to-Branch Sync**: Stock transfer and centralized membership data.
 
 ---

@@ -46,16 +46,22 @@ This document provides a technical summary of implemented features and architect
 ## 8. Current Architecture
 - **Tech Stack**: Compose (M3), Hilt DI, Room, Coroutines/Flow.
 - **Navigation**: Typed `Screen` sealed class with `NavGraph` integration.
-- **Database**: Room v7 includes `printer_configs`, `staff`, `commission_records`, `products`, `sales`, `laundry_orders`, and `car_wash_jobs`.
+- **Database**: Room v19 includes `printer_configs`, `staff`, `commission_records`, `products`, `sales`, `laundry_orders`, `car_wash_jobs`, `autocount_config`, `members`, and `loyalty_transactions`.
 
-## 9. Next Priority: AutoCount Accounting Integration
-- **Objective**: Automate sales data synchronization to AutoCount Accounting software via REST API.
-- **Scope**: Mapping `Sale` and `SaleItem` to AutoCount `CashSale` or `SalesInvoice` objects.
-- **Authentication**: OAuth2 or API Key based authentication.
+## 9. AutoCount Accounting Integration
+- **Functionality**: Automated background synchronization of sales data to AutoCount Accounting via REST API.
+- **Mapping**: Converts internal `Sale` and `SaleItem` to AutoCount `CashSale` format with support for GL Account mapping and Malaysian tax codes (SR-S).
+- **Reliability**: Uses `WorkManager` for persistent sync with retry logic and sync status tracking on each transaction.
 
-## 10. Security & Multi-User (Planned)
-- **Licensing**: Implementation of SSAID-bound license keys for device activation.
-- **User Management**: PIN-based screen lock and role-based permissions (RBAC).
+## 10. Customer Loyalty & CRM
+- **Points Engine**: Tiered rewards (Bronze, Silver, Gold) with configurable point multipliers.
+- **Redemption**: Support for point-to-currency redemption (e.g., 100 pts = RM 1) integrated into the checkout cart.
+- **History**: Full audit trail of point transactions (Earned/Redeemed) and linked purchase history per member.
+
+## 11. Security & Multi-User
+- **Licensing**: SSAID-bound device activation with encrypted license keys.
+- **Access Control**: PIN-based high-speed user switching and Role-Based Access Control (RBAC) for sensitive operations (Voids, Discounts).
+- **Next Priority**: Biometric authentication and advanced session management (Security & Multi-User Enhancements).
 
 ---
-*Last Updated: Phase 7 Initialization (Security & Licensing Focus)*
+*Last Updated: Phase 11 Implementation (Loyalty & AutoCount Focus)*

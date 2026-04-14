@@ -11,13 +11,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.extrotarget.extroposv2.ui.navigation.Screen
+import com.extrotarget.extroposv2.ui.sales.BusinessMode
+import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateTo: (String) -> Unit
+    onNavigateTo: (String) -> Unit,
+    viewModel: SalesViewModel = hiltViewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+    val activeMode = uiState.activeMode
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Settings") })
@@ -70,22 +79,40 @@ fun SettingsScreen(
                     icon = Icons.Default.Sync,
                     onClick = { onNavigateTo(Screen.AutoCountSettings.route) }
                 )
+                SettingsItem(
+                    title = "Loyalty & Members",
+                    subtitle = "Configure points and member rewards",
+                    icon = Icons.Default.CardMembership,
+                    onClick = { onNavigateTo(Screen.LoyaltySettings.route) }
+                )
             }
 
             item {
                 SettingsCategoryHeader("Modules & Features")
-                SettingsItem(
-                    title = "F&B Table Management",
-                    subtitle = "Configure floor plan and table layouts",
-                    icon = Icons.Default.TableBar,
-                    onClick = { onNavigateTo(Screen.Tables.route) }
-                )
-                SettingsItem(
-                    title = "Laundry Configuration",
-                    subtitle = "Setup weight units and WhatsApp alerts",
-                    icon = Icons.Default.LocalLaundryService,
-                    onClick = { onNavigateTo(Screen.Laundry.route) }
-                )
+                if (activeMode == BusinessMode.FNB) {
+                    SettingsItem(
+                        title = "F&B Table Management",
+                        subtitle = "Configure floor plan and table layouts",
+                        icon = Icons.Default.TableBar,
+                        onClick = { onNavigateTo(Screen.Tables.route) }
+                    )
+                }
+                if (activeMode == BusinessMode.LAUNDRY) {
+                    SettingsItem(
+                        title = "Laundry Configuration",
+                        subtitle = "Setup weight units and WhatsApp alerts",
+                        icon = Icons.Default.LocalLaundryService,
+                        onClick = { onNavigateTo(Screen.Laundry.route) }
+                    )
+                }
+                if (activeMode == BusinessMode.CARWASH) {
+                    SettingsItem(
+                        title = "Car Wash Services",
+                        subtitle = "Manage wash types and staff commissions",
+                        icon = Icons.Default.DirectionsCar,
+                        onClick = { /* onNavigateTo("carwash_settings") */ }
+                    )
+                }
             }
 
             item {

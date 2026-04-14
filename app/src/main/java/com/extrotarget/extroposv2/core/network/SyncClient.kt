@@ -8,9 +8,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
 import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.gson.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.client.plugins.websocket.*
+import io.ktor.util.cio.*
+import io.ktor.utils.io.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +22,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.*
 import java.io.File
 import java.io.FileOutputStream
+import kotlin.io.path.Path
+import kotlin.io.copyTo
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -87,7 +92,7 @@ class SyncClient @Inject constructor(
                 val shmFile = File(dbPath.path + "-shm")
                 val tempFile = File(context.cacheDir, "temp_db")
                 
-                response.bodyAsChannel().copyTo(tempFile.writeChannel())
+                response.bodyAsChannel().copyAndClose(tempFile.writeChannel())
 
                 // Safer replacement
                 if (tempFile.exists()) {

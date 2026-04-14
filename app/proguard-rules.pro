@@ -1,21 +1,39 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# --- ExtroPOS v2 ProGuard Rules ---
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Preserve Line Numbers for Debugging
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# --- Room Persistence ---
+-keep class * extends androidx.room.RoomDatabase
+-keep class * { @androidx.room.Dao *; }
+-keep class * { @androidx.room.Entity *; }
+-keep class * { @androidx.room.PrimaryKey *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# --- Hilt / Dagger ---
+-keep class dagger.hilt.android.internal.managers.** { *; }
+-keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$ComponentManager
+-keep @dagger.hilt.android.EntryPoint class *
+-keep @dagger.hilt.InstallIn class *
+
+# --- Gson / Retrofit / OkHttp ---
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class sun.misc.Unsafe { *; }
+-keep class com.google.gson.stream.** { *; }
+
+# Preserve LHDN and DuitNow Models for JSON Mapping
+-keep class com.extrotarget.extroposv2.core.data.model.lhdn.** { *; }
+-keep class com.extrotarget.extroposv2.core.network.api.lhdn.** { *; }
+-keep class com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig { *; }
+
+# --- Ktor ---
+-keep class io.ktor.** { *; }
+-keep class kotlinx.serialization.json.** { *; }
+
+# --- Security & Crypto ---
+-keep class androidx.security.crypto.** { *; }
+
+# --- Android Hardware & ML Kit ---
+-keep class com.google.mlkit.** { *; }
+-keep class androidx.camera.** { *; }

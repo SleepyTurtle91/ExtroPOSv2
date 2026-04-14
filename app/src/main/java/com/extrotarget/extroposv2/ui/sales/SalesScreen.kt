@@ -20,11 +20,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.ui.components.ProductCard
 import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 import com.extrotarget.extroposv2.ui.sales.components.*
+import com.extrotarget.extroposv2.ui.loyalty.MemberManagementScreen
 
 @Composable
 fun SalesScreen(
@@ -52,14 +54,6 @@ fun SalesScreen(
     val activeMode = uiState.activeMode
 
     Row(modifier = modifier.fillMaxSize().background(Color(0xFFF1F5F9))) {
-        SidebarNavigation(
-            activeMode = activeMode,
-            activeTab = uiState.activeTab,
-            onTabSelected = { viewModel.setActiveTab(it) },
-            onToggleSettings = { viewModel.toggleSettingsModal(it) },
-            onLock = { viewModel.lock() }
-        )
-
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
             SaleHeader(
                 activeMode = activeMode,
@@ -79,7 +73,9 @@ fun SalesScreen(
                             onRemoveFromCart = { viewModel.removeFromCart(it) },
                             onClearCart = { viewModel.clearCartWithConfirm() },
                             onSendToKitchen = { viewModel.sendToKitchen() },
-                            onCompleteSale = { viewModel.completeSale(it) }
+                            onCompleteSale = { viewModel.completeSale(it) },
+                            onAddCustomer = { viewModel.setShowMemberSelection(true) },
+                            onRedeemPoints = { viewModel.setRedeemedPoints(it) }
                         )
                     }
                     "tables" -> {
@@ -196,6 +192,34 @@ fun SalesScreen(
             onConfirm = { pin -> viewModel.authenticateAdmin(pin) },
             errorMessage = uiState.adminAuthError
         )
+    }
+
+    if (uiState.showMemberSelection) {
+        Dialog(
+            onDismissRequest = { viewModel.setShowMemberSelection(false) },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Select Member", style = MaterialTheme.typography.headlineMedium)
+                        IconButton(onClick = { viewModel.setShowMemberSelection(false) }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close")
+                        }
+                    }
+                    MemberManagementScreen(
+                        onMemberSelected = { viewModel.selectMember(it) }
+                    )
+                }
+            }
+        }
     }
 }
 

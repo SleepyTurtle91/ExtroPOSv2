@@ -20,7 +20,10 @@ fun DuitNowSettingsScreen(
     onNavigateBack: () -> Unit
 ) {
     val config by viewModel.config.collectAsState()
+    val secureMerchantId by viewModel.merchantId.collectAsState()
+    
     var editableConfig by remember(config) { mutableStateOf(config) }
+    var merchantIdInput by remember(secureMerchantId) { mutableStateOf(secureMerchantId) }
 
     Scaffold(
         topBar = {
@@ -33,7 +36,7 @@ fun DuitNowSettingsScreen(
                 },
                 actions = {
                     Button(
-                        onClick = { viewModel.saveConfig(editableConfig) },
+                        onClick = { viewModel.saveConfig(editableConfig, merchantIdInput) },
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Text("Save")
@@ -56,8 +59,8 @@ fun DuitNowSettingsScreen(
             )
 
             OutlinedTextField(
-                value = editableConfig.merchantId,
-                onValueChange = { editableConfig = editableConfig.copy(merchantId = it) },
+                value = merchantIdInput,
+                onValueChange = { merchantIdInput = it },
                 label = { Text("Merchant ID / DuitNow ID") },
                 modifier = Modifier.fillMaxWidth(),
                 supportingText = { Text("Enter your 26-digit ID or the ID provided by your bank") }

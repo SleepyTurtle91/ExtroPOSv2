@@ -18,6 +18,8 @@ class StaffRepository @Inject constructor(
 ) {
     fun getAllActiveStaff(): Flow<List<Staff>> = staffDao.getAllActiveStaff()
 
+    suspend fun getAllStaff(): List<Staff> = staffDao.getAllStaff()
+
     fun isCurrentUserAdmin(): Boolean {
         return sessionManager.hasRole("ADMIN") || sessionManager.hasRole("SUPERVISOR")
     }

@@ -15,6 +15,7 @@ import com.extrotarget.extroposv2.core.data.repository.carwash.CarWashRepository
 import com.extrotarget.extroposv2.core.data.repository.fnb.TableRepository
 import com.extrotarget.extroposv2.core.data.repository.lhdn.LhdnRepository
 import com.extrotarget.extroposv2.core.data.repository.settings.AutoCountRepository
+import com.extrotarget.extroposv2.core.data.repository.loyalty.LoyaltyRepository
 import com.extrotarget.extroposv2.core.data.model.lhdn.BuyerInfo
 import com.extrotarget.extroposv2.core.work.AutoCountSyncWorker
 import com.extrotarget.extroposv2.core.work.EInvoiceSubmissionWorker
@@ -31,9 +32,10 @@ class ProcessSaleUseCase @Inject constructor(
     private val tableRepository: TableRepository,
     private val lhdnRepository: LhdnRepository,
     private val autoCountRepository: AutoCountRepository,
+    private val loyaltyRepository: LoyaltyRepository,
     @ApplicationContext private val context: Context
 ) {
-    suspend fun invoke(
+    operator suspend fun invoke(
         sale: Sale,
         saleItems: List<SaleItem>,
         commissionRecords: List<CommissionRecord>,
@@ -81,6 +83,23 @@ class ProcessSaleUseCase @Inject constructor(
         val autoCountConfig = autoCountRepository.getConfig().firstOrNull()
         if (autoCountConfig != null && autoCountConfig.isEnabled && autoCountConfig.syncToken != null) {
             enqueueAutoCountSync(sale.id, autoCountConfig.syncToken)
+        }
+
+        // 7. Loyalty Points: If a member is associated and loyalty is enabled
+        sale.memberId?.let { memberId ->
+            val loyaltyConfig = loyaltyRepository.getConfig().firstOrNull()
+            if (loyaltyConfig != null && loyaltyConfig.isEnabled) {
+                val member = loyaltyRepository.getMemberById(memberId)
+                if (member != null) {
+                    val multiplier = when (member.tier) {
+                        "SILVER" -> loyaltyConfig.silverMultiplier
+                        "GOLD" -> loyaltyConfig.goldMultiplier
+                        else -> BigDecimal.ONE
+                    }
+                    val pointsEarned = sale.totalAmount.multiply(loyaltyConfig.pointsPerCurrencyUnit).multiply(multiplier)
+                    loyaltyRepository.addPoints(memberId, pointsEarned, sale.id, "Earned from sale ${sale.id}")
+                }
+            }
         }
     }
 

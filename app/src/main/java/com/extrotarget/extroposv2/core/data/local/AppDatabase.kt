@@ -18,6 +18,7 @@ import com.extrotarget.extroposv2.core.data.model.Category
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
+import com.extrotarget.extroposv2.core.data.local.dao.loyalty.LoyaltyDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.PaymentMethodDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.TaxDao
@@ -36,6 +37,9 @@ import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnConfig
 import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnToken
 import com.extrotarget.extroposv2.core.data.model.lhdn.SaleEInvoiceSubmission
 import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import com.extrotarget.extroposv2.core.data.model.loyalty.LoyaltyConfig
+import com.extrotarget.extroposv2.core.data.model.loyalty.LoyaltyPointTransaction
+import com.extrotarget.extroposv2.core.data.model.loyalty.Member
 import com.extrotarget.extroposv2.core.data.model.settings.AutoCountConfig
 import com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig
 import com.extrotarget.extroposv2.core.data.model.settings.PaymentMethod
@@ -63,9 +67,12 @@ import com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig
         LhdnToken::class,
         DuitNowConfig::class,
         AuditLog::class,
-        AutoCountConfig::class
+        AutoCountConfig::class,
+        Member::class,
+        LoyaltyPointTransaction::class,
+        LoyaltyConfig::class
     ],
-    version = 18,
+    version = 19,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -87,6 +94,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun lhdnDao(): LhdnDao
     abstract fun duitNowDao(): DuitNowDao
     abstract fun autoCountDao(): AutoCountDao
+    abstract fun loyaltyDao(): LoyaltyDao
 
     companion object {
         const val DATABASE_NAME = "extro_pos_db"

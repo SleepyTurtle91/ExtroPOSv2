@@ -21,6 +21,7 @@ import com.extrotarget.extroposv2.ui.sales.SalesUiState
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import java.math.BigDecimal
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ModifierDialog(
     item: CartItem,
@@ -143,6 +144,7 @@ fun TerminalProgressDialog(status: String?, totalAmount: BigDecimal) {
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderSuccessDialog(
     uiState: SalesUiState,

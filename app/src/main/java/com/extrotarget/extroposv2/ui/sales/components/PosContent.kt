@@ -30,7 +30,9 @@ fun PosContent(
     onClearCart: () -> Unit,
     onSendToKitchen: () -> Unit,
     onCompleteSale: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onAddCustomer: () -> Unit = {},
+    onRedeemPoints: (java.math.BigDecimal) -> Unit = {}
 ) {
     val activeMode = uiState.activeMode
 
@@ -87,7 +89,9 @@ fun PosContent(
             onRemoveFromCart = onRemoveFromCart,
             onClearCart = onClearCart,
             onSendToKitchen = onSendToKitchen,
-            onCompleteSale = onCompleteSale
+            onCompleteSale = onCompleteSale,
+            onAddCustomer = onAddCustomer,
+            onRedeemPoints = onRedeemPoints
         )
     }
 }

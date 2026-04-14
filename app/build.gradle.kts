@@ -105,6 +105,7 @@ dependencies {
     // DataStore
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.biometric)
 
     // Ktor
     implementation(libs.ktor.server.core)

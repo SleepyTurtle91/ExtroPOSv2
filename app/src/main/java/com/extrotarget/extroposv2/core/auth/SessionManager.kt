@@ -57,7 +57,22 @@ class SessionManager @Inject constructor(
     fun isLoggedIn(): Boolean = _currentUser.value != null
 
     fun getCurrentStaff(): Staff? = _currentUser.value
-    
+
+    fun hasPermission(permission: String): Boolean {
+        val user = _currentUser.value ?: return false
+        if (user.role == "ADMIN") return true
+        
+        return when (permission) {
+            "VOID_SALE" -> user.role == "SUPERVISOR"
+            "GIVE_DISCOUNT" -> user.role in listOf("SUPERVISOR", "CASHIER")
+            "MANAGE_INVENTORY" -> user.role == "SUPERVISOR"
+            "VIEW_REPORTS" -> user.role == "SUPERVISOR"
+            "MANAGE_STAFF" -> false // Only ADMIN
+            "SYSTEM_SETTINGS" -> false // Only ADMIN
+            else -> false
+        }
+    }
+
     fun hasRole(role: String): Boolean {
         return _currentUser.value?.role == role || _currentUser.value?.role == "ADMIN"
     }

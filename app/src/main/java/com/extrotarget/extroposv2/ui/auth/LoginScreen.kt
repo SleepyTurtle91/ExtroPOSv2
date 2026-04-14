@@ -5,31 +5,46 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backspace
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.extrotarget.extroposv2.core.auth.BiometricHelper
 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
+    biometricHelper: BiometricHelper, // Assuming it's provided or can be injected
     onLoginSuccess: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.isLoginSuccessful) {
         if (uiState.isLoginSuccessful) {
             onLoginSuccess()
+        }
+    }
+
+    // Auto-show biometric prompt if available
+    LaunchedEffect(uiState.isBiometricAvailable) {
+        if (uiState.isBiometricAvailable && context is FragmentActivity) {
+            biometricHelper.showBiometricPrompt(
+                activity = context,
+                onSuccess = { viewModel.onBiometricSuccess() },
+                onError = { _, _ -> /* Handle error */ },
+                onFailed = { /* Handle failure */ }
+            )
         }
     }
 
@@ -94,7 +109,7 @@ fun LoginScreen(
                 listOf("1", "2", "3"),
                 listOf("4", "5", "6"),
                 listOf("7", "8", "9"),
-                listOf("", "0", "DEL")
+                listOf("FINGERPRINT", "0", "DEL")
             )
             
             rows.forEach { row ->
@@ -103,7 +118,25 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     row.forEach { key ->
-                        if (key.isEmpty()) {
+                        if (key == "FINGERPRINT") {
+                            if (uiState.isBiometricAvailable) {
+                                PinKeyButton(
+                                    text = key,
+                                    onClick = {
+                                        if (context is FragmentActivity) {
+                                            biometricHelper.showBiometricPrompt(
+                                                activity = context,
+                                                onSuccess = { viewModel.onBiometricSuccess() },
+                                                onError = { _, _ -> },
+                                                onFailed = { }
+                                            )
+                                        }
+                                    }
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.size(80.dp))
+                            }
+                        } else if (key.isEmpty()) {
                             Spacer(modifier = Modifier.size(80.dp))
                         } else {
                             PinKeyButton(
@@ -136,14 +169,16 @@ fun PinKeyButton(
         modifier = Modifier.size(80.dp),
         shape = CircleShape
     ) {
-        if (text == "DEL") {
-            Icon(Icons.Default.Backspace, contentDescription = "Delete")
-        } else {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+        when (text) {
+            "DEL" -> Icon(Icons.Default.Backspace, contentDescription = "Delete")
+            "FINGERPRINT" -> Icon(Icons.Default.Fingerprint, contentDescription = "Biometric")
+            else -> {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

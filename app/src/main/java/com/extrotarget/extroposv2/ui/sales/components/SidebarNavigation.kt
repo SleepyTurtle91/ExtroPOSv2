@@ -107,7 +107,7 @@ fun SidebarNavigation(
 }
 
 @Composable
-private fun NavButton(
+fun NavButton(
     icon: ImageVector,
     label: String,
     isSelected: Boolean,

@@ -21,6 +21,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.draw.clip
 import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
 import androidx.activity.compose.rememberLauncherForActivityResult

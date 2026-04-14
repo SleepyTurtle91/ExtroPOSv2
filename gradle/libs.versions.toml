@@ -28,6 +28,7 @@ desugarJdkLibs = "2.0.4"
 ktor = "2.3.11"
 timber = "5.0.1"
 securityCrypto = "1.1.0-alpha06"
+biometric = "1.2.0-alpha05"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -91,6 +92,7 @@ ktor-server-websockets = { group = "io.ktor", name = "ktor-server-websockets-jvm
 ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
+androidx-biometric = { group = "androidx.biometric", name = "biometric-ktx", version.ref = "biometric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

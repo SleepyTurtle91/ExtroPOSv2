@@ -26,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.extrotarget.extroposv2.core.data.model.hardware.PrinterConfig
 import com.extrotarget.extroposv2.ui.settings.viewmodel.PrinterSettingsViewModel
 
+import com.extrotarget.extroposv2.ui.util.BluetoothPermissionWrapper
 import androidx.compose.material.icons.filled.Delete
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 
@@ -91,7 +92,6 @@ fun PrinterSettingsScreen(
                     icon = Icons.Default.Bluetooth,
                     label = "Bluetooth Printer",
                     onClick = {
-                        viewModel.discoverBluetoothDevices()
                         showBluetoothList = true
                     }
                 )
@@ -119,17 +119,28 @@ fun PrinterSettingsScreen(
     }
 
     if (showBluetoothList) {
-        DeviceSelectionDialog(
-            title = "Select Bluetooth Printer",
-            devices = bluetoothDevices.map { 
-                @SuppressLint("MissingPermission")
-                val name = it.name ?: "Unknown Device"
-                name to it.address 
+        BluetoothPermissionWrapper(
+            onPermissionGranted = {
+                LaunchedEffect(Unit) {
+                    viewModel.discoverBluetoothDevices()
+                }
+                DeviceSelectionDialog(
+                    title = "Select Bluetooth Printer",
+                    devices = bluetoothDevices.map { 
+                        @SuppressLint("MissingPermission")
+                        val name = it.name ?: "Unknown Device"
+                        name to it.address 
+                    },
+                    onDismiss = { showBluetoothList = false },
+                    onSelect = { name, address, tag ->
+                        viewModel.savePrinterConfig(name, "BLUETOOTH", address, tag = tag)
+                        showBluetoothList = false
+                    }
+                )
             },
-            onDismiss = { showBluetoothList = false },
-            onSelect = { name, address, tag ->
-                viewModel.savePrinterConfig(name, "BLUETOOTH", address, tag = tag)
+            onPermissionDenied = {
                 showBluetoothList = false
+                // Optionally show a toast or message
             }
         )
     }

@@ -10,5 +10,6 @@ data class Staff(
     val phone: String?,
     val role: String, // e.g., "CASHIER", "SUPERVISOR", "ADMIN"
     val pin: String? = null, // 4-6 digit PIN for screen lock
+    val biometricEnabled: Boolean = false,
     val isActive: Boolean = true
 )
