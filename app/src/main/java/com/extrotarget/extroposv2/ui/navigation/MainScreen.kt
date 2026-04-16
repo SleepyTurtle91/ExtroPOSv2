@@ -1,13 +1,18 @@
 package com.extrotarget.extroposv2.ui.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -22,10 +27,6 @@ import com.extrotarget.extroposv2.ui.auth.LoginScreen
 import com.extrotarget.extroposv2.ui.auth.MainViewModel
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.components.NavButton
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.vector.ImageVector
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,9 +37,29 @@ fun MainScreen(
     val currentUser by sessionManager.currentUser.collectAsState()
     val licenseStatus by viewModel.licenseStatus.collectAsState()
     val licenseInfo by viewModel.licenseInfo.collectAsState()
+    val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState()
     val navController = rememberNavController()
     var showActivationDialog by remember { mutableStateOf(false) }
     
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(Unit) {
+        viewModel.stockAlerts.collect { productName ->
+            snackbarHostState.showSnackbar(
+                message = "Low Stock Alert: $productName",
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
+    if (!isOnboardingCompleted) {
+        com.extrotarget.extroposv2.ui.onboarding.OnboardingWizardScreen(
+            viewModel = hiltViewModel(),
+            onSetupComplete = { /* Handled by Flow */ }
+        )
+        return
+    }
+
     if (currentUser == null) {
         LoginScreen(
             biometricHelper = viewModel.biometricHelper,
@@ -56,21 +77,24 @@ fun MainScreen(
         return
     }
 
-    val screens = listOf(
-        Screen.Sales,
-        Screen.Tables,
-        Screen.CarWash,
-        Screen.Laundry,
-        Screen.Inventory,
-        Screen.Analytics,
-        Screen.Staff,
-        Screen.Settings
-    )
-
     val activeBusinessMode by viewModel.activeBusinessMode.collectAsState()
 
+    val screens = remember(activeBusinessMode) {
+        listOfNotNull(
+            Screen.Sales,
+            if (activeBusinessMode.hasTables) Screen.Tables else null,
+            if (activeBusinessMode == BusinessMode.CARWASH) Screen.CarWash else null,
+            if (activeBusinessMode == BusinessMode.LAUNDRY) Screen.Laundry else null,
+            Screen.Inventory,
+            Screen.Analytics,
+            if (activeBusinessMode.hasStaffAssignment) Screen.Staff else null,
+            Screen.Settings
+        )
+    }
+
     Scaffold(
-        containerColor = Color(0xFF0F172A) // Slate 900
+        containerColor = Color(0xFF0F172A), // Slate 900
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Row(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             // New Sidebar Implementation
@@ -90,148 +114,62 @@ fun MainScreen(
                     Surface(
                         modifier = Modifier.size(64.dp),
                         shape = RoundedCornerShape(16.dp),
-                        color = Color.White.copy(alpha = 0.1f)
+                        color = Color(0xFF3B82F6),
+                        shadowElevation = 4.dp
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(activeBusinessMode.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
+                            Icon(
+                                activeBusinessMode.icon,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
                         }
                     }
 
                     Spacer(Modifier.height(48.dp))
 
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        val mainScreens = listOf(
-                            Screen.Sales,
-                            Screen.Tables,
-                            Screen.CarWash,
-                            Screen.Laundry,
-                            Screen.Inventory,
-                            Screen.Analytics,
-                            Screen.Staff
-                        )
-
-                        mainScreens.forEach { screen ->
-                            val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                            
-                            // Industry Specific Visibility Logic
-                            val isVisible = when(screen) {
-                                Screen.Tables -> activeBusinessMode.hasTables
-                                Screen.CarWash -> activeBusinessMode == BusinessMode.CARWASH
-                                Screen.Laundry -> activeBusinessMode == BusinessMode.LAUNDRY
-                                Screen.Staff -> activeBusinessMode.hasStaffAssignment
-                                else -> true
-                            }
-
-                            if (isVisible) {
-                                NavButton(
-                                    icon = if (screen == Screen.Sales && activeBusinessMode.hasTables) Icons.Default.Restaurant else screen.icon,
-                                    label = if (screen == Screen.Sales && activeBusinessMode.hasTables) "FLOOR" else screen.title.uppercase(),
-                                    isSelected = isSelected,
-                                    onClick = {
-                                        navController.navigate(screen.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
+                    // Main Navigation
+                    screens.forEach { screen ->
+                        val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                        NavButton(
+                            icon = screen.icon,
+                            label = screen.title,
+                            isSelected = isSelected,
+                            onClick = {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
                                     }
-                                )
-                            }
-                        }
-                    }
-
-                    // Bottom Sidebar Actions (Settings & Lock)
-                    Column(verticalArrangement = Arrangement.spacedBy(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        val isSettingsSelected = currentDestination?.hierarchy?.any { it.route == Screen.Settings.route } == true
-                        
-                        IconButton(
-                            onClick = { 
-                                navController.navigate(Screen.Settings.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            },
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(
-                                    if (isSettingsSelected) Color(0xFF0F172A) else Color.White.copy(alpha = 0.05f), 
-                                    RoundedCornerShape(16.dp)
-                                )
-                        ) {
-                            Icon(
-                                Icons.Default.Settings, 
-                                contentDescription = "Settings", 
-                                tint = if (isSettingsSelected) Color.White else Color.White.copy(alpha = 0.7f)
-                            )
-                        }
-                        
-                        IconButton(
-                            onClick = { sessionManager.logout() },
-                            modifier = Modifier.size(56.dp).background(Color(0xFFEF4444).copy(alpha = 0.1f), RoundedCornerShape(16.dp))
-                        ) {
-                            Icon(Icons.Default.PowerSettingsNew, contentDescription = "Logout", tint = Color(0xFFEF4444))
-                        }
+                            }
+                        )
+                        Spacer(Modifier.height(16.dp))
                     }
-                }
-            }
 
-            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                if (licenseStatus is LicenseStatus.Trial) {
-                Surface(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    tonalElevation = 2.dp
-                ) {
-                    Row(
+                    Spacer(Modifier.weight(1f))
+
+                    // Bottom Actions (Logout/Profile)
+                    IconButton(
+                        onClick = { sessionManager.logout() },
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .size(56.dp)
+                            .background(Color(0xFF334155), RoundedCornerShape(16.dp))
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Trial Mode: ${(licenseStatus as LicenseStatus.Trial).daysRemaining} days remaining",
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(
-                            onClick = { showActivationDialog = true },
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
-                            modifier = Modifier.height(32.dp)
-                        ) {
-                            Text("Activate", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-                        }
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color(0xFF94A3B8))
                     }
                 }
             }
-            NavGraph(
-                navController = navController,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
 
-    if (showActivationDialog) {
-        ActivationDialog(
-            deviceId = licenseInfo?.deviceId ?: "",
-            onDismiss = { showActivationDialog = false },
-            onActivate = { 
-                viewModel.activateLicense(it)
-                showActivationDialog = false
+            // Main Content Area
+            Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                NavGraph(
+                    navController = navController
+                )
             }
-        )
+        }
     }
 }
 
@@ -241,39 +179,44 @@ fun ActivationDialog(
     onDismiss: () -> Unit,
     onActivate: (String) -> Unit
 ) {
-    var activationKey by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Activate License") },
-        text = {
-            Column {
-                Text("Device ID:", style = MaterialTheme.typography.labelSmall)
-                Text(deviceId, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.height(16.dp))
+    var key by remember { mutableStateOf("") }
+    
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("Activate License", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text("Device ID: $deviceId", style = MaterialTheme.typography.bodySmall)
+                
+                Spacer(Modifier.height(24.dp))
+                
                 OutlinedTextField(
-                    value = activationKey,
-                    onValueChange = { activationKey = it },
-                    label = { Text("Activation Key") },
+                    value = key,
+                    onValueChange = { key = it },
+                    label = { Text("License Key") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { onActivate(activationKey) },
-                enabled = activationKey.isNotBlank()
-            ) {
-                Text("Activate")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Later")
+                
+                Spacer(Modifier.height(24.dp))
+                
+                Button(
+                    onClick = { onActivate(key) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("Activate Now")
+                }
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -282,71 +225,81 @@ fun LicenseGate(
     deviceId: String,
     onActivate: (String) -> Unit
 ) {
-    var activationKey by remember { mutableStateOf("") }
-    
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.errorContainer) {
+    var showActivation by remember { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0F172A)),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.padding(32.dp)
         ) {
-            Icon(
-                Icons.Default.Warning,
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.error
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = if (status is LicenseStatus.Expired) "License Expired" else "Invalid License",
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "Please contact support to activate your POS system.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Card(
-                modifier = Modifier.fillMaxWidth(0.6f),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            Surface(
+                modifier = Modifier.size(120.dp),
+                shape = RoundedCornerShape(32.dp),
+                color = Color(0xFF1E293B)
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text("Device ID:", style = MaterialTheme.typography.labelLarge)
-                    Text(
-                        text = deviceId,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = Color(0xFFEF4444),
+                        modifier = Modifier.size(64.dp)
                     )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    OutlinedTextField(
-                        value = activationKey,
-                        onValueChange = { activationKey = it },
-                        label = { Text("Activation Key") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Button(
-                        onClick = { onActivate(activationKey) },
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = activationKey.isNotBlank()
-                    ) {
-                        Text("Activate Now")
-                    }
                 }
             }
+            
+            Spacer(Modifier.height(32.dp))
+            
+            Text(
+                text = if (status is LicenseStatus.Expired) "License Expired" else "Invalid License",
+                color = Color.White,
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Black
+            )
+            
+            Spacer(Modifier.height(12.dp))
+            
+            Text(
+                "Please activate your software to continue using ExtroPOS v2.",
+                color = Color(0xFF94A3B8),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                fontSize = 16.sp
+            )
+            
+            Spacer(Modifier.height(48.dp))
+            
+            Button(
+                onClick = { showActivation = true },
+                modifier = Modifier.height(64.dp).width(300.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6))
+            ) {
+                Text("ENTER LICENSE KEY", fontWeight = FontWeight.Black, fontSize = 16.sp)
+            }
+            
+            Spacer(Modifier.height(24.dp))
+            
+            Text(
+                "Device ID: $deviceId",
+                color = Color(0xFF475569),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (showActivation) {
+            ActivationDialog(
+                deviceId = deviceId,
+                onDismiss = { showActivation = false },
+                onActivate = { 
+                    onActivate(it)
+                    showActivation = false
+                }
+            )
         }
     }
 }

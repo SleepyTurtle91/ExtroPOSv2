@@ -33,6 +33,12 @@ interface LhdnDao {
     @Query("SELECT * FROM sale_einvoice_submission WHERE status = :status")
     suspend fun getSubmissionsByStatus(status: EInvoiceStatus): List<SaleEInvoiceSubmission>
 
+    @Query("SELECT * FROM sale_einvoice_submission WHERE uuid = :uuid")
+    suspend fun getSubmissionByUuid(uuid: String): SaleEInvoiceSubmission?
+
+    @Query("SELECT * FROM sale_einvoice_submission ORDER BY lastAttemptTimestamp DESC")
+    fun getAllSubmissions(): Flow<List<SaleEInvoiceSubmission>>
+
     @Query("SELECT * FROM lhdn_tokens WHERE id = 1")
     suspend fun getToken(): LhdnToken?
 

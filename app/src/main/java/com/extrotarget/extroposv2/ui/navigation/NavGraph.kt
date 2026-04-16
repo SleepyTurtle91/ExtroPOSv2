@@ -32,6 +32,8 @@ import com.extrotarget.extroposv2.ui.settings.sync.SyncScreen
 import com.extrotarget.extroposv2.ui.loyalty.MemberManagementScreen
 import com.extrotarget.extroposv2.ui.loyalty.LoyaltySettingsScreen
 import com.extrotarget.extroposv2.ui.inventory.viewmodel.InventoryViewModel
+import com.extrotarget.extroposv2.ui.lhdn.history.LhdnHistoryScreen
+import com.extrotarget.extroposv2.ui.lhdn.history.LhdnHistoryViewModel
 
 @Composable
 fun NavGraph(
@@ -137,7 +139,15 @@ fun NavGraph(
         composable("lhdn_settings") {
             LhdnSettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
+                onNavigateToHistory = { navController.navigate(Screen.LhdnHistory.route) },
                 viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Screen.LhdnHistory.route) {
+            LhdnHistoryScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

@@ -88,5 +88,12 @@ This file tracks the implementation status of features defined in the developmen
 - [x] **Customer Loyalty System**: Points-based rewards with Tiered Rewards (Bronze/Silver/Gold) and detailed member purchase/transaction history.
 - [ ] **Branch-to-Branch Sync**: Stock transfer and centralized membership data.
 
+## Phase 12: Generic Tax & Globalization Refactor
+- [x] **Dynamic Tax Config**: Decoupled "SST" from core logic. Support for VAT, GST, etc. via `TaxConfig`.
+- [x] **Report Genericization**: `ZReport` and `SstReportManager` (now `TaxReportManager`) support dynamic tax labels.
+- [x] **UI Label Cleanup**: Removed hardcoded "SST" from Settings, Analytics, and Receipt views.
+- [x] **Currency Globalization**: Removing hardcoded "RM" and MYR locale dependencies.
+- [x] **Hardcoded String Audit**: Externalizing all remaining UI strings to `strings.xml`.
+
 ---
-*Last Updated: Completed Phase 9 and initiated Phase 10: Final Hardening & LHDN Sandbox.*
+*Last Updated: Completed Phase 11 and initiated Phase 12: Generic Tax & Globalization Refactor.*

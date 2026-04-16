@@ -39,7 +39,7 @@ data class BuyerInfo(
 enum class EInvoiceStatus {
     NOT_SUBMITTED,
     SUBMITTED,
-    VALIDATED,
+    VALID,      // Renamed from VALIDATED to match poll results
     REJECTED,
     CANCELLED
 }

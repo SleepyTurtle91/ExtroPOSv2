@@ -1,10 +1,12 @@
 package com.extrotarget.extroposv2.core.data.repository
 
 import com.extrotarget.extroposv2.core.data.local.dao.SaleDao
+import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asSharedFlow
 import javax.inject.Inject
 import com.extrotarget.extroposv2.core.network.SyncServer
 import javax.inject.Singleton
@@ -12,6 +14,7 @@ import javax.inject.Singleton
 @Singleton
 class SaleRepository @Inject constructor(
     private val saleDao: SaleDao,
+    private val productDao: ProductDao,
     private val syncServer: SyncServer
 ) {
     fun getAllSalesWithItems(): Flow<List<SaleWithItems>> =
@@ -45,4 +48,17 @@ class SaleRepository @Inject constructor(
 
     fun getSalesInRange(start: Long, end: Long): Flow<List<Sale>> =
         saleDao.getSalesInRange(start, end)
+
+    suspend fun updateLocalStock(productId: String, quantity: java.math.BigDecimal) {
+        val product = productDao.getProductById(productId)
+        productDao.setStockQuantity(productId, quantity)
+        
+        // Check for low stock alert
+        if (product != null && quantity <= product.minStockLevel && product.minStockLevel > java.math.BigDecimal.ZERO) {
+            _stockAlerts.emit(product.name)
+        }
+    }
+
+    private val _stockAlerts = kotlinx.coroutines.flow.MutableSharedFlow<String>()
+    val stockAlerts = _stockAlerts.asSharedFlow()
 }

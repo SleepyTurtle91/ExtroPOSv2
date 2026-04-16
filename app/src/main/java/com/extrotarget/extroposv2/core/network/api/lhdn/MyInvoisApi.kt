@@ -1,11 +1,7 @@
 package com.extrotarget.extroposv2.core.network.api.lhdn
 
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.Field
-import retrofit2.http.FormUrlEncoded
-import retrofit2.http.Header
-import retrofit2.http.POST
+import retrofit2.http.*
 
 interface MyInvoisApi {
 
@@ -23,6 +19,18 @@ interface MyInvoisApi {
         @Header("Authorization") token: String,
         @Body body: DocumentSubmissionRequest
     ): Response<DocumentSubmissionResponse>
+
+    @GET("api/v1.0/documentsubmissions/{submissionId}")
+    suspend fun getSubmissionStatus(
+        @Header("Authorization") token: String,
+        @Path("submissionId") submissionId: String
+    ): Response<SubmissionStatusResponse>
+
+    @GET("api/v1.0/documents/{uuid}/details")
+    suspend fun getDocumentDetails(
+        @Header("Authorization") token: String,
+        @Path("uuid") uuid: String
+    ): Response<DocumentDetailsResponse>
 }
 
 data class TokenResponse(
@@ -64,4 +72,29 @@ data class MyInvoisError(
     val message: String,
     val target: String? = null,
     val details: List<MyInvoisError>? = null
+)
+
+data class SubmissionStatusResponse(
+    val submissionId: String,
+    val status: String, // "InProgress", "Completed", "Failed"
+    val documentCount: Int,
+    val dateTimeReceived: String,
+    val overallStatus: String? = null
+)
+
+data class DocumentDetailsResponse(
+    val uuid: String,
+    val submissionId: String,
+    val status: String, // "Valid", "Invalid", "Cancelled", "Submitted"
+    val validationResults: ValidationResults? = null
+)
+
+data class ValidationResults(
+    val status: String,
+    val validationSteps: List<ValidationStep>? = null
+)
+
+data class ValidationStep(
+    val status: String,
+    val error: MyInvoisError? = null
 )

@@ -10,6 +10,7 @@ import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnConfig
 import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnToken
 import com.extrotarget.extroposv2.core.data.model.lhdn.SaleEInvoiceSubmission
 import com.extrotarget.extroposv2.core.network.api.lhdn.*
+import com.extrotarget.extroposv2.core.util.lhdn.LhdnInvoicingUtils
 import com.extrotarget.extroposv2.core.util.security.SecurityManager
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
@@ -61,6 +62,53 @@ class LhdnRepository @Inject constructor(
 
     suspend fun insertSubmission(submission: SaleEInvoiceSubmission) =
         lhdnDao.insertSubmission(submission)
+
+    suspend fun getPendingSubmissions(): List<SaleEInvoiceSubmission> =
+        lhdnDao.getSubmissionsByStatus(EInvoiceStatus.SUBMITTED)
+
+    /**
+     * Polls the status of a specific document from LHDN.
+     */
+    suspend fun pollDocumentStatus(uuid: String): Result<DocumentDetailsResponse> {
+        val config = lhdnDao.getConfig().firstOrNull() ?: return Result.failure(Exception("LHDN not configured"))
+        val token = getValidToken() ?: return Result.failure(Exception("Failed to authenticate with LHDN"))
+
+        return try {
+            val response = getApi(config.isSandbox).getDocumentDetails(token, uuid)
+            if (response.isSuccessful && response.body() != null) {
+                val details = response.body()!!
+                
+                // Update local database based on status
+                val submission = lhdnDao.getSubmissionByUuid(uuid)
+                if (submission != null) {
+                    val newStatus = when (details.status) {
+                        "Valid" -> EInvoiceStatus.VALID
+                        "Invalid" -> EInvoiceStatus.REJECTED
+                        "Cancelled" -> EInvoiceStatus.CANCELLED
+                        else -> submission.status
+                    }
+                    
+                    val errorMessage = details.validationResults?.validationSteps
+                        ?.firstOrNull { it.status == "Failed" }
+                        ?.error?.message
+
+                    lhdnDao.updateSubmission(submission.copy(
+                        status = newStatus,
+                        lhdnValidationMessage = errorMessage ?: submission.lhdnValidationMessage,
+                        lastResponse = "Status: ${details.status}",
+                        lastAttemptTimestamp = System.currentTimeMillis()
+                    ))
+                }
+                
+                Result.success(details)
+            } else {
+                Result.failure(Exception("LHDN API Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "LHDN Polling Exception for document $uuid")
+            Result.failure(e)
+        }
+    }
 
     /**
      * Gets a valid access token. If the current token is expired or missing, 
@@ -128,7 +176,7 @@ class LhdnRepository @Inject constructor(
             val jsonString = gson.toJson(invoiceJson)
 
             // 2. Calculate JSON Canonicalization Hash (Simplified for Sandbox)
-            val jsonHash = sha256(jsonString)
+            val jsonHash = LhdnInvoicingUtils.calculateDocumentHash(jsonString)
             val document = DocumentItem(
                 format = "JSON",
                 document = Base64.encodeToString(jsonString.toByteArray(), Base64.NO_WRAP),
@@ -173,12 +221,8 @@ class LhdnRepository @Inject constructor(
 
             return Result.failure(Exception("LHDN API Error: ${response.code()}"))
         } catch (e: Exception) {
+            Timber.e(e, "LHDN Submission Exception for sale ${sale.id}")
             return Result.failure(e)
         }
-    }
-
-    private fun sha256(input: String): String {
-        val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
-        return bytes.joinToString("") { "%02x".format(it) }
     }
 }

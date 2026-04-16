@@ -26,9 +26,12 @@ import java.math.BigDecimal
 
 @Composable
 fun StaffEarnings(
-    staffList: List<Staff>,
+    staffEarnings: List<com.extrotarget.extroposv2.ui.analytics.viewmodel.StaffEarningItem>,
     modifier: Modifier = Modifier
 ) {
+    val totalPayout = staffEarnings.sumOf { it.totalEarnings }
+    val topPerformer = staffEarnings.maxByOrNull { it.totalEarnings }?.staff?.name
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -88,7 +91,7 @@ fun StaffEarnings(
                             letterSpacing = 1.sp
                         )
                         Text(
-                            staffList.firstOrNull()?.name?.uppercase() ?: "N/A",
+                            topPerformer?.uppercase() ?: "N/A",
                             color = Color.White,
                             fontWeight = FontWeight.Black,
                             fontSize = 28.sp,
@@ -104,7 +107,7 @@ fun StaffEarnings(
                             letterSpacing = 1.sp
                         )
                         Text(
-                            CurrencyUtils.format(BigDecimal("245.50")), // Mock data or from DB
+                            CurrencyUtils.format(totalPayout),
                             color = Color.White,
                             fontWeight = FontWeight.Black,
                             fontSize = 28.sp,
@@ -131,7 +134,7 @@ fun StaffEarnings(
                 letterSpacing = 1.sp
             )
             Text(
-                "${staffList.size} ACTIVE",
+                "${staffEarnings.size} ACTIVE",
                 color = Color(0xFF3B82F6), // Primary Blue
                 fontWeight = FontWeight.Bold,
                 fontSize = 12.sp
@@ -143,15 +146,15 @@ fun StaffEarnings(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            items(staffList) { staff ->
-                StaffEarningsCard(staff)
+            items(staffEarnings) { item ->
+                StaffEarningsCard(item.staff, item.totalEarnings)
             }
         }
     }
 }
 
 @Composable
-fun StaffEarningsCard(staff: Staff) {
+fun StaffEarningsCard(staff: Staff, earnings: BigDecimal) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -186,7 +189,7 @@ fun StaffEarningsCard(staff: Staff) {
                         letterSpacing = (-0.5).sp
                     )
                     Text(
-                        "12 JOBS COMPLETED", // Mock
+                        "ACTIVE SESSION",
                         color = Color(0xFF64748B), // Slate 500
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp
@@ -196,7 +199,7 @@ fun StaffEarningsCard(staff: Staff) {
             
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    CurrencyUtils.format(BigDecimal("105.50")), // Mock
+                    CurrencyUtils.format(earnings),
                     color = Color(0xFF0F172A), // Slate 900
                     fontWeight = FontWeight.Black,
                     fontSize = 18.sp

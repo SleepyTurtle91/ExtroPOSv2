@@ -66,11 +66,8 @@ The project follows strict architectural rules defined in `KOTLIN_DEVELOPMENT_RU
 ## 📈 Project Status
 
 See `PROGRESSION.md` for the latest implementation milestones.
-- ✅ Phase 1: Core Engine & Compliance
-- ✅ Phase 2: Hardware & Infrastructure
-- ✅ Phase 3: Sales & Payments
-- ✅ Phase 1-7: Core Engine, Hardware, Sales, Industry Modules, UI, Analytics, and Security.
-- 🚧 Phase 8: Data Portability & Advanced Offline (Standalone Focus)
+- ✅ Phase 1-9: Core Engine, Hardware, Sales, Industry Modules, UI, Analytics, Security, Data Portability & Advanced P2P Sync.
+- ✅ Phase 10: Final Hardening & LHDN Sandbox (LHDN MyInvois V1.1 Integration, Status Polling, and Stock Consistency).
 
 ---
 

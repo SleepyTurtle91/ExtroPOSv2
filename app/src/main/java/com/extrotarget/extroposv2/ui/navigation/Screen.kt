@@ -30,6 +30,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object AutoCountSettings : Screen("autocount_settings", "AutoCount Sync", Icons.Default.Sync)
     object LoyaltySettings : Screen("loyalty_settings", "Loyalty Program", Icons.Default.CardMembership)
     object MemberManagement : Screen("member_management", "Members", Icons.Default.CardMembership)
+    object LhdnHistory : Screen("lhdn_history", "LHDN History", Icons.Default.ReceiptLong)
     
     // Analytics Sub-screens
     object InventoryAnalytics : Screen("inventory_analytics", "Low Stock", Icons.Default.Inventory)

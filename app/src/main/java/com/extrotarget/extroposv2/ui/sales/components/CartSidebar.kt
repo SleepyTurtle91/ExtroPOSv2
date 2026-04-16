@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.ui.sales.CartItem
 import com.extrotarget.extroposv2.ui.sales.SalesUiState
@@ -184,10 +186,15 @@ fun CartSidebar(
                                 }
                             }
                         }
-                        SummaryRow("SUBTOTAL", CurrencyUtils.format(uiState.subtotal))
-                        SummaryRow("TAX (SST 6%)", CurrencyUtils.format(uiState.totalTax), valueColor = Color(0xFF10B981))
+                        SummaryRow(stringResource(R.string.sales_subtotal).uppercase(), CurrencyUtils.format(uiState.subtotal))
+                        if (uiState.taxConfig?.isTaxEnabled == true || uiState.totalTax > BigDecimal.ZERO) {
+                            val taxName = uiState.taxConfig?.taxName ?: stringResource(R.string.sales_tax)
+                            val taxRate = uiState.taxConfig?.defaultTaxRate?.stripTrailingZeros()?.toPlainString() ?: "0"
+                            val taxLabel = "${taxName.uppercase()} (${taxRate}%)"
+                            SummaryRow(taxLabel, CurrencyUtils.format(uiState.totalTax), valueColor = Color(0xFF10B981))
+                        }
                         if (uiState.totalDiscount > BigDecimal.ZERO) {
-                            SummaryRow("DISCOUNT", "-${CurrencyUtils.format(uiState.totalDiscount)}", valueColor = Color(0xFFEF4444))
+                            SummaryRow(stringResource(R.string.sales_discount).uppercase(), "-${CurrencyUtils.format(uiState.totalDiscount)}", valueColor = Color(0xFFEF4444))
                         }
                     }
                     
@@ -212,19 +219,33 @@ fun CartSidebar(
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         if (uiState.activeMode.hasTables) {
+                            val allSaved = uiState.cartItems.isNotEmpty() && uiState.cartItems.all { it.isSentToKitchen }
                             Button(
                                 onClick = onSendToKitchen,
                                 modifier = Modifier.weight(0.4f).height(64.dp),
                                 shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF475569)),
-                                enabled = uiState.cartItems.any { !it.isSentToKitchen }
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (allSaved) Color(0xFF10B981) else Color(0xFF475569)
+                                ),
+                                enabled = uiState.cartItems.isNotEmpty() && !allSaved
                             ) {
-                                Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(
+                                        if (allSaved) Icons.Default.CheckCircle else Icons.Default.Save,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        if (allSaved) "SAVED" else "SAVE",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Black
+                                    )
+                                }
                             }
                         }
                         
                         Button(
-                            onClick = { onCompleteSale("CASH") },
+                            onClick = { onCompleteSale("OPEN_DIALOG") },
                             modifier = Modifier.weight(1f).height(64.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6)),

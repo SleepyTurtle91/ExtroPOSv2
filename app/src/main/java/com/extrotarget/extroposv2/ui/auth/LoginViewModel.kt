@@ -36,9 +36,9 @@ class LoginViewModel @Inject constructor(
     }
 
     fun onPinChange(newPin: String) {
-        if (newPin.length <= 6) {
+        if (newPin.length <= 4) {
             _uiState.update { it.copy(pin = newPin, error = null) }
-            if (newPin.length >= 4) {
+            if (newPin.length == 4) {
                 verifyPin(newPin)
             }
         }
@@ -50,10 +50,8 @@ class LoginViewModel @Inject constructor(
             val staff = staffRepository.getStaffByPin(pin)
             if (staff != null) {
                 onLoginSuccess(staff)
-            } else if (pin.length == 6) {
-                _uiState.update { it.copy(isLoading = false, error = "Invalid PIN", pin = "") }
             } else {
-                _uiState.update { it.copy(isLoading = false) }
+                _uiState.update { it.copy(isLoading = false, error = "Invalid PIN", pin = "") }
             }
         }
     }

@@ -54,6 +54,7 @@ class SalesViewModel @Inject constructor(
     private val cartUseCase: CartUseCase,
     private val loyaltyRepository: com.extrotarget.extroposv2.core.data.repository.loyalty.LoyaltyRepository,
     private val settingsRepository: SettingsRepository,
+    private val taxRepository: com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -93,6 +94,16 @@ class SalesViewModel @Inject constructor(
         viewModelScope.launch {
             settingsRepository.activeBusinessMode.collect { activeMode ->
                 _uiState.update { it.copy(activeMode = activeMode) }
+            }
+        }
+        viewModelScope.launch {
+            taxRepository.getTaxConfig().collect { taxConfig ->
+                _uiState.update { it.copy(taxConfig = taxConfig) }
+            }
+        }
+        viewModelScope.launch {
+            loyaltyRepository.getConfig().collect { config ->
+                _uiState.update { it.copy(loyaltyConfig = config) }
             }
         }
     }
@@ -211,56 +222,79 @@ class SalesViewModel @Inject constructor(
     fun sendToKitchen() {
         val currentState = _uiState.value
         val table = currentState.selectedTable ?: return
-        val unsentItems = currentState.cartItems.filter { !it.isSentToKitchen }
-        if (unsentItems.isEmpty()) return
+        if (currentState.cartItems.isEmpty()) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isCheckingOut = true) }
-            
-            val existingSale = saleRepository.getPendingSaleForTable(table.id)
-            val saleId = existingSale?.id ?: UUID.randomUUID().toString()
-            
-            val sale = Sale(
-                id = saleId,
-                totalAmount = currentState.totalAmount,
-                taxAmount = currentState.totalTax,
-                discountAmount = currentState.totalDiscount,
-                paymentMethod = "PENDING",
-                status = "PENDING",
-                tableId = table.id
-            )
-
-            val allSaleItems = currentState.cartItems.map { cartItem ->
-                SaleItem(
-                    id = cartItem.id,
-                    saleId = saleId,
-                    productId = cartItem.product.id,
-                    productName = cartItem.product.name,
-                    quantity = cartItem.quantity,
-                    unitPrice = cartItem.unitPrice,
-                    taxRate = cartItem.taxRate,
-                    taxAmount = cartItem.taxAmount,
-                    discountAmount = cartItem.discountAmount,
-                    discountLabel = cartItem.discount?.label,
-                    totalAmount = cartItem.totalPrice.add(cartItem.taxAmount),
-                    modifiers = cartItem.modifiers.joinToString(", ").takeIf { it.isNotEmpty() },
-                    printerTag = cartItem.product.printerTag ?: "KITCHEN",
-                    status = if (cartItem.isSentToKitchen) "SENT" else "PENDING"
+            try {
+                _uiState.update { it.copy(isCheckingOut = true) }
+                
+                // If the table was already occupied, it should have a currentSaleId
+                val saleId = table.currentSaleId ?: currentState.lastSaleId ?: UUID.randomUUID().toString()
+                
+                val sale = com.extrotarget.extroposv2.core.data.model.Sale(
+                    id = saleId,
+                    totalAmount = currentState.totalAmount,
+                    taxAmount = currentState.totalTax,
+                    discountAmount = currentState.totalDiscount,
+                    paymentMethod = "PENDING",
+                    status = "PENDING",
+                    tableId = table.id,
+                    timestamp = System.currentTimeMillis()
                 )
+
+                val allSaleItems = currentState.cartItems.map { cartItem ->
+                    com.extrotarget.extroposv2.core.data.model.SaleItem(
+                        id = cartItem.id,
+                        saleId = saleId,
+                        productId = cartItem.product.id,
+                        productName = cartItem.product.name,
+                        quantity = cartItem.quantity,
+                        unitPrice = cartItem.unitPrice,
+                        taxRate = cartItem.taxRate,
+                        taxAmount = cartItem.taxAmount,
+                        discountAmount = cartItem.discountAmount,
+                        discountLabel = cartItem.discount?.label,
+                        totalAmount = cartItem.totalPrice.add(cartItem.taxAmount),
+                        modifiers = cartItem.modifiers.joinToString(", ").takeIf { it.isNotEmpty() },
+                        printerTag = cartItem.product.printerTag ?: "KITCHEN",
+                        status = "SENT"
+                    )
+                }
+
+                saleRepository.completeSale(sale, allSaleItems)
+
+                val unsentItems = currentState.cartItems.filter { !it.isSentToKitchen }
+                if (unsentItems.isNotEmpty()) {
+                    val itemsToPrint = allSaleItems.filter { item -> 
+                        unsentItems.any { it.id == item.id }
+                    }
+                    try {
+                        printReceiptUseCase.printOrderSlip(saleId, table.name, itemsToPrint)
+                    } catch (e: Exception) {
+                        // Log printing error but don't fail the save
+                        android.util.Log.e("SalesViewModel", "Printing failed", e)
+                    }
+                }
+
+                tableRepository.updateTable(table.copy(
+                    status = com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.OCCUPIED, 
+                    currentSaleId = saleId,
+                    hasUnsentItems = false
+                ))
+
+                // After saving, we stay on the table but mark items as sent
+                _uiState.update { 
+                    it.copy(
+                        isCheckingOut = false, 
+                        cartItems = currentState.cartItems.map { it.copy(isSentToKitchen = true) },
+                        lastSaleId = saleId 
+                    ) 
+                }
+                
+                auditManager.logAction("SAVE_TABLE", "Saved order to ${table.name}", "SALES")
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isCheckingOut = false, terminalStatus = "Error saving: ${e.message}") }
             }
-
-            saleRepository.completeSale(sale, allSaleItems)
-
-            val itemsToPrint = allSaleItems.filter { it.status == "PENDING" }
-            printReceiptUseCase.printOrderSlip(saleId, table.name, itemsToPrint)
-
-            tableRepository.updateTable(table.copy(
-                status = com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.OCCUPIED, 
-                currentSaleId = saleId,
-                hasUnsentItems = false
-            ))
-
-            _uiState.update { it.copy(isCheckingOut = false, cartItems = emptyList(), selectedTable = null) }
         }
     }
 
@@ -439,29 +473,56 @@ class SalesViewModel @Inject constructor(
         val currentState = _uiState.value
         if (currentState.cartItems.isEmpty()) return
 
+        if (paymentMethod == "OPEN_DIALOG") {
+            _uiState.update { it.copy(showPaymentMethodDialog = true) }
+            return
+        }
+
+        _uiState.update { it.copy(showPaymentMethodDialog = false) }
+
+        if (paymentMethod == "CLOSE_DIALOG") return
+
         viewModelScope.launch {
             val saleId = UUID.randomUUID().toString()
 
-            if (paymentMethod == "CARD") {
-                _uiState.update { it.copy(showTerminalProgress = true, terminalStatus = "Awaiting Terminal Response...") }
-                val response = terminalRepository.processPayment(currentState.totalAmount, saleId)
-                _uiState.update { it.copy(showTerminalProgress = false) }
+            when (paymentMethod) {
+                "CASH" -> {
+                    _uiState.update { it.copy(showCashReceivedDialog = true) }
+                }
+                "CARD" -> {
+                    _uiState.update { it.copy(showTerminalProgress = true, terminalStatus = "Awaiting Terminal Response...") }
+                    val response = terminalRepository.processPayment(currentState.totalAmount, saleId)
+                    _uiState.update { it.copy(showTerminalProgress = false) }
 
-                when (response) {
-                    is TerminalResponse.Success -> finalizeSale(paymentMethod, saleId, response)
-                    is TerminalResponse.Error -> {
-                        _uiState.update { it.copy(terminalStatus = "Terminal Error: ${response.message}") }
-                        return@launch
-                    }
-                    TerminalResponse.Cancelled -> {
-                        _uiState.update { it.copy(terminalStatus = "Payment Cancelled") }
-                        return@launch
+                    when (response) {
+                        is TerminalResponse.Success -> finalizeSale(paymentMethod, saleId, response)
+                        is TerminalResponse.Error -> {
+                            _uiState.update { it.copy(terminalStatus = "Terminal Error: ${response.message}") }
+                            return@launch
+                        }
+                        TerminalResponse.Cancelled -> {
+                            _uiState.update { it.copy(terminalStatus = "Payment Cancelled") }
+                            return@launch
+                        }
                     }
                 }
-            } else {
-                finalizeSale(paymentMethod, saleId)
+                else -> {
+                    finalizeSale(paymentMethod, saleId)
+                }
             }
         }
+    }
+
+    fun confirmCashReceived(amount: BigDecimal) {
+        val saleId = UUID.randomUUID().toString()
+        _uiState.update { it.copy(showCashReceivedDialog = false, cashReceived = amount) }
+        viewModelScope.launch {
+            finalizeSale("CASH", saleId)
+        }
+    }
+
+    fun dismissCashReceived() {
+        _uiState.update { it.copy(showCashReceivedDialog = false) }
     }
 
     private suspend fun finalizeSale(
@@ -509,10 +570,12 @@ class SalesViewModel @Inject constructor(
         }
 
         val commissionRecords = currentState.cartItems.filter { it.assignedStaffId != null }.map { cartItem ->
-            val calculatedCommission = cartItem.unitPrice.multiply(cartItem.product.commissionRate)
-                .divide(BigDecimal("100"), 2, java.math.RoundingMode.HALF_EVEN)
-                .add(cartItem.product.fixedCommission)
-                .multiply(cartItem.quantity)
+            val calculatedCommission = com.extrotarget.extroposv2.core.util.CommissionCalculator.calculate(
+                price = cartItem.unitPrice,
+                ratePercent = cartItem.product.commissionRate,
+                fixedAllowance = cartItem.product.fixedCommission,
+                quantity = cartItem.quantity
+            )
 
             CommissionRecord(
                 id = UUID.randomUUID().toString(),
@@ -569,6 +632,7 @@ class SalesViewModel @Inject constructor(
             showPaymentSuccess = true,
             lastSaleId = saleId,
             lastSaleQrContent = qrContent,
+            lastPaymentMethod = paymentMethod,
             terminalStatus = null
         ) }
     }

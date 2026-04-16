@@ -24,6 +24,7 @@ import java.io.File
 import java.io.FileOutputStream
 import kotlin.io.path.Path
 import kotlin.io.copyTo
+import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import timber.log.Timber
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -57,6 +58,10 @@ class SyncClient @Inject constructor(
                 client.webSocket(method = io.ktor.http.HttpMethod.Get, host = masterIp, port = port, path = "/sync/realtime") {
                     session = this
                     _syncStatus.value = SyncStatus.CONNECTED
+                    
+                    // On connection, push all pending local sales to master
+                    pushUnsyncedSales()
+
                     delayMs = 1000L // Reset delay on success
                     for (frame in incoming) {
                         if (frame is Frame.Text) {
@@ -79,8 +84,24 @@ class SyncClient @Inject constructor(
         }
     }
 
-    suspend fun syncFromMaster(masterIp: String, port: Int = 8080): Result<Unit> = withContext(Dispatchers.IO) {
+    private suspend fun pushUnsyncedSales() {
+        val unsynced = database.saleDao().getUnsyncedSalesWithItems()
+        unsynced.forEach { saleWithItems ->
+            val message = mapOf("type" to "PUSH_SALE", "data" to saleWithItems)
+            val json = com.google.gson.Gson().toJson(message)
+            session?.send(Frame.Text(json))
+            database.saleDao().markSaleAsSynced(saleWithItems.sale.id)
+        }
+    }
+
+    suspend fun syncFromMaster(masterIp: String, port: Int = 8080, force: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            // Dirty Check
+            val unsyncedCount = database.saleDao().getUnsyncedCount()
+            if (unsyncedCount > 0 && !force) {
+                return@withContext Result.failure(Exception("DIRTY_DATA: $unsyncedCount unsynced sales found."))
+            }
+
             val response: HttpResponse = client.get("http://$masterIp:$port/sync/database")
             
             if (response.status.value == 200) {

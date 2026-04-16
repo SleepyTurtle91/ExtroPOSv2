@@ -19,6 +19,9 @@ interface TableDao {
     @Update
     suspend fun updateTable(table: Table)
 
+    @Query("DELETE FROM fnb_tables WHERE id = :tableId")
+    suspend fun deleteTable(tableId: String)
+
     @Query("UPDATE fnb_tables SET status = :status, currentSaleId = :saleId WHERE id = :tableId")
     suspend fun updateTableStatus(tableId: String, status: TableStatus, saleId: String?)
 

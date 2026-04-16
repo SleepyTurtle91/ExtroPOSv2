@@ -16,6 +16,7 @@ object ReceiptGenerator {
         sale: Sale,
         items: List<SaleItem>,
         config: ReceiptConfig = ReceiptConfig(),
+        taxConfig: com.extrotarget.extroposv2.core.data.model.settings.TaxConfig = com.extrotarget.extroposv2.core.data.model.settings.TaxConfig(),
         lhdnSubmission: SaleEInvoiceSubmission? = null,
         isSandbox: Boolean = true
     ): List<PrintCommand> {
@@ -28,10 +29,10 @@ object ReceiptGenerator {
         config.phone?.let { commands.add(PrintCommand.Text("Tel: $it", Alignment.CENTER)) }
         
         val brnLine = config.brn?.let { "BRN: $it" } ?: ""
-        val sstLine = config.sstId?.let { "SST ID: $it" } ?: ""
+        val sstLine = config.sstId?.let { "Tax ID: $it" } ?: ""
         
         if (brnLine.isNotEmpty() || sstLine.isNotEmpty()) {
-            val combined = listOfNotNull(config.brn?.let { "BRN: $it" }, config.sstId?.let { "SST: $it" })
+            val combined = listOfNotNull(config.brn?.let { "BRN: $it" }, config.sstId?.let { "Tax ID: $it" })
                 .joinToString(" | ")
             commands.add(PrintCommand.Text(combined, Alignment.CENTER))
         }
@@ -65,7 +66,10 @@ object ReceiptGenerator {
             commands.add(PrintCommand.Text("Discount: -${CurrencyUtils.format(sale.discountAmount)}", Alignment.RIGHT))
         }
 
-        commands.add(PrintCommand.Text("SST (Service Tax): ${CurrencyUtils.format(sale.taxAmount)}", Alignment.RIGHT))
+        if (sale.taxAmount > java.math.BigDecimal.ZERO) {
+            val taxLabel = "${taxConfig.taxName} (${taxConfig.defaultTaxRate}%):"
+            commands.add(PrintCommand.Text("$taxLabel ${CurrencyUtils.format(sale.taxAmount)}", Alignment.RIGHT))
+        }
         
         val rounding = sale.roundingAdjustment
         if (config.showRounding && rounding != java.math.BigDecimal.ZERO) {
@@ -84,7 +88,7 @@ object ReceiptGenerator {
             commands.add(PrintCommand.Text("LHDN E-INVOICE VERIFICATION", Alignment.CENTER, isBold = true))
             
             val baseUrl = if (isSandbox) "https://preprod.myinvois.hasil.gov.my" else "https://myinvois.hasil.gov.my"
-            val lhdnUrl = "$baseUrl/uuid/${lhdnSubmission.uuid}"
+            val lhdnUrl = "$baseUrl/viewer/uuid/${lhdnSubmission.uuid}"
 
             commands.add(PrintCommand.QRCode(lhdnUrl))
             commands.add(PrintCommand.Text("UUID: ${lhdnSubmission.uuid.take(8)}...", Alignment.CENTER))

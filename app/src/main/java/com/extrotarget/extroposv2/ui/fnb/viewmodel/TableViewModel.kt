@@ -67,4 +67,10 @@ class TableViewModel @Inject constructor(
             tableRepository.joinTable(sourceTableId, targetTableId)
         }
     }
+
+    fun deleteTable(tableId: String) {
+        viewModelScope.launch {
+            tableRepository.deleteTable(tableId)
+        }
+    }
 }

@@ -36,9 +36,25 @@ class SyncViewModel @Inject constructor(
 
     private fun observeRealtimeUpdates() {
         viewModelScope.launch {
-            syncClient.realtimeUpdates.collect { message ->
-                // Handle realtime message (e.g., "SALE_COMPLETED")
-                _syncStatus.value = "Real-time update received: $message"
+            syncClient.realtimeUpdates.collect { messageJson ->
+                try {
+                    val message = com.google.gson.Gson().fromJson(messageJson, Map::class.java)
+                    when (message["type"]) {
+                        "SALE_COMPLETED" -> {
+                            _syncStatus.value = "New sale synced from Master."
+                        }
+                        "STOCK_UPDATE" -> {
+                            val data = message["data"] as Map<*, *>
+                            val productId = data["productId"] as String
+                            val newQuantity = java.math.BigDecimal(data["newQuantity"].toString())
+                            
+                            saleRepository.updateLocalStock(productId, newQuantity)
+                            _syncStatus.value = "Stock updated for product $productId"
+                        }
+                    }
+                } catch (e: Exception) {
+                    _syncStatus.value = "Error parsing update: ${e.message}"
+                }
             }
         }
     }
@@ -54,6 +70,11 @@ class SyncViewModel @Inject constructor(
     private val _syncStatus = MutableStateFlow<String?>(null)
     val syncStatus = _syncStatus.asStateFlow()
 
+    private val _showConflictDialog = MutableStateFlow(false)
+    val showConflictDialog = _showConflictDialog.asStateFlow()
+
+    private var pendingMasterIp: String? = null
+
     private val _localIp = MutableStateFlow(getLocalIpAddress())
     val localIp = _localIp.asStateFlow()
 
@@ -66,24 +87,38 @@ class SyncViewModel @Inject constructor(
         _isServerRunning.value = syncServer.isRunning()
     }
 
-    fun syncFromMaster(masterIp: String) {
+    fun syncFromMaster(masterIp: String, force: Boolean = false) {
         viewModelScope.launch {
-            // ... (existing conflict check)
-            
             _syncStatus.value = "Syncing from Master..."
-            val result = syncClient.syncFromMaster(masterIp)
+            val result = syncClient.syncFromMaster(masterIp, force = force)
             if (result.isSuccess) {
                 _syncStatus.value = "Sync Successful! Connecting to Real-time..."
-                // Start WebSocket connection after successful DB sync
                 viewModelScope.launch {
                     syncClient.connectToRealtime(masterIp)
                 }
                 kotlinx.coroutines.delay(2000)
                 syncClient.restartApp()
             } else {
-                _syncStatus.value = "Sync Failed: ${result.exceptionOrNull()?.message}"
+                val error = result.exceptionOrNull()?.message ?: "Unknown error"
+                if (error.contains("DIRTY_DATA")) {
+                    pendingMasterIp = masterIp
+                    _showConflictDialog.value = true
+                    _syncStatus.value = "Conflict: Unsynced local sales detected."
+                } else {
+                    _syncStatus.value = "Sync Failed: $error"
+                }
             }
         }
+    }
+
+    fun confirmForceSync() {
+        _showConflictDialog.value = false
+        pendingMasterIp?.let { syncFromMaster(it, force = true) }
+    }
+
+    fun dismissConflict() {
+        _showConflictDialog.value = false
+        pendingMasterIp = null
     }
 
     private fun getLocalIpAddress(): String {

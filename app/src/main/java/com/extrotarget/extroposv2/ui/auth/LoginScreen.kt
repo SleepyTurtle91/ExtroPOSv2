@@ -77,7 +77,7 @@ fun LoginScreen(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.padding(vertical = 24.dp)
         ) {
-            repeat(6) { index ->
+            repeat(4) { index ->
                 val isFilled = index < uiState.pin.length
                 Box(
                     modifier = Modifier

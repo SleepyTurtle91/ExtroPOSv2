@@ -26,7 +26,7 @@ fun TaxSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Tax & SST Settings") },
+                title = { Text("Tax Settings") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -51,7 +51,7 @@ fun TaxSettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                "Configure Malaysian Sales & Service Tax (SST) and other charges applied to your sales.",
+                "Configure tax and other charges applied to your sales.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -59,7 +59,7 @@ fun TaxSettingsScreen(
             HorizontalDivider()
 
             ListItem(
-                headlineContent = { Text("Enable Tax (SST)") },
+                headlineContent = { Text("Enable Tax") },
                 supportingContent = { Text("Apply tax automatically to all transactions") },
                 trailingContent = {
                     Switch(

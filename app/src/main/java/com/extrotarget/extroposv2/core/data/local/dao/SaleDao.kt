@@ -45,6 +45,19 @@ interface SaleDao {
         }
     }
 
+    @Query("SELECT * FROM sales WHERE localSyncStatus = 'PENDING'")
+    suspend fun getUnsyncedSales(): List<Sale>
+
+    @Transaction
+    @Query("SELECT * FROM sales WHERE localSyncStatus = 'PENDING'")
+    suspend fun getUnsyncedSalesWithItems(): List<SaleWithItems>
+
+    @Query("UPDATE sales SET localSyncStatus = 'SYNCED' WHERE id = :saleId")
+    suspend fun markSaleAsSynced(saleId: String)
+
+    @Query("SELECT COUNT(*) FROM sales WHERE localSyncStatus = 'PENDING'")
+    suspend fun getUnsyncedCount(): Int
+
     @Update
     suspend fun updateSale(sale: Sale)
 

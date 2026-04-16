@@ -20,6 +20,7 @@ class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val ACTIVE_BUSINESS_MODE = stringPreferencesKey("active_business_mode")
+    private val ONBOARDING_COMPLETED = androidx.datastore.preferences.core.booleanPreferencesKey("onboarding_completed")
 
     val activeBusinessMode: Flow<BusinessMode> = context.dataStore.data
         .map { preferences ->
@@ -27,9 +28,20 @@ class SettingsRepository @Inject constructor(
             BusinessMode.values().find { it.id == modeId } ?: BusinessMode.RETAIL
         }
 
+    val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data
+        .map { preferences ->
+            preferences[ONBOARDING_COMPLETED] ?: false
+        }
+
     suspend fun updateBusinessMode(mode: BusinessMode) {
         context.dataStore.edit { preferences ->
             preferences[ACTIVE_BUSINESS_MODE] = mode.id
+        }
+    }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[ONBOARDING_COMPLETED] = completed
         }
     }
 }

@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.ui.sales.Discount
 import com.extrotarget.extroposv2.ui.sales.DiscountType
 import java.math.BigDecimal
@@ -22,6 +23,7 @@ fun DiscountDialog(
     var discountType by remember { mutableStateOf(initialDiscount?.type ?: DiscountType.PERCENTAGE) }
     var discountValue by remember { mutableStateOf(initialDiscount?.value?.toPlainString() ?: "") }
     var discountLabel by remember { mutableStateOf(initialDiscount?.label ?: "") }
+    val currencySymbol = remember { CurrencyUtils.getCurrencySymbol() }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -47,7 +49,7 @@ fun DiscountDialog(
                         onClick = { discountType = DiscountType.FIXED },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2)
                     ) {
-                        Text("RM")
+                        Text(currencySymbol)
                     }
                 }
 
@@ -55,7 +57,7 @@ fun DiscountDialog(
                     value = discountValue,
                     onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) discountValue = it },
                     label = { Text("Value") },
-                    suffix = { Text(if (discountType == DiscountType.PERCENTAGE) "%" else "RM") },
+                    suffix = { Text(if (discountType == DiscountType.PERCENTAGE) "%" else currencySymbol) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true

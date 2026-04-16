@@ -23,12 +23,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.extrotarget.extroposv2.core.network.SyncStatus
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
+import com.extrotarget.extroposv2.ui.sales.SalesUiState
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun SaleHeader(
     activeMode: BusinessMode,
+    uiState: SalesUiState,
     currentTime: Date,
     syncStatus: SyncStatus
 ) {
@@ -75,6 +77,29 @@ fun SaleHeader(
                     fontWeight = FontWeight.Black,
                     letterSpacing = 0.5.sp
                 )
+            }
+
+            if (activeMode.hasTables && uiState.selectedTable != null) {
+                Surface(
+                    color = Color(0xFF3B82F6).copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp),
+                    border = BorderStroke(1.dp, Color(0xFF3B82F6).copy(alpha = 0.2f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(Icons.Default.TableBar, contentDescription = null, tint = Color(0xFF3B82F6), modifier = Modifier.size(14.dp))
+                        Text(
+                            "TABLE ${uiState.selectedTable?.name}",
+                            color = Color(0xFF3B82F6),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
             }
 
             SyncStatusIndicator(syncStatus)

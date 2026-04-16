@@ -10,7 +10,9 @@
     <!-- Sales -->
     <string name="sales_total">Total</string>
     <string name="sales_subtotal">Subtotal</string>
-    <string name="sales_sst">SST</string>
+    <string name="sales_tax">Tax</string>
+    <string name="sales_discount">Discount</string>
+    <string name="sales_change">Change</string>
     <string name="sales_rounding">Rounding</string>
     <string name="sales_pay">Pay</string>
     <string name="sales_cart">Cart</string>

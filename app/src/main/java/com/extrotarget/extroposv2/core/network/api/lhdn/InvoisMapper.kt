@@ -61,9 +61,9 @@ object InvoisMapper {
                 "tin" to config.sellerTin,
                 "idn" to config.sellerBrn,
                 "idType" to "BRN",
-                "name" to "EXTRO TARGET SDN BHD", // In production, this should be configurable
+                "name" to config.businessActivityDesc.ifBlank { "EXTRO TARGET SDN BHD" }, 
                 "address" to mapOf(
-                    "line0" to "No 1, Jalan Teknologi",
+                    "line0" to (config.sellerSstId ?: "No 1, Jalan Teknologi"),
                     "city" to "Petaling Jaya",
                     "postalCode" to "47810",
                     "country" to "MYS",
@@ -76,7 +76,7 @@ object InvoisMapper {
             "dateTimeIssued" to sdfDate.format(now) + "T" + sdfTime.format(now),
             "documentType" to if (isConsolidated) "11" else "01", // 11 = Consolidated Invoice
             "documentVersion" to "1.1",
-            "internalId" to (sale.id.take(50)), // LHDN Internal ID limit
+            "internalId" to LhdnInvoicingUtils.generateInternalId(sale, config.sellerSstId ?: "NA"),
             "documentItems" to items.map { item ->
                 mapOf(
                     "description" to item.productName,
@@ -86,6 +86,7 @@ object InvoisMapper {
                     "taxRate" to item.taxRate.toDouble(),
                     "taxAmount" to item.taxAmount.toDouble(),
                     "taxCategory" to "S", // S = Standard Rated
+                    "taxExemptionReason" to if (item.taxRate.toDouble() == 0.0) "Zero-rated" else null,
                     "subtotal" to item.totalAmount.toDouble(),
                     "classification" to "022" // 022 = Retail
                 )
@@ -94,8 +95,15 @@ object InvoisMapper {
             "totalTaxAmount" to sale.taxAmount.toDouble(),
             "totalPayableAmount" to sale.totalAmount.toDouble(),
             "totalDiscountAmount" to sale.discountAmount.toDouble(),
+            "totalRoundingAmount" to sale.roundingAdjustment.toDouble(),
             "netAmount" to sale.totalAmount.toDouble(),
-            "invoiceCurrencyCode" to "MYR"
+            "invoiceCurrencyCode" to "MYR",
+            "billingReference" to listOf(
+                mapOf(
+                    "id" to sale.id,
+                    "description" to "POS Reference"
+                )
+            )
         )
     }
 }

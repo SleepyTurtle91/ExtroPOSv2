@@ -9,10 +9,12 @@ import io.ktor.server.application.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -74,7 +76,39 @@ class SyncServer @Inject constructor(
                     sessions += this
                     try {
                         for (frame in incoming) {
-                            // Handle incoming messages from slaves if needed
+                            if (frame is Frame.Text) {
+                                val text = frame.readText()
+                                try {
+                                    val message = com.google.gson.Gson().fromJson(text, Map::class.java)
+                                    if (message["type"] == "PUSH_SALE") {
+                                        val dataJson = com.google.gson.Gson().toJson(message["data"])
+                                        val saleWithItems = com.google.gson.Gson().fromJson(dataJson, SaleWithItems::class.java)
+                                        
+                                        scope.launch {
+                                            // Handle multi-terminal stock consistency: 
+                                            // Ensure we check current stock on Master before committing if needed, 
+                                            // or broadcast the update to everyone to decrement.
+                                            database.saleDao().completeSale(saleWithItems.sale, saleWithItems.items)
+                                            
+                                            // Broadcast STOCK_UPDATE to all other slaves
+                                            saleWithItems.items.forEach { item ->
+                                                val product = database.productDao().getProductById(item.productId)
+                                                product?.let {
+                                                    broadcastUpdate("STOCK_UPDATE", mapOf(
+                                                        "productId" to it.id,
+                                                        "newQuantity" to it.stockQuantity
+                                                    ))
+                                                }
+                                            }
+
+                                            // Re-broadcast to all other slaves
+                                            broadcastUpdate("SALE_COMPLETED", saleWithItems)
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
                         }
                     } finally {
                         sessions -= this

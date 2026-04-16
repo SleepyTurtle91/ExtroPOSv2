@@ -40,6 +40,7 @@ import javax.inject.Inject
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
+import com.extrotarget.extroposv2.core.data.seeder.DataSeeder
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 
 // --- UI State ---
@@ -66,7 +67,7 @@ data class OnboardingUIState(
         get() = storeName.isNotBlank() && regNo.isNotBlank() && contactNo.isNotBlank()
 
     val isStep2Valid: Boolean
-        get() = adminName.isNotBlank() && adminUsername.isNotBlank() && adminPin.length in 4..6
+        get() = adminName.isNotBlank() && adminUsername.isNotBlank() && adminPin.length == 4
 
     val isStep3Valid: Boolean
         get() = activationKey.isNotBlank() || isTrialStarted
@@ -76,7 +77,8 @@ data class OnboardingUIState(
 
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val dataSeeder: DataSeeder
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(OnboardingUIState())
     val uiState: StateFlow<OnboardingUIState> = _uiState.asStateFlow()
@@ -90,7 +92,7 @@ class OnboardingViewModel @Inject constructor(
     fun updateAdminName(value: String) = _uiState.update { it.copy(adminName = value) }
     fun updateAdminUsername(value: String) = _uiState.update { it.copy(adminUsername = value) }
     fun updateAdminPin(value: String) {
-        if (value.length <= 6 && value.all { it.isDigit() }) {
+        if (value.length <= 4 && value.all { it.isDigit() }) {
             _uiState.update { it.copy(adminPin = value) }
         }
     }
@@ -112,10 +114,18 @@ class OnboardingViewModel @Inject constructor(
     fun activateLicense(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isActivating = true, activationError = null) }
-            delay(2000) // Simulate network/license verification
+            delay(1000)
             
             if (_uiState.value.activationKey == "EXTRO-PRO-2024") {
-                settingsRepository.updateBusinessMode(_uiState.value.businessMode)
+                val state = _uiState.value
+                dataSeeder.seedForMode(
+                    mode = state.businessMode,
+                    adminName = state.adminName,
+                    adminUsername = state.adminUsername,
+                    adminPin = state.adminPin
+                )
+                settingsRepository.updateBusinessMode(state.businessMode)
+                settingsRepository.setOnboardingCompleted(true)
                 onSuccess()
             } else {
                 _uiState.update { it.copy(isActivating = false, activationError = "Invalid Activation Key. Please contact support.") }
@@ -126,8 +136,16 @@ class OnboardingViewModel @Inject constructor(
     fun startTrial(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isActivating = true) }
-            delay(1500)
-            settingsRepository.updateBusinessMode(_uiState.value.businessMode)
+            val state = _uiState.value
+            dataSeeder.seedForMode(
+                mode = state.businessMode,
+                adminName = state.adminName,
+                adminUsername = state.adminUsername,
+                adminPin = state.adminPin
+            )
+            settingsRepository.updateBusinessMode(state.businessMode)
+            settingsRepository.setOnboardingCompleted(true)
+            delay(500)
             onSuccess()
         }
     }
@@ -416,7 +434,7 @@ fun AdminAccountStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel)
             icon = Icons.Default.Badge
         )
         WizardTextField(
-            label = "Security PIN (4-6 digits)",
+            label = "Security PIN (4 digits)",
             value = uiState.adminPin,
             onValueChange = viewModel::updateAdminPin,
             icon = Icons.Default.Lock,

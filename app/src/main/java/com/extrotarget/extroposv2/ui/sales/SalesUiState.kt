@@ -17,6 +17,7 @@ data class SalesUiState(
     val cartItems: List<CartItem> = emptyList(),
     val searchQuery: String = "",
     val isCheckingOut: Boolean = false,
+    val showPaymentMethodDialog: Boolean = false,
     val showStaffSelection: Boolean = false,
     val itemAwaitingStaff: CartItem? = null,
     val showWeightInput: Boolean = false,
@@ -24,10 +25,12 @@ data class SalesUiState(
     val showPaymentSuccess: Boolean = false,
     val lastSaleQrContent: String? = null,
     val lastSaleId: String? = null,
+    val lastPaymentMethod: String? = null,
     val selectedTable: com.extrotarget.extroposv2.core.data.model.fnb.Table? = null,
     val itemAwaitingModifiers: CartItem? = null,
     val availableModifiers: List<String> = listOf("Bungkus", "Ikat Tepi", "Kurang Manis", "Tambah Pedas", "No Veggie"),
     val cartDiscount: Discount? = null,
+    val taxConfig: com.extrotarget.extroposv2.core.data.model.settings.TaxConfig? = null,
     val showDiscountDialog: Boolean = false,
     val itemAwaitingDiscount: CartItem? = null,
     val showTerminalProgress: Boolean = false,
@@ -41,9 +44,12 @@ data class SalesUiState(
     val activeTab: String = "pos",
     val selectedMember: Member? = null,
     val redeemedPoints: BigDecimal = BigDecimal.ZERO,
+    val loyaltyConfig: com.extrotarget.extroposv2.core.data.model.loyalty.LoyaltyConfig? = null,
     val showMemberSelection: Boolean = false,
     val tables: List<com.extrotarget.extroposv2.core.data.model.fnb.Table> = emptyList(),
-    val syncStatus: com.extrotarget.extroposv2.core.network.SyncStatus = com.extrotarget.extroposv2.core.network.SyncStatus.IDLE
+    val syncStatus: com.extrotarget.extroposv2.core.network.SyncStatus = com.extrotarget.extroposv2.core.network.SyncStatus.IDLE,
+    val showCashReceivedDialog: Boolean = false,
+    val cashReceived: BigDecimal = BigDecimal.ZERO
 ) {
     val filteredProducts: List<Product> = products.filter { product ->
         (product.businessMode == null || product.businessMode == activeMode.id) &&
@@ -61,15 +67,17 @@ data class SalesUiState(
 
     val cartDiscountAmount: BigDecimal = cartDiscount?.calculateDiscount(subtotal.subtract(itemDiscounts)) ?: BigDecimal.ZERO
 
-    val redeemedAmount: BigDecimal = if (selectedMember != null) {
-        redeemedPoints.multiply(BigDecimal("0.01")) // Hardcoded default, should ideally come from config
+    val redeemedAmount: BigDecimal = if (selectedMember != null && loyaltyConfig != null) {
+        redeemedPoints.multiply(loyaltyConfig.redemptionValuePerPoint)
     } else BigDecimal.ZERO
 
     val totalDiscount: BigDecimal = itemDiscounts.add(cartDiscountAmount).add(redeemedAmount)
     
-    val totalTax: BigDecimal = cartItems.fold(BigDecimal.ZERO) { acc, item ->
-        acc.add(item.taxAmount)
-    }
+    val totalTax: BigDecimal = if (taxConfig?.isTaxEnabled == true) {
+        cartItems.fold(BigDecimal.ZERO) { acc, item ->
+            acc.add(item.taxAmount)
+        }
+    } else BigDecimal.ZERO
 
     val amountBeforeRounding: BigDecimal = subtotal.subtract(totalDiscount).add(totalTax)
     
@@ -78,6 +86,10 @@ data class SalesUiState(
     val roundingAdjustment: BigDecimal = roundingResult.adjustment
     val totalAmount: BigDecimal = amountBeforeRounding
     val totalAmountCash: BigDecimal = roundingResult.finalTotal
+
+    val changeAmount: BigDecimal = if (cashReceived > BigDecimal.ZERO) {
+        cashReceived.subtract(totalAmountCash).max(BigDecimal.ZERO)
+    } else BigDecimal.ZERO
 }
 
 data class Discount(

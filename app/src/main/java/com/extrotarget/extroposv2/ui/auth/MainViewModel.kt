@@ -8,12 +8,10 @@ import com.extrotarget.extroposv2.core.license.LicenseInfo
 import com.extrotarget.extroposv2.core.license.LicenseManager
 import com.extrotarget.extroposv2.core.license.LicenseStatus
 import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
+import com.extrotarget.extroposv2.core.data.repository.SaleRepository
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -22,6 +20,7 @@ class MainViewModel @Inject constructor(
     val sessionManager: SessionManager,
     private val licenseManager: LicenseManager,
     private val settingsRepository: SettingsRepository,
+    private val saleRepository: SaleRepository,
     val biometricHelper: BiometricHelper
 ) : ViewModel() {
     
@@ -34,6 +33,11 @@ class MainViewModel @Inject constructor(
 
     val activeBusinessMode: StateFlow<BusinessMode> = settingsRepository.activeBusinessMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), BusinessMode.RETAIL)
+
+    val isOnboardingCompleted: StateFlow<Boolean> = settingsRepository.isOnboardingCompleted
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true) // Default to true to avoid flicker if not needed
+
+    val stockAlerts = saleRepository.stockAlerts
 
     init {
         viewModelScope.launch {

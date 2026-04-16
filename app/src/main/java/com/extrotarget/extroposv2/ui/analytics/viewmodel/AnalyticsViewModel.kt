@@ -60,7 +60,7 @@ class AnalyticsViewModel @Inject constructor(
             val taxReport = items.groupBy { it.taxRate }
                 .map { (rate, itemsAtRate) ->
                     TaxReportItem(
-                        categoryName = "SST @ ${rate.stripTrailingZeros().toPlainString()}%",
+                        categoryName = "Tax @ ${rate.stripTrailingZeros().toPlainString()}%",
                         netSales = itemsAtRate.sumOfItems { it.totalAmount.subtract(it.taxAmount) },
                         taxAmount = itemsAtRate.sumOfItems { it.taxAmount },
                         taxRate = rate

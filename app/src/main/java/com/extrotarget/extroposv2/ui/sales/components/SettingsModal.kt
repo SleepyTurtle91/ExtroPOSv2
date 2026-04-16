@@ -162,7 +162,7 @@ fun SettingsModal(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
-                            InfoItem("Regional Setting", "Malaysia (SST Compliant)")
+                            InfoItem("Regional Setting", "Standard (Dynamic Tax)")
                             InfoItem("Terminal ID", "POS-MY-004-KL")
                             InfoItem("Version", "v2.1.0-stable")
                         }

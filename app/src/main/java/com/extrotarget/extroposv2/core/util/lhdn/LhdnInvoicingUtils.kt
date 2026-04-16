@@ -25,6 +25,13 @@ object LhdnInvoicingUtils {
         return items.groupBy { it.taxRate.toDouble() }
     }
 
+    /**
+     * Calculates the SHA-256 hash required for LHDN digital signatures and document verification.
+     */
+    fun calculateDocumentHash(jsonString: String): String {
+        return sha256(jsonString)
+    }
+
     private fun sha256(input: String): String {
         val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }

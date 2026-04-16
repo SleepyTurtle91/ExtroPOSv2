@@ -81,7 +81,7 @@ fun ReceiptSettingsScreen(
             OutlinedTextField(
                 value = editableConfig.sstId ?: "",
                 onValueChange = { editableConfig = editableConfig.copy(sstId = it) },
-                label = { Text("SST ID (Tax Number)") },
+                label = { Text("Tax Registration Number (e.g. SST ID)") },
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -106,7 +106,7 @@ fun ReceiptSettingsScreen(
 
             ListItem(
                 headlineContent = { Text("Show Tax Summary") },
-                supportingContent = { Text("Display SST breakdown on receipt") },
+                supportingContent = { Text("Display tax breakdown on receipt") },
                 trailingContent = {
                     Switch(
                         checked = editableConfig.showTaxSummary,
@@ -117,7 +117,7 @@ fun ReceiptSettingsScreen(
 
             ListItem(
                 headlineContent = { Text("Show Cash Rounding") },
-                supportingContent = { Text("Display BNM 5-sen rounding on receipt") },
+                supportingContent = { Text("Display 5-sen rounding on receipt") },
                 trailingContent = {
                     Switch(
                         checked = editableConfig.showRounding,

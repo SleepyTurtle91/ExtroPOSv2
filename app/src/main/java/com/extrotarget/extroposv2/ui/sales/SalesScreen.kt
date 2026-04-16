@@ -26,6 +26,8 @@ import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.ui.components.ProductCard
 import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 import com.extrotarget.extroposv2.ui.sales.components.*
+import com.extrotarget.extroposv2.ui.fnb.TableFloorPlanScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.extrotarget.extroposv2.ui.loyalty.MemberManagementScreen
 
 @Composable
@@ -57,6 +59,7 @@ fun SalesScreen(
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
             SaleHeader(
                 activeMode = activeMode,
+                uiState = uiState,
                 currentTime = currentTime,
                 syncStatus = uiState.syncStatus
             )
@@ -79,19 +82,40 @@ fun SalesScreen(
                         )
                     }
                     "tables" -> {
-                        TableMap(
-                            tables = uiState.tables,
-                            onTableClick = { viewModel.selectTable(it); viewModel.setActiveTab("pos") }
+                        TableFloorPlanScreen(
+                            viewModel = hiltViewModel<com.extrotarget.extroposv2.ui.fnb.viewmodel.TableViewModel>(),
+                            onTableClick = { table ->
+                                viewModel.selectTable(table)
+                                viewModel.setActiveTab("pos")
+                            }
                         )
                     }
                     "staff" -> {
+                        val staffEarningsViewModel: com.extrotarget.extroposv2.ui.analytics.viewmodel.StaffEarningsViewModel = hiltViewModel()
+                        val staffEarningsState by staffEarningsViewModel.uiState.collectAsState()
                         StaffEarnings(
-                            staffList = uiState.staffList
+                            staffEarnings = staffEarningsState.staffEarnings
                         )
                     }
                 }
             }
         }
+    }
+
+    if (uiState.showPaymentMethodDialog) {
+        PaymentMethodDialog(
+            totalAmount = uiState.totalAmount,
+            onSelectMethod = { viewModel.completeSale(it) },
+            onDismiss = { viewModel.completeSale("CLOSE_DIALOG") }
+        )
+    }
+
+    if (uiState.showCashReceivedDialog) {
+        CashReceivedDialog(
+            totalAmount = uiState.totalAmountCash,
+            onConfirm = { viewModel.confirmCashReceived(it) },
+            onDismiss = { viewModel.dismissCashReceived() }
+        )
     }
 
     if (uiState.showConfirmClearCart) {

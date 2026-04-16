@@ -24,5 +24,6 @@ data class Sale(
     val maskedPan: String? = null,
     val approvalCode: String? = null,
     val autoCountSyncStatus: String = "NOT_SYNCED", // NOT_SYNCED, SYNCED, FAILED
-    val autoCountDocNo: String? = null
+    val autoCountDocNo: String? = null,
+    val localSyncStatus: String = "SYNCED" // SYNCED, PENDING (Slaves use PENDING for local-only sales)
 )

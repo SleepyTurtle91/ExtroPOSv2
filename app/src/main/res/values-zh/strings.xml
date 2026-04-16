@@ -10,7 +10,9 @@
     <!-- Sales -->
     <string name="sales_total">总额</string>
     <string name="sales_subtotal">小计</string>
-    <string name="sales_sst">SST 税</string>
+    <string name="sales_tax">税率</string>
+    <string name="sales_discount">折扣</string>
+    <string name="sales_change">找零</string>
     <string name="sales_rounding">舍入</string>
     <string name="sales_pay">付款</string>
     <string name="sales_cart">购物车</string>

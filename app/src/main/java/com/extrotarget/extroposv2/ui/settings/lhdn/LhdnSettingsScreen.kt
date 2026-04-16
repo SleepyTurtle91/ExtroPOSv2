@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun LhdnSettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     viewModel: LhdnSettingsViewModel = hiltViewModel()
 ) {
     val config by viewModel.config.collectAsState()
@@ -42,6 +44,9 @@ fun LhdnSettingsScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToHistory) {
+                        Icon(Icons.Default.History, contentDescription = "Submission History")
+                    }
                     IconButton(onClick = {
                         viewModel.saveConfig(
                             sellerTin, sellerBrn, sellerSstId, msicCode, businessDesc, 

@@ -24,37 +24,24 @@ class SstReportManager @Inject constructor(
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             
             // Header
-            writer.write("Date,Sale ID,Payment Method,Net Amount,Rounding,Tax Amount (6%),Tax Amount (8%),Tax Amount (10%),Total Amount")
+            writer.write("Date,Sale ID,Payment Method,Net Amount,Rounding,Tax Amount,Total Amount")
             writer.newLine()
             
             var count = 0
             var totalNet = BigDecimal.ZERO
             var totalRounding = BigDecimal.ZERO
-            var totalTax6 = BigDecimal.ZERO
-            var totalTax8 = BigDecimal.ZERO
-            var totalTax10 = BigDecimal.ZERO
+            var totalTax = BigDecimal.ZERO
             var totalGross = BigDecimal.ZERO
 
             salesWithItems.forEach { saleWithItems ->
                 val sale = saleWithItems.sale
-                val items = saleWithItems.items
-                
-                // Group tax by rate
-                val tax6 = items.filter { it.taxRate.compareTo(BigDecimal("6.00")) == 0 }
-                    .fold(BigDecimal.ZERO) { acc, item -> acc.add(item.taxAmount) }
-                val tax8 = items.filter { it.taxRate.compareTo(BigDecimal("8.00")) == 0 }
-                    .fold(BigDecimal.ZERO) { acc, item -> acc.add(item.taxAmount) }
-                val tax10 = items.filter { it.taxRate.compareTo(BigDecimal("10.00")) == 0 }
-                    .fold(BigDecimal.ZERO) { acc, item -> acc.add(item.taxAmount) }
                 
                 val netAmount = sale.totalAmount.subtract(sale.taxAmount).subtract(sale.roundingAdjustment)
 
                 // Accumulate totals
                 totalNet = totalNet.add(netAmount)
                 totalRounding = totalRounding.add(sale.roundingAdjustment)
-                totalTax6 = totalTax6.add(tax6)
-                totalTax8 = totalTax8.add(tax8)
-                totalTax10 = totalTax10.add(tax10)
+                totalTax = totalTax.add(sale.taxAmount)
                 totalGross = totalGross.add(sale.totalAmount)
 
                 val line = StringBuilder()
@@ -63,9 +50,7 @@ class SstReportManager @Inject constructor(
                 line.append(sale.paymentMethod).append(",")
                 line.append(netAmount.toPlainString()).append(",")
                 line.append(sale.roundingAdjustment.toPlainString()).append(",")
-                line.append(tax6.toPlainString()).append(",")
-                line.append(tax8.toPlainString()).append(",")
-                line.append(tax10.toPlainString()).append(",")
+                line.append(sale.taxAmount.toPlainString()).append(",")
                 line.append(sale.totalAmount.toPlainString())
                 
                 writer.write(line.toString())
@@ -79,9 +64,7 @@ class SstReportManager @Inject constructor(
             summary.append("TOTAL,,,")
             summary.append(totalNet.toPlainString()).append(",")
             summary.append(totalRounding.toPlainString()).append(",")
-            summary.append(totalTax6.toPlainString()).append(",")
-            summary.append(totalTax8.toPlainString()).append(",")
-            summary.append(totalTax10.toPlainString()).append(",")
+            summary.append(totalTax.toPlainString()).append(",")
             summary.append(totalGross.toPlainString())
             writer.write(summary.toString())
             

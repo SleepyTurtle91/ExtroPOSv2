@@ -59,13 +59,13 @@ fun AnalyticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Business Analytics & SST") },
+                title = { Text("Business Analytics & Tax") },
                 actions = {
                     IconButton(onClick = {
-                        val fileName = "SST_Report_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.startDate))}_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.endDate))}.csv"
+                        val fileName = "Tax_Report_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.startDate))}_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.endDate))}.csv"
                         exportLauncher.launch(fileName)
                     }) {
-                        Icon(Icons.Default.Download, contentDescription = "Export SST CSV")
+                        Icon(Icons.Default.Download, contentDescription = "Export Tax CSV")
                     }
                 }
             )
@@ -114,7 +114,7 @@ fun AnalyticsScreen(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                     SummaryCard(
-                        title = "SST Collected",
+                        title = "Tax Collected",
                         value = CurrencyUtils.format(uiState.totalTax),
                         modifier = Modifier.weight(1f),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -122,11 +122,11 @@ fun AnalyticsScreen(
                 }
             }
 
-            // Per-Rate SST Breakdown
+            // Per-Rate Tax Breakdown
             if (uiState.taxReports.isNotEmpty()) {
                 item {
                     Text(
-                        "SST Breakdown by Rate",
+                        "Tax Breakdown by Rate",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 8.dp)
@@ -264,10 +264,10 @@ fun AnalyticsScreen(
                 }
             }
 
-            // SST Compliance Section
+            // Tax Compliance Section
             item {
                 Text(
-                    "Malaysian Tax Compliance (SST)",
+                    "Tax Compliance",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -281,13 +281,13 @@ fun AnalyticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Ready for SST Filing",
+                            "Ready for Tax Filing",
                             style = MaterialTheme.typography.titleMedium,
                             color = Color(0xFF2E7D32)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "Total SST (6% / 8%): ${CurrencyUtils.format(uiState.totalTax)}",
+                            "Total Tax Collected: ${CurrencyUtils.format(uiState.totalTax)}",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold
                         )

@@ -10,7 +10,9 @@
     <!-- Sales -->
     <string name="sales_total">Jumlah</string>
     <string name="sales_subtotal">Sub-jumlah</string>
-    <string name="sales_sst">Cukai SST</string>
+    <string name="sales_tax">Cukai</string>
+    <string name="sales_discount">Diskaun</string>
+    <string name="sales_change">Baki</string>
     <string name="sales_rounding">Pembundaran</string>
     <string name="sales_pay">Bayar</string>
     <string name="sales_cart">Bakul</string>

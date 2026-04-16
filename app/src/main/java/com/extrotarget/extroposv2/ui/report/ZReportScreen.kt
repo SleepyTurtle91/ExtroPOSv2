@@ -25,11 +25,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
+import com.extrotarget.extroposv2.core.data.repository.SaleRepository
+import com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository
+import com.extrotarget.extroposv2.core.data.model.settings.TaxConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
@@ -47,7 +53,8 @@ data class ZReportUiState(
     val cashIn: String = "0.00",
     val cashOut: String = "0.00",
     val grossSales: BigDecimal = BigDecimal.ZERO,
-    val sstCollected: BigDecimal = BigDecimal.ZERO,
+    val taxCollected: BigDecimal = BigDecimal.ZERO,
+    val taxConfig: TaxConfig? = null,
     val roundingAdjustment: BigDecimal = BigDecimal.ZERO,
     val salesByPaymentMethod: Map<String, BigDecimal> = emptyMap(),
     val isPrinting: Boolean = false,
@@ -80,27 +87,57 @@ data class ZReportUiState(
 // --- ViewModel ---
 
 @HiltViewModel
-class ZReportViewModel @Inject constructor() : ViewModel() {
+class ZReportViewModel @Inject constructor(
+    private val saleRepository: SaleRepository,
+    private val taxRepository: TaxRepository,
+    private val sessionManager: com.extrotarget.extroposv2.core.auth.SessionManager
+) : ViewModel() {
     private val _uiState = MutableStateFlow(ZReportUiState())
     val uiState: StateFlow<ZReportUiState> = _uiState.asStateFlow()
 
     init {
-        loadMockData()
+        loadInitialData()
+        observeSales()
         updateTime()
     }
 
-    private fun loadMockData() {
-        _uiState.update {
-            it.copy(
-                grossSales = BigDecimal("4580.50"),
-                sstCollected = BigDecimal("274.83"),
-                roundingAdjustment = BigDecimal("-0.03"),
-                salesByPaymentMethod = mapOf(
-                    "Cash" to BigDecimal("1250.40"),
-                    "DuitNow" to BigDecimal("2100.10"),
-                    "Card" to BigDecimal("1230.00")
-                )
-            )
+    private fun loadInitialData() {
+        val staff = sessionManager.getCurrentStaff()
+        _uiState.update { it.copy(staffName = staff?.name ?: "Unknown") }
+    }
+
+    private fun observeSales() {
+        viewModelScope.launch {
+            val calendar = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            val startOfDay = calendar.timeInMillis
+            val endOfDay = startOfDay + 86400000L // 24 hours
+
+            combine(
+                saleRepository.getSalesInRange(startOfDay, endOfDay),
+                taxRepository.getTaxConfig()
+            ) { sales, taxConfig ->
+                val gross = sales.sumOf { it.totalAmount }
+                val tax = sales.sumOf { it.taxAmount }
+                val rounding = sales.sumOf { it.roundingAdjustment }
+                
+                val paymentMethods = sales.groupBy { it.paymentMethod }
+                    .mapValues { (_, salesList) -> salesList.sumOf { it.totalAmount.add(it.taxAmount).add(it.roundingAdjustment) } }
+
+                _uiState.update {
+                    it.copy(
+                        grossSales = gross,
+                        taxCollected = tax,
+                        taxConfig = taxConfig,
+                        roundingAdjustment = rounding,
+                        salesByPaymentMethod = paymentMethods
+                    )
+                }
+            }.collectLatest { }
         }
     }
 
@@ -163,6 +200,31 @@ fun ZReportScreen(
     onNavigateBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    ZReportContent(
+        uiState = uiState,
+        onNavigateBack = onNavigateBack,
+        onActualCashChange = { viewModel.onActualCashChange(it) },
+        onFloatChange = { viewModel.onFloatChange(it) },
+        onCashInChange = { viewModel.onCashInChange(it) },
+        onCashOutChange = { viewModel.onCashOutChange(it) },
+        onPrint = { viewModel.printZReport() },
+        onExport = { viewModel.exportToCsv() }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ZReportContent(
+    uiState: ZReportUiState,
+    onNavigateBack: () -> Unit,
+    onActualCashChange: (String) -> Unit,
+    onFloatChange: (String) -> Unit,
+    onCashInChange: (String) -> Unit,
+    onCashOutChange: (String) -> Unit,
+    onPrint: () -> Unit,
+    onExport: () -> Unit
+) {
     val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy, HH:mm:ss", Locale.getDefault()) }
 
     Scaffold(
@@ -193,8 +255,8 @@ fun ZReportScreen(
             ZReportFooter(
                 isPrinting = uiState.isPrinting,
                 isExporting = uiState.isExporting,
-                onPrint = { viewModel.printZReport() },
-                onExport = { viewModel.exportToCsv() }
+                onPrint = onPrint,
+                onExport = onExport
             )
         },
         containerColor = Color(0xFF0F172A) // Slate 900
@@ -210,10 +272,10 @@ fun ZReportScreen(
             Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                 CashDrawerCard(
                     uiState = uiState,
-                    onActualCashChange = { viewModel.onActualCashChange(it) },
-                    onFloatChange = { viewModel.onFloatChange(it) },
-                    onCashInChange = { viewModel.onCashInChange(it) },
-                    onCashOutChange = { viewModel.onCashOutChange(it) }
+                    onActualCashChange = onActualCashChange,
+                    onFloatChange = onFloatChange,
+                    onCashInChange = onCashInChange,
+                    onCashOutChange = onCashOutChange
                 )
                 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -369,8 +431,17 @@ fun DailySummaryCard(uiState: ZReportUiState) {
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color.White.copy(alpha = 0.1f))
 
             SummaryRow("Gross Sales", CurrencyUtils.format(uiState.grossSales), isMain = true)
-            SummaryRow("SST Collected (6%/8%)", CurrencyUtils.format(uiState.sstCollected))
-            SummaryRow("Rounding (5-Sen)", CurrencyUtils.format(uiState.roundingAdjustment))
+            
+            val taxLabel = if (uiState.taxConfig != null) {
+                "${uiState.taxConfig.taxName} Collected"
+            } else if (uiState.taxCollected > BigDecimal.ZERO) {
+                "Tax Collected"
+            } else {
+                "Tax (N/A)"
+            }
+            SummaryRow(taxLabel, CurrencyUtils.format(uiState.taxCollected))
+            
+            SummaryRow("Rounding", CurrencyUtils.format(uiState.roundingAdjustment))
             
             Spacer(modifier = Modifier.height(16.dp))
             Text("Sales by Payment Method", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
@@ -397,7 +468,7 @@ fun DailySummaryCard(uiState: ZReportUiState) {
                 Column {
                     Text("Total Net Revenue", style = MaterialTheme.typography.bodySmall, color = Color(0xFFC7D2FE))
                     Text(
-                        text = CurrencyUtils.format(uiState.grossSales.add(uiState.sstCollected).add(uiState.roundingAdjustment)),
+                        text = CurrencyUtils.format(uiState.grossSales.add(uiState.taxCollected).add(uiState.roundingAdjustment)),
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
@@ -540,6 +611,15 @@ fun ZReportFooter(
 @Composable
 fun ZReportPreview() {
     MaterialTheme {
-        ZReportScreen(viewModel = ZReportViewModel())
+        ZReportContent(
+            uiState = ZReportUiState(),
+            onNavigateBack = {},
+            onActualCashChange = {},
+            onFloatChange = {},
+            onCashInChange = {},
+            onCashOutChange = {},
+            onPrint = {},
+            onExport = {}
+        )
     }
 }

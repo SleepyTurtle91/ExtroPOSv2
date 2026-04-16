@@ -51,6 +51,18 @@ fun TableActionDialog(
                     }
                 }
 
+                if (table.status == TableStatus.AVAILABLE) {
+                    Button(
+                        onClick = { onAction("DELETE") },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Icon(Icons.Default.Delete, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Delete Table")
+                    }
+                }
+
                 if (table.status == TableStatus.DIRTY) {
                     Button(
                         onClick = { onAction("CLEAN") },

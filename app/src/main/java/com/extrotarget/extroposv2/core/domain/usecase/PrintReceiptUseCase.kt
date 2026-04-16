@@ -18,10 +18,12 @@ class PrintReceiptUseCase @Inject constructor(
     private val printerDao: PrinterDao,
     private val receiptDao: ReceiptDao,
     private val lhdnRepository: LhdnRepository,
+    private val taxRepository: com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository,
     @ApplicationContext private val context: Context
 ) {
     suspend operator fun invoke(sale: Sale, items: List<SaleItem>, tableName: String? = null) {
         val receiptConfig = receiptDao.getReceiptConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig()
+        val taxConfig = taxRepository.getTaxConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.TaxConfig()
         val lhdnConfig = lhdnRepository.getConfig().firstOrNull()
         
         val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
@@ -35,6 +37,7 @@ class PrintReceiptUseCase @Inject constructor(
                     sale = sale,
                     items = items,
                     config = receiptConfig,
+                    taxConfig = taxConfig,
                     lhdnSubmission = lhdnSubmission,
                     isSandbox = lhdnConfig?.isSandbox ?: true
                 )

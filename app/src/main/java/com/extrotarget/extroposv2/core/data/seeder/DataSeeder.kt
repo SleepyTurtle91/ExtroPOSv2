@@ -17,79 +17,110 @@ class DataSeeder @Inject constructor(
     private val productRepository: ProductRepository,
     private val categoryRepository: CategoryRepository,
     private val inventoryRepository: InventoryRepository,
-    private val staffRepository: com.extrotarget.extroposv2.core.data.repository.carwash.StaffRepository
+    private val staffRepository: com.extrotarget.extroposv2.core.data.repository.carwash.StaffRepository,
+    private val taxRepository: com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository
 ) {
-    suspend fun seedIfNeeded() {
+    suspend fun seedForMode(
+        mode: BusinessMode,
+        adminName: String? = null,
+        adminUsername: String? = null,
+        adminPin: String? = null
+    ) {
+        seedEssentialData(adminName, adminUsername, adminPin)
+        seedModeSpecificData(mode)
+    }
+
+    private suspend fun seedEssentialData(
+        adminName: String? = null,
+        adminUsername: String? = null,
+        adminPin: String? = null
+    ) {
         val activeStaff = staffRepository.getAllActiveStaff().first()
         if (activeStaff.isEmpty()) {
-            val staffMembers = listOf(
-                Pair("Admin", "123456"),
-                Pair("Ali", "111111"),
-                Pair("Abu", "222222"),
-                Pair("Chong", "333333"),
-                Pair("Muthu", "444444"),
-                Pair("Siti", "555555")
+            val admin = com.extrotarget.extroposv2.core.data.model.carwash.Staff(
+                id = "admin-fixed-id",
+                name = adminName ?: "Administrator",
+                phone = adminUsername ?: "admin", // Using username as phone for now if needed, or update model
+                role = "ADMIN",
+                pin = adminPin ?: "0000",
+                isActive = true
             )
+            staffRepository.saveStaff(admin)
+        } else if (adminPin != null) {
+            // If staff exists (e.g. from partial previous seed), update the admin PIN
+            val admin = staffRepository.getStaffById("admin-fixed-id")
+            if (admin != null) {
+                staffRepository.saveStaff(admin.copy(
+                    name = adminName ?: admin.name,
+                    phone = adminUsername ?: admin.phone,
+                    pin = adminPin
+                ))
+            }
+        }
 
-            staffMembers.forEach { (name, pin) ->
-                staffRepository.saveStaff(
-                    com.extrotarget.extroposv2.core.data.model.carwash.Staff(
-                        id = UUID.randomUUID().toString(),
-                        name = name,
-                        phone = "012345678${staffMembers.indexOf(Pair(name, pin))}",
-                        role = if (name == "Admin") "ADMIN" else "CASHIER",
-                        pin = pin,
-                        isActive = true
-                    )
+        val taxConfig = taxRepository.getTaxConfig().first()
+        if (taxConfig == null) {
+            taxRepository.updateTaxConfig(
+                com.extrotarget.extroposv2.core.data.model.settings.TaxConfig(
+                    id = "default_tax",
+                    defaultTaxRate = BigDecimal("0.00"),
+                    isTaxEnabled = false,
+                    taxName = "Tax"
                 )
-            }
+            )
         }
+    }
 
+    private suspend fun seedModeSpecificData(mode: BusinessMode) {
         val categories = categoryRepository.getAllCategories().first()
-        if (categories.isEmpty()) {
-            val retailCats = listOf("Drinks", "Bakery", "Tech")
-            val fnbCats = listOf("Main", "Drinks")
-            val carwashCats = listOf("Wash", "Service", "Premium")
-            val laundryCats = listOf("Weight Based", "Unit Based")
+        // If already has categories, assume seeded or user-configured
+        if (categories.isNotEmpty()) return
 
-            val allCats = (retailCats + fnbCats + carwashCats + laundryCats).distinct()
-            val catMap = mutableMapOf<String, Category>()
-
-            allCats.forEach { name ->
-                val cat = Category(UUID.randomUUID().toString(), name, "Category for $name")
-                categoryRepository.insertCategory(cat)
-                catMap[name] = cat
-            }
-
-            // Products Seeding from Template
-            val seedProducts = mutableListOf<Product>()
-
-            // Retail
-            seedProducts.add(createSeedProduct("Mineral Water 500ml", "1.50", catMap["Drinks"], BusinessMode.RETAIL))
-            seedProducts.add(createSeedProduct("Gardenia White Bread", "3.20", catMap["Bakery"], BusinessMode.RETAIL))
-            seedProducts.add(createSeedProduct("Powerbank 10k mAh", "89.00", catMap["Tech"], BusinessMode.RETAIL))
-            seedProducts.add(createSeedProduct("USB-C Cable 1m", "15.90", catMap["Tech"], BusinessMode.RETAIL))
-
-            // F&B
-            seedProducts.add(createSeedProduct("Nasi Lemak Ayam Goreng", "12.90", catMap["Main"], BusinessMode.FNB))
-            seedProducts.add(createSeedProduct("Teh Tarik (Kaw)", "2.80", catMap["Drinks"], BusinessMode.FNB))
-            seedProducts.add(createSeedProduct("Roti Canai Plain", "1.50", catMap["Main"], BusinessMode.FNB))
-            seedProducts.add(createSeedProduct("Kopi O Ais", "2.50", catMap["Drinks"], BusinessMode.FNB))
-
-            // Car Wash
-            seedProducts.add(createSeedProduct("Basic Wash (Sedan)", "15.00", catMap["Wash"], BusinessMode.CARWASH))
-            seedProducts.add(createSeedProduct("Interior Vacuum", "10.00", catMap["Service"], BusinessMode.CARWASH))
-            seedProducts.add(createSeedProduct("Nano Mist Treatment", "45.00", catMap["Premium"], BusinessMode.CARWASH))
-
-            // Laundry
-            seedProducts.add(createSeedProduct("Wash & Fold (per kg)", "4.50", catMap["Weight Based"], BusinessMode.LAUNDRY, isWeight = true))
-            seedProducts.add(createSeedProduct("Comforter / Blanket", "15.00", catMap["Unit Based"], BusinessMode.LAUNDRY))
-
-            seedProducts.forEach { product ->
-                productRepository.insertProduct(product)
-                inventoryRepository.adjustStock(product.id, product.stockQuantity, "IN", "Initial template seeding")
-            }
+        val modeCats = when (mode) {
+            BusinessMode.RETAIL -> listOf("Drinks", "Bakery", "Tech")
+            BusinessMode.FNB -> listOf("Main Dishes", "Drinks", "Desserts")
+            BusinessMode.CARWASH -> listOf("Wash Services", "Add-ons", "Premium Detail")
+            BusinessMode.LAUNDRY -> listOf("Weight Based", "Dry Clean")
         }
+
+        val catMap = mutableMapOf<String, Category>()
+        modeCats.forEach { name ->
+            val cat = Category(UUID.randomUUID().toString(), name, "Default $name")
+            categoryRepository.insertCategory(cat)
+            catMap[name] = cat
+        }
+
+        val products = when (mode) {
+            BusinessMode.RETAIL -> listOf(
+                createSeedProduct("Mineral Water 500ml", "1.50", catMap["Drinks"], BusinessMode.RETAIL),
+                createSeedProduct("Gardenia Bread", "3.50", catMap["Bakery"], BusinessMode.RETAIL),
+                createSeedProduct("USB Cable", "15.00", catMap["Tech"], BusinessMode.RETAIL)
+            )
+            BusinessMode.FNB -> listOf(
+                createSeedProduct("Nasi Lemak Ayam", "12.90", catMap["Main Dishes"], BusinessMode.FNB),
+                createSeedProduct("Teh Tarik", "2.80", catMap["Drinks"], BusinessMode.FNB),
+                createSeedProduct("Chocolate Cake", "8.50", catMap["Desserts"], BusinessMode.FNB)
+            )
+            BusinessMode.CARWASH -> listOf(
+                createSeedProduct("Basic Wash", "15.00", catMap["Wash Services"], BusinessMode.CARWASH),
+                createSeedProduct("Vacuum", "5.00", catMap["Add-ons"], BusinessMode.CARWASH),
+                createSeedProduct("Nano Coating", "150.00", catMap["Premium Detail"], BusinessMode.CARWASH)
+            )
+            BusinessMode.LAUNDRY -> listOf(
+                createSeedProduct("Wash & Fold", "4.50", catMap["Weight Based"], BusinessMode.LAUNDRY, isWeight = true),
+                createSeedProduct("Suit Dry Clean", "25.00", catMap["Dry Clean"], BusinessMode.LAUNDRY)
+            )
+        }
+
+        products.forEach { product ->
+            productRepository.insertProduct(product)
+            inventoryRepository.adjustStock(product.id, BigDecimal("100"), "IN", "Initial template seeding")
+        }
+    }
+
+    suspend fun seedIfNeeded() {
+        // Essential only
+        seedEssentialData()
     }
 
     private fun createSeedProduct(
@@ -105,7 +136,7 @@ class DataSeeder @Inject constructor(
             sku = "SKU-${name.take(5).uppercase()}-${UUID.randomUUID().toString().take(4)}",
             barcode = "8000${UUID.randomUUID().toString().filter { it.isDigit() }.take(8)}",
             price = BigDecimal(price),
-            taxRate = BigDecimal("0.06"),
+            taxRate = BigDecimal("0.00"),
             stockQuantity = BigDecimal("100"),
             categoryId = category?.id,
             businessMode = mode.id,

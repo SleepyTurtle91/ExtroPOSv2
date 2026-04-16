@@ -6,7 +6,17 @@ import java.text.NumberFormat
 import java.util.Locale
 
 object CurrencyUtils {
-    private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("en", "MY"))
+    private var currencyLocale = Locale("en", "MY")
+    private var currencyFormat = NumberFormat.getCurrencyInstance(currencyLocale)
+
+    fun updateLocale(locale: Locale) {
+        currencyLocale = locale
+        currencyFormat = NumberFormat.getCurrencyInstance(locale)
+    }
+
+    fun getCurrencySymbol(): String {
+        return currencyFormat.currency?.symbol ?: "$"
+    }
 
     fun format(amount: BigDecimal): String {
         return currencyFormat.format(amount)
@@ -14,7 +24,6 @@ object CurrencyUtils {
 
     /**
      * Calculates tax based on the given rate.
-     * Malaysian SST is typically 5%, 6%, 8%, or 10%.
      */
     fun calculateTax(amount: BigDecimal, taxRate: BigDecimal): BigDecimal {
         return amount.multiply(taxRate)

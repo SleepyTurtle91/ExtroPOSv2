@@ -76,11 +76,13 @@ Phase 9: Standalone Excellence & Advanced Sync (COMPLETE)
    - Scheduled Auto-Backup: Automated database protection using WorkManager for daily external exports.
    - Advanced Data Portability: Comprehensive ZIP exports for external accounting and tax filing with AES-256 encryption.
 
-Phase 10: Final Hardening & LHDN Sandbox (IN PROGRESS)
+Phase 10: Final Hardening & LHDN Sandbox (COMPLETE)
    - Goal: Finalize LHDN e-Invoicing integration and ensure system-wide stability.
-   - LHDN MyInvois Sandbox: Real-time API submission and validation of e-Invoices.
-   - Network Resiliency: Robust handling of intermittent connectivity during sync.
-   - Security Audit: Final verification of encryption and data protection mechanisms.
+   - LHDN MyInvois Sandbox: Real-time API submission, status polling, and validation of e-Invoices.
+   - Staff Commission Engine: Implemented core logic using the defined formula ($E = \sum (P \times C) + F$) for automated earnings calculation.
+   - Payment Versatility: Integrated multi-method payment selection dialog (Cash, Card, DuitNow, E-Wallet) at checkout for compliance and UX.
+   - Multi-terminal Stock Consistency: Real-time inventory synchronization across P2P terminals to prevent overselling.
+   - Security Audit: Verified encryption for sensitive LHDN credentials and data exports.
 
 *Project is now focused on final compliance testing and system hardening.*
 

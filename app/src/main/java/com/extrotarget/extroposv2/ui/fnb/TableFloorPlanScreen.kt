@@ -94,6 +94,7 @@ fun TableFloorPlanScreen(
                     "DIRTY" -> viewModel.updateTableStatus(table, TableStatus.DIRTY)
                     "CLEAN" -> viewModel.updateTableStatus(table, TableStatus.AVAILABLE)
                     "OPEN" -> onTableClick(table)
+                    "DELETE" -> viewModel.deleteTable(table.id)
                 }
                 selectedTableForActions = null
             }

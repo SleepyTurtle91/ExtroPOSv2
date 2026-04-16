@@ -19,6 +19,8 @@ class TableRepository @Inject constructor(
 
     suspend fun updateTable(table: Table) = tableDao.updateTable(table)
 
+    suspend fun deleteTable(tableId: String) = tableDao.deleteTable(tableId)
+
     suspend fun occupyTable(tableId: String, saleId: String) {
         tableDao.updateTableStatus(tableId, TableStatus.OCCUPIED, saleId)
     }
