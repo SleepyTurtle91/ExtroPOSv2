@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
@@ -33,6 +33,7 @@ fun LhdnSettingsScreen(
     var clientSecret by remember(secureClientSecret) { mutableStateOf(secureClientSecret) }
     var isSandbox by remember(config) { mutableStateOf(config?.isSandbox ?: true) }
     var isEnabled by remember(config) { mutableStateOf(config?.isEnabled ?: false) }
+    var thresholdAmount by remember(config) { mutableStateOf(config?.einvoiceThresholdAmount?.toPlainString() ?: "10000.00") }
 
     Scaffold(
         topBar = {
@@ -40,7 +41,7 @@ fun LhdnSettingsScreen(
                 title = { Text("LHDN MyInvois Config") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -48,9 +49,14 @@ fun LhdnSettingsScreen(
                         Icon(Icons.Default.History, contentDescription = "Submission History")
                     }
                     IconButton(onClick = {
+                        val threshold = try { 
+                            java.math.BigDecimal(thresholdAmount) 
+                        } catch (e: Exception) { 
+                            java.math.BigDecimal("10000.00") 
+                        }
                         viewModel.saveConfig(
                             sellerTin, sellerBrn, sellerSstId, msicCode, businessDesc, 
-                            clientId, clientSecret, isSandbox, isEnabled
+                            clientId, clientSecret, isSandbox, isEnabled, threshold
                         )
                         onNavigateBack()
                     }) {
@@ -73,7 +79,7 @@ fun LhdnSettingsScreen(
                 Text("Enable LHDN MyInvois Submission")
             }
 
-            Divider()
+            HorizontalDivider()
 
             Text("Merchant Information", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             
@@ -112,7 +118,7 @@ fun LhdnSettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Divider()
+            HorizontalDivider()
             Text("API Credentials (ERP/POS)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
 
             OutlinedTextField(
@@ -133,6 +139,18 @@ fun LhdnSettingsScreen(
                 Checkbox(checked = isSandbox, onCheckedChange = { isSandbox = it })
                 Text("Enable Sandbox (Pre-Production)")
             }
+
+            HorizontalDivider()
+            Text("Compliance Rules (2026)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+
+            OutlinedTextField(
+                value = thresholdAmount,
+                onValueChange = { thresholdAmount = it },
+                label = { Text("Individual e-Invoice Threshold (RM)") },
+                modifier = Modifier.fillMaxWidth(),
+                supportingText = { Text("Mandatory threshold for Individual e-Invoices. Default is RM 10,000.") }
+            )
         }
     }
 }
+

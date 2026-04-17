@@ -20,6 +20,8 @@ import com.extrotarget.extroposv2.core.domain.usecase.CartUseCase
 import com.extrotarget.extroposv2.core.domain.usecase.PrintReceiptUseCase
 import com.extrotarget.extroposv2.core.domain.usecase.ProcessSaleUseCase
 import com.extrotarget.extroposv2.core.util.audit.AuditManager
+import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.ui.sales.AdminAuthAction
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.CartItem
@@ -27,6 +29,7 @@ import com.extrotarget.extroposv2.ui.sales.SalesUiState
 import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
 import com.extrotarget.extroposv2.core.network.SyncClient
 import com.extrotarget.extroposv2.core.data.repository.hardware.TerminalRepository
+import com.extrotarget.extroposv2.core.data.repository.ShiftRepository
 import com.extrotarget.extroposv2.core.hardware.terminal.TerminalResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -49,12 +52,15 @@ class SalesViewModel @Inject constructor(
     private val duitNowRepository: DuitNowRepository,
     private val securityManager: com.extrotarget.extroposv2.core.util.security.SecurityManager,
     private val syncClient: SyncClient,
+    private val branchSyncManager: com.extrotarget.extroposv2.core.network.BranchSyncManager,
     private val processSaleUseCase: ProcessSaleUseCase,
     private val printReceiptUseCase: PrintReceiptUseCase,
     private val cartUseCase: CartUseCase,
     private val loyaltyRepository: com.extrotarget.extroposv2.core.data.repository.loyalty.LoyaltyRepository,
     private val settingsRepository: SettingsRepository,
     private val taxRepository: com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository,
+    private val shiftRepository: ShiftRepository,
+    private val modifierRepository: com.extrotarget.extroposv2.core.data.repository.fnb.ModifierRepository,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -106,6 +112,13 @@ class SalesViewModel @Inject constructor(
                 _uiState.update { it.copy(loyaltyConfig = config) }
             }
         }
+        viewModelScope.launch {
+            shiftRepository.getActiveShift().collect { shift ->
+                if (shift == null) {
+                    _uiState.update { it.copy(isLocked = true, terminalStatus = "SHIFT_CLOSED") }
+                }
+            }
+        }
     }
 
     fun unlock(pin: String) {
@@ -115,7 +128,7 @@ class SalesViewModel @Inject constructor(
                 _uiState.update { it.copy(isLocked = false, adminAuthError = null) }
                 auditManager.logAction("LOGIN", "Staff ${staff.name} logged in", "AUTH")
             } else {
-                _uiState.update { it.copy(adminAuthError = "Invalid PIN") }
+                _uiState.update { it.copy(adminAuthError = context.getString(R.string.invalid_pin)) }
             }
         }
     }
@@ -200,7 +213,7 @@ class SalesViewModel @Inject constructor(
                             taxRate = item.taxRate,
                             assignedStaffId = item.assignedStaffId,
                             assignedStaffName = item.assignedStaffName,
-                            modifiers = item.modifiers?.split(", ") ?: emptyList(),
+                            selectedModifiers = emptyList(), // Need to load modifiers from DB if persistent
                             discount = item.discountLabel?.let { label -> 
                                 com.extrotarget.extroposv2.ui.sales.Discount(
                                     type = com.extrotarget.extroposv2.ui.sales.DiscountType.FIXED,
@@ -233,9 +246,12 @@ class SalesViewModel @Inject constructor(
                 
                 val sale = com.extrotarget.extroposv2.core.data.model.Sale(
                     id = saleId,
+                    subtotal = currentState.subtotal,
                     totalAmount = currentState.totalAmount,
                     taxAmount = currentState.totalTax,
+                    serviceChargeAmount = currentState.totalServiceCharge,
                     discountAmount = currentState.totalDiscount,
+                    roundingAdjustment = currentState.roundingAdjustment,
                     paymentMethod = "PENDING",
                     status = "PENDING",
                     tableId = table.id,
@@ -243,6 +259,7 @@ class SalesViewModel @Inject constructor(
                 )
 
                 val allSaleItems = currentState.cartItems.map { cartItem ->
+                    val scAmount = currentState.taxConfig?.let { cartItem.calculateServiceCharge(it.serviceChargeRate) } ?: BigDecimal.ZERO
                     com.extrotarget.extroposv2.core.data.model.SaleItem(
                         id = cartItem.id,
                         saleId = saleId,
@@ -252,10 +269,12 @@ class SalesViewModel @Inject constructor(
                         unitPrice = cartItem.unitPrice,
                         taxRate = cartItem.taxRate,
                         taxAmount = cartItem.taxAmount,
+                        serviceChargeRate = currentState.taxConfig?.serviceChargeRate ?: BigDecimal.ZERO,
+                        serviceChargeAmount = scAmount,
                         discountAmount = cartItem.discountAmount,
                         discountLabel = cartItem.discount?.label,
-                        totalAmount = cartItem.totalPrice.add(cartItem.taxAmount),
-                        modifiers = cartItem.modifiers.joinToString(", ").takeIf { it.isNotEmpty() },
+                        totalAmount = cartItem.totalPrice.add(cartItem.taxAmount).add(scAmount),
+                        modifiers = cartItem.selectedModifiers.joinToString(", ") { "${it.name}${if (it.priceAdjustment > BigDecimal.ZERO) " (+RM${it.priceAdjustment})" else ""}" }.takeIf { it.isNotEmpty() },
                         printerTag = cartItem.product.printerTag ?: "KITCHEN",
                         status = "SENT"
                     )
@@ -269,10 +288,11 @@ class SalesViewModel @Inject constructor(
                         unsentItems.any { it.id == item.id }
                     }
                     try {
+                        // Batch print by printer tag to avoid multiple connections if possible, 
+                        // though PrintReceiptUseCase handles grouping.
                         printReceiptUseCase.printOrderSlip(saleId, table.name, itemsToPrint)
                     } catch (e: Exception) {
-                        // Log printing error but don't fail the save
-                        android.util.Log.e("SalesViewModel", "Printing failed", e)
+                        android.util.Log.e("SalesViewModel", "Kitchen printing failed", e)
                     }
                 }
 
@@ -340,6 +360,10 @@ class SalesViewModel @Inject constructor(
         }
     }
 
+    fun saveOrder() {
+        sendToKitchen()
+    }
+
     fun addWeightBasedItem(weight: BigDecimal) {
         val product = _uiState.value.productAwaitingWeight ?: return
         _uiState.update { state ->
@@ -383,14 +407,23 @@ class SalesViewModel @Inject constructor(
     }
 
     fun showModifierSelection(item: CartItem) {
-        _uiState.update { it.copy(itemAwaitingModifiers = item) }
+        viewModelScope.launch {
+            val availableModifiers = modifierRepository.getModifiersForProduct(
+                item.product.id, 
+                item.product.categoryId
+            )
+            _uiState.update { it.copy(
+                itemAwaitingModifiers = item,
+                availableModifiers = availableModifiers // We'll need to add this to SalesUiState
+            ) }
+        }
     }
 
     fun dismissModifierSelection() {
         _uiState.update { it.copy(itemAwaitingModifiers = null) }
     }
 
-    fun toggleModifier(modifier: String) {
+    fun toggleModifier(modifier: com.extrotarget.extroposv2.core.data.model.Modifier) {
         val item = _uiState.value.itemAwaitingModifiers ?: return
         _uiState.update { state ->
             val updatedItems = cartUseCase.toggleModifier(state.cartItems, item, modifier)
@@ -457,10 +490,11 @@ class SalesViewModel @Inject constructor(
                         _uiState.update { it.copy(itemAwaitingDiscount = action.item) }
                         executeApplyDiscount(action.discount)
                     }
+                    is AdminAuthAction.OpenDrawer -> executeOpenDrawer()
                     else -> {}
                 }
             } else {
-                _uiState.update { it.copy(adminAuthError = "Invalid Admin PIN") }
+                _uiState.update { it.copy(adminAuthError = context.getString(R.string.invalid_admin_pin)) }
             }
         }
     }
@@ -562,7 +596,7 @@ class SalesViewModel @Inject constructor(
                 discountAmount = cartItem.discountAmount,
                 discountLabel = cartItem.discount?.label,
                 totalAmount = cartItem.totalPrice.add(cartItem.taxAmount),
-                modifiers = cartItem.modifiers.joinToString(", ").takeIf { it.isNotEmpty() },
+                modifiers = cartItem.selectedModifiers.joinToString(", ") { "${it.name}${if (it.priceAdjustment > BigDecimal.ZERO) " (+RM${it.priceAdjustment})" else ""}" }.takeIf { it.isNotEmpty() },
                 assignedStaffId = cartItem.assignedStaffId,
                 assignedStaffName = cartItem.assignedStaffName,
                 printerTag = cartItem.product.printerTag ?: "RECEIPT"
@@ -596,6 +630,11 @@ class SalesViewModel @Inject constructor(
             selectedTableId = currentState.selectedTable?.id,
             buyerInfo = currentState.selectedMember?.let { BuyerInfo(name = it.name, contact = it.phoneNumber) }
         )
+
+        // Branch Sync: Push sale to HQ asynchronously
+        viewModelScope.launch {
+            branchSyncManager.pushSaleToHQ(SaleWithItems(sale, saleItems))
+        }
 
         currentState.selectedMember?.let { member ->
             val loyaltyConfig = loyaltyRepository.getConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.loyalty.LoyaltyConfig()
@@ -651,6 +690,20 @@ class SalesViewModel @Inject constructor(
             val sale = saleRepository.getSaleById(saleId) ?: return@launch
             val items = saleRepository.getItemsBySaleId(saleId)
             printReceiptUseCase(sale, items, _uiState.value.selectedTable?.name)
+        }
+    }
+
+    fun openDrawer() {
+        _uiState.update { it.copy(showAdminAuthDialog = true, adminAuthAction = AdminAuthAction.OpenDrawer) }
+    }
+
+    private fun executeOpenDrawer() {
+        viewModelScope.launch {
+            val currentShift = shiftRepository.getActiveShift().firstOrNull()
+            val staffName = currentShift?.staffName ?: "Unknown Staff"
+            
+            printReceiptUseCase.openCashDrawer()
+            auditManager.logAction("OPEN_DRAWER", "Manual drawer opening by $staffName", "SECURITY", "WARNING")
         }
     }
 

@@ -61,4 +61,25 @@
     <string name="btn_confirm">确认</string>
     <string name="btn_save">保存</string>
     <string name="btn_delete">删除</string>
+
+    <!-- Shift Management -->
+    <string name="shift_open_new">开启新班次</string>
+    <string name="shift_enter_float">输入抽屉内的初始备用金</string>
+    <string name="shift_start_float_label">初始备用金 (MYR)</string>
+    <string name="shift_start_btn">开始班次</string>
+    <string name="shift_active">活跃班次</string>
+    <string name="shift_closed">已结班</string>
+    <string name="shift_history">班次历史</string>
+    <string name="shift_details">班次详情</string>
+    <string name="shift_start_time">开始时间</string>
+    <string name="shift_end_time">结束时间</string>
+    <string name="shift_staff">员工</string>
+    <string name="shift_expected_cash">预计现金</string>
+    <string name="shift_actual_cash">实际现金</string>
+    <string name="shift_difference">差额</string>
+    <string name="shift_total_sales">总销售额</string>
+    <string name="shift_total_tax">总税收</string>
+    <string name="shift_z_report">Z-报告 (日结)</string>
+    <string name="shift_print_z_report">打印 Z-报告</string>
+    <string name="shift_no_history">未找到班次历史记录。</string>
 </resources>

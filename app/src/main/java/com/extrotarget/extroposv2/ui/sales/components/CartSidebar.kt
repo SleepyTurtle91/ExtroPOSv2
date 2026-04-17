@@ -59,7 +59,7 @@ fun CartSidebar(
             ) {
                 Column {
                     Text(
-                        "BILLING",
+                        stringResource(R.string.sales_cart).uppercase(),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Black,
                         color = Color(0xFF0F172A)
@@ -196,6 +196,11 @@ fun CartSidebar(
                         if (uiState.totalDiscount > BigDecimal.ZERO) {
                             SummaryRow(stringResource(R.string.sales_discount).uppercase(), "-${CurrencyUtils.format(uiState.totalDiscount)}", valueColor = Color(0xFFEF4444))
                         }
+                        if (uiState.totalServiceCharge > BigDecimal.ZERO) {
+                            val scRate = uiState.taxConfig?.serviceChargeRate?.stripTrailingZeros()?.toPlainString() ?: "0"
+                            val scLabel = "SERVICE CHARGE (${scRate}%)"
+                            SummaryRow(scLabel, CurrencyUtils.format(uiState.totalServiceCharge))
+                        }
                     }
                     
                     HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), color = Color(0xFFE2E8F0))
@@ -205,7 +210,7 @@ fun CartSidebar(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("TOTAL PAYABLE", color = Color(0xFF0F172A), fontWeight = FontWeight.Black, fontSize = 14.sp)
+                        Text(stringResource(R.string.sales_total_payable).uppercase(), color = Color(0xFF0F172A), fontWeight = FontWeight.Black, fontSize = 14.sp)
                         Text(
                             CurrencyUtils.format(uiState.totalAmount),
                             color = Color(0xFF3B82F6),
@@ -227,7 +232,7 @@ fun CartSidebar(
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = if (allSaved) Color(0xFF10B981) else Color(0xFF475569)
                                 ),
-                                enabled = uiState.cartItems.isNotEmpty() && !allSaved
+                                enabled = uiState.cartItems.isNotEmpty()
                             ) {
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Icon(
@@ -236,7 +241,7 @@ fun CartSidebar(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
-                                        if (allSaved) "SAVED" else "SAVE",
+                                        if (allSaved) "SENT" else "SEND",
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Black
                                     )
@@ -253,7 +258,7 @@ fun CartSidebar(
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(24.dp))
-                                Text("PROCEED TO PAY", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                                Text(stringResource(R.string.sales_pay).uppercase(), fontWeight = FontWeight.Black, fontSize = 18.sp)
                             }
                         }
                     }
@@ -314,9 +319,9 @@ private fun CartItemTile(
                             )
                         }
                     }
-                    if (item.modifiers.isNotEmpty()) {
+                    if (item.selectedModifiers.isNotEmpty()) {
                         Text(
-                            item.modifiers.joinToString(", ").uppercase(),
+                            item.selectedModifiers.joinToString(", ") { it.name }.uppercase(),
                             color = activeColor,
                             fontWeight = FontWeight.Black,
                             fontSize = 9.sp,

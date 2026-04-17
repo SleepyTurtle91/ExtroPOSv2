@@ -30,6 +30,11 @@ object CurrencyUtils {
             .divide(BigDecimal("100"), 2, RoundingMode.HALF_EVEN)
     }
 
+    fun calculateServiceCharge(amount: BigDecimal, serviceChargeRate: BigDecimal): BigDecimal {
+        return amount.multiply(serviceChargeRate)
+            .divide(BigDecimal("100"), 2, RoundingMode.HALF_EVEN)
+    }
+
     /**
      * Calculates the total amount including tax and applying discounts.
      */

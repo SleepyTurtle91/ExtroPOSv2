@@ -28,6 +28,16 @@ object EscPosEncoder {
                     out.write(setFontSize(1))
                     out.write(setBold(false))
                 }
+                is PrintCommand.BigText -> {
+                    out.write(setAlignment(command.alignment))
+                    out.write(setFontSize(2)) // Double height/width
+                    out.write(setBold(true))
+                    out.write(command.content.toByteArray())
+                    out.write(LF.toInt())
+                    // Reset
+                    out.write(setFontSize(1))
+                    out.write(setBold(false))
+                }
                 is PrintCommand.Text -> {
                     out.write(setAlignment(command.alignment))
                     out.write(setBold(command.isBold))
@@ -38,6 +48,11 @@ object EscPosEncoder {
                     out.write(setAlignment(Alignment.CENTER))
                     out.write("--------------------------------".toByteArray())
                     out.write(LF.toInt())
+                }
+                is PrintCommand.Buzzer -> {
+                    // GS ( A pL pH n c t
+                    // Trigger buzzer/beeper
+                    out.write(byteArrayOf(GS, 0x28, 0x41, 0x04, 0x00, 0x30, 0x02, 0x01, 0x03))
                 }
                 is PrintCommand.Feed -> {
                     repeat(command.lines) { out.write(LF.toInt()) }

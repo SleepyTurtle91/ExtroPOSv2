@@ -9,6 +9,9 @@ interface ProductDao {
     @Query("SELECT * FROM products")
     fun getAllProducts(): Flow<List<Product>>
 
+    @Query("SELECT * FROM products")
+    suspend fun getAllProductsNow(): List<Product>
+
     @Query("SELECT * FROM products WHERE categoryId = :categoryId")
     fun getProductsByCategory(categoryId: String): Flow<List<Product>>
 
@@ -17,6 +20,9 @@ interface ProductDao {
 
     @Delete
     suspend fun deleteProduct(product: Product)
+
+    @Update
+    suspend fun updateProduct(product: Product)
 
     @Query("SELECT * FROM products WHERE id = :id")
     suspend fun getProductById(id: String): Product?

@@ -31,8 +31,8 @@ import java.math.RoundingMode
 @Composable
 fun ModifierDialog(
     item: CartItem,
-    availableModifiers: List<String>,
-    onToggleModifier: (String) -> Unit,
+    availableModifiers: List<com.extrotarget.extroposv2.core.data.model.Modifier>,
+    onToggleModifier: (com.extrotarget.extroposv2.core.data.model.Modifier) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -53,7 +53,7 @@ fun ModifierDialog(
                     ) {
                         Column {
                             Text(
-                                "SELECT MODIFIERS",
+                                stringResource(R.string.sales_select_modifiers).uppercase(),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 24.sp,
                                 color = Color(0xFF0F172A)
@@ -82,23 +82,37 @@ fun ModifierDialog(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         availableModifiers.forEach { modifier ->
-                            val isSelected = item.modifiers.contains(modifier)
+                            val isSelected = item.selectedModifiers.any { it.id == modifier.id }
+                            val isAvailable = modifier.isAvailable
                             FilterChip(
                                 selected = isSelected,
                                 onClick = { onToggleModifier(modifier) },
+                                enabled = isAvailable,
                                 label = { 
-                                    Text(
-                                        modifier, 
-                                        fontWeight = FontWeight.Black,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp)
-                                    ) 
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            modifier.name, 
+                                            fontWeight = FontWeight.Black,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                        )
+                                        if (modifier.priceAdjustment > BigDecimal.ZERO) {
+                                            Text(
+                                                "+RM ${modifier.priceAdjustment}",
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (isSelected) Color.White else if (isAvailable) Color(0xFFF59E0B) else Color(0xFFCBD5E1)
+                                            )
+                                        }
+                                    }
                                 },
                                 shape = RoundedCornerShape(16.dp),
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = Color(0xFF3B82F6),
                                     selectedLabelColor = Color.White,
                                     containerColor = Color(0xFFF8FAFC),
-                                    labelColor = Color(0xFF64748B)
+                                    labelColor = Color(0xFF64748B),
+                                    disabledContainerColor = Color(0xFFF1F5F9),
+                                    disabledLabelColor = Color(0xFF94A3B8)
                                 ),
                                 border = FilterChipDefaults.filterChipBorder(
                                     borderColor = Color(0xFFE2E8F0),
@@ -120,7 +134,7 @@ fun ModifierDialog(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
                     ) {
-                        Text("SAVE SELECTION", fontWeight = FontWeight.Black, fontSize = 16.sp)
+                        Text(stringResource(R.string.sales_save_selection).uppercase(), fontWeight = FontWeight.Black, fontSize = 16.sp)
                     }
                 }
             }
@@ -152,14 +166,14 @@ fun CashReceivedDialog(
             ) {
                 Column(modifier = Modifier.padding(32.dp)) {
                     Text(
-                        "CASH RECEIVED",
+                        stringResource(R.string.sales_cash_received).uppercase(),
                         fontWeight = FontWeight.Black,
                         fontSize = 24.sp,
                         color = Color(0xFF0F172A)
                     )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "TOTAL PAYABLE: ${CurrencyUtils.format(totalAmount)}",
+                        "${stringResource(R.string.sales_total_payable).uppercase()}: ${CurrencyUtils.format(totalAmount)}",
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF3B82F6)
                     )
@@ -173,7 +187,7 @@ fun CashReceivedDialog(
                                 receivedText = newValue 
                             }
                         },
-                        label = { Text("Amount Received") },
+                        label = { Text(stringResource(R.string.sales_amount_received)) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Decimal
@@ -196,7 +210,7 @@ fun CashReceivedDialog(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("CHANGE TO GIVE", fontWeight = FontWeight.Bold, color = Color(0xFF166534))
+                                Text(stringResource(R.string.sales_change_to_give).uppercase(), fontWeight = FontWeight.Bold, color = Color(0xFF166534))
                                 Text(
                                     CurrencyUtils.format(change),
                                     fontWeight = FontWeight.Black,
@@ -236,7 +250,7 @@ fun CashReceivedDialog(
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
                     ) {
-                        Text("CONFIRM PAYMENT", fontWeight = FontWeight.Black, fontSize = 18.sp)
+                        Text(stringResource(R.string.sales_confirm_payment).uppercase(), fontWeight = FontWeight.Black, fontSize = 18.sp)
                     }
                 }
             }
@@ -250,7 +264,7 @@ fun TerminalProgressDialog(status: String?, totalAmount: BigDecimal) {
     AlertDialog(
         onDismissRequest = { },
         properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
-        title = { Text("Processing Card Payment") },
+        title = { Text(stringResource(R.string.sales_processing_card)) },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -258,9 +272,9 @@ fun TerminalProgressDialog(status: String?, totalAmount: BigDecimal) {
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
                 Spacer(Modifier.height(16.dp))
-                Text(status ?: "Communicating with terminal...", style = MaterialTheme.typography.bodyLarge)
+                Text(status ?: stringResource(R.string.sales_terminal_comm), style = MaterialTheme.typography.bodyLarge)
                 Spacer(Modifier.height(8.dp))
-                Text("Total: ${CurrencyUtils.format(totalAmount)}", fontWeight = FontWeight.Bold)
+                Text("${stringResource(R.string.sales_total)}: ${CurrencyUtils.format(totalAmount)}", fontWeight = FontWeight.Bold)
             }
         },
         confirmButton = {}
@@ -305,8 +319,8 @@ fun OrderSuccessDialog(
                             }
                         }
                         Spacer(Modifier.height(24.dp))
-                        Text("ORDER PAID", fontWeight = FontWeight.Black, fontSize = 28.sp, color = Color(0xFF065F46), letterSpacing = (-1).sp)
-                        Text("TRANSACTION SUCCESSFUL", color = Color(0xFF059669), fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.Center)
+                        Text(stringResource(R.string.sales_order_paid).uppercase(), fontWeight = FontWeight.Black, fontSize = 28.sp, color = Color(0xFF065F46), letterSpacing = (-1).sp)
+                        Text(stringResource(R.string.sales_transaction_success).uppercase(), color = Color(0xFF059669), fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.Center)
                         
                         Spacer(Modifier.height(48.dp))
                         
@@ -322,14 +336,14 @@ fun OrderSuccessDialog(
                                 }
                             }
                             Spacer(Modifier.height(12.dp))
-                            Text("SCAN FOR E-RECEIPT", fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF059669))
+                            Text(stringResource(R.string.sales_scan_e_receipt).uppercase(), fontSize = 10.sp, fontWeight = FontWeight.Black, color = Color(0xFF059669))
                         }
                     }
 
                     Column(modifier = Modifier.weight(0.6f).padding(40.dp)) {
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                             Column {
-                                Text("TICKET SUMMARY", fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color(0xFF64748B))
+                                Text(stringResource(R.string.sales_ticket_summary).uppercase(), fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color(0xFF64748B))
                                 Text("#${uiState.lastSaleId?.takeLast(8)?.uppercase() ?: "PENDING"}", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color(0xFF0F172A))
                             }
                             IconButton(onClick = onDismiss) {
@@ -350,19 +364,23 @@ fun OrderSuccessDialog(
                             if (uiState.totalDiscount > BigDecimal.ZERO) {
                                 SummaryDetailRow(stringResource(R.string.sales_discount).uppercase(), "-${CurrencyUtils.format(uiState.totalDiscount)}", valueColor = Color(0xFFEF4444))
                             }
+                            if (uiState.totalServiceCharge > BigDecimal.ZERO) {
+                                val scLabel = "SERVICE CHARGE (${uiState.taxConfig?.serviceChargeRate?.stripTrailingZeros()?.toPlainString()}%)"
+                                SummaryDetailRow(scLabel, CurrencyUtils.format(uiState.totalServiceCharge))
+                            }
                             if (uiState.roundingAdjustment != BigDecimal.ZERO) {
                                 SummaryDetailRow(stringResource(R.string.sales_rounding).uppercase(), CurrencyUtils.format(uiState.roundingAdjustment))
                             }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFF1F5F9))
                         
                         if (uiState.lastPaymentMethod == "CASH" && uiState.cashReceived > BigDecimal.ZERO) {
-                            SummaryDetailRow("CASH RECEIVED", CurrencyUtils.format(uiState.cashReceived))
+                            SummaryDetailRow(stringResource(R.string.sales_cash_received).uppercase(), CurrencyUtils.format(uiState.cashReceived))
                             SummaryDetailRow(stringResource(R.string.sales_change).uppercase(), CurrencyUtils.format(uiState.changeAmount), valueColor = Color(0xFF166534))
                             Spacer(Modifier.height(8.dp))
                         }
 
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Text("TOTAL PAID", fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color(0xFF0F172A))
+                                Text(stringResource(R.string.sales_total_paid).uppercase(), fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color(0xFF0F172A))
                                 Text(CurrencyUtils.format(uiState.totalAmountCash), fontWeight = FontWeight.Black, fontSize = 36.sp, color = Color(0xFF3B82F6), letterSpacing = (-1).sp)
                             }
                         }
@@ -373,10 +391,10 @@ fun OrderSuccessDialog(
                             OutlinedButton(onClick = onReprint, modifier = Modifier.height(64.dp).weight(1f), shape = RoundedCornerShape(16.dp), border = BorderStroke(2.dp, Color(0xFFE2E8F0))) {
                                 Icon(Icons.Default.Print, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
-                                Text("PRINT RECEIPT", fontWeight = FontWeight.Black)
+                                Text(stringResource(R.string.sales_print_receipt).uppercase(), fontWeight = FontWeight.Black)
                             }
                             Button(onClick = onDismiss, modifier = Modifier.height(64.dp).weight(1f), shape = RoundedCornerShape(16.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))) {
-                                Text("NEXT ORDER", fontWeight = FontWeight.Black)
+                                Text(stringResource(R.string.sales_next_order).uppercase(), fontWeight = FontWeight.Black)
                             }
                         }
                     }
@@ -419,13 +437,13 @@ fun PaymentMethodDialog(
                     ) {
                         Column {
                             Text(
-                                "PAYMENT METHOD",
+                                stringResource(R.string.sales_payment_method).uppercase(),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 24.sp,
                                 color = Color(0xFF0F172A)
                             )
                             Text(
-                                "TOTAL TO PAY: ${CurrencyUtils.format(totalAmount)}",
+                                "${stringResource(R.string.sales_total_payable).uppercase()}: ${CurrencyUtils.format(totalAmount)}",
                                 color = Color(0xFF3B82F6),
                                 fontWeight = FontWeight.Black,
                                 fontSize = 14.sp
@@ -446,14 +464,14 @@ fun PaymentMethodDialog(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         PaymentMethodCard(
-                            name = "CASH",
+                            name = stringResource(R.string.sales_cash).uppercase(),
                             icon = Icons.Default.Payments,
                             color = Color(0xFF10B981),
                             modifier = Modifier.weight(1f),
                             onClick = { onSelectMethod("CASH") }
                         )
                         PaymentMethodCard(
-                            name = "CARD",
+                            name = stringResource(R.string.sales_card).uppercase(),
                             icon = Icons.Default.CreditCard,
                             color = Color(0xFF3B82F6),
                             modifier = Modifier.weight(1f),
@@ -468,14 +486,14 @@ fun PaymentMethodDialog(
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         PaymentMethodCard(
-                            name = "DUITNOW QR",
+                            name = stringResource(R.string.sales_duitnow_qr).uppercase(),
                             icon = Icons.Default.QrCodeScanner,
                             color = Color(0xFFEC4899),
                             modifier = Modifier.weight(1f),
                             onClick = { onSelectMethod("DUITNOW") }
                         )
                         PaymentMethodCard(
-                            name = "E-WALLET",
+                            name = stringResource(R.string.sales_e_wallet).uppercase(),
                             icon = Icons.Default.AccountBalanceWallet,
                             color = Color(0xFFF59E0B),
                             modifier = Modifier.weight(1f),
@@ -486,7 +504,7 @@ fun PaymentMethodDialog(
                     Spacer(Modifier.height(32.dp))
                     
                     Text(
-                        "All transactions are recorded securely for LHDN compliance.",
+                        stringResource(R.string.sales_lhdn_compliance),
                         color = Color(0xFF94A3B8),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,

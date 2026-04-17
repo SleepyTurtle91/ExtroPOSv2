@@ -14,7 +14,8 @@ data class Member(
     val lifetimePointsEarned: BigDecimal = BigDecimal.ZERO, // For tier calculation
     val joinDate: Long = System.currentTimeMillis(),
     val tier: String = "BRONZE", // BRONZE, SILVER, GOLD
-    val status: String = "ACTIVE"
+    val status: String = "ACTIVE",
+    val lastSyncTimestamp: Long = 0L
 )
 
 @Entity(tableName = "loyalty_transactions")

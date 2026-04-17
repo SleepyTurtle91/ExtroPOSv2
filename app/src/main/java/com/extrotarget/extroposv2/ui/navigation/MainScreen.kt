@@ -39,7 +39,6 @@ fun MainScreen(
     val licenseInfo by viewModel.licenseInfo.collectAsState()
     val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState()
     val navController = rememberNavController()
-    var showActivationDialog by remember { mutableStateOf(false) }
     
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -166,7 +165,8 @@ fun MainScreen(
             // Main Content Area
             Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                 NavGraph(
-                    navController = navController
+                    navController = navController,
+                    sessionManager = sessionManager
                 )
             }
         }

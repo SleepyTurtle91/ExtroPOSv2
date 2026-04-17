@@ -28,7 +28,7 @@ data class SalesUiState(
     val lastPaymentMethod: String? = null,
     val selectedTable: com.extrotarget.extroposv2.core.data.model.fnb.Table? = null,
     val itemAwaitingModifiers: CartItem? = null,
-    val availableModifiers: List<String> = listOf("Bungkus", "Ikat Tepi", "Kurang Manis", "Tambah Pedas", "No Veggie"),
+    val availableModifiers: List<com.extrotarget.extroposv2.core.data.model.Modifier> = emptyList(),
     val cartDiscount: Discount? = null,
     val taxConfig: com.extrotarget.extroposv2.core.data.model.settings.TaxConfig? = null,
     val showDiscountDialog: Boolean = false,
@@ -73,13 +73,19 @@ data class SalesUiState(
 
     val totalDiscount: BigDecimal = itemDiscounts.add(cartDiscountAmount).add(redeemedAmount)
     
-    val totalTax: BigDecimal = if (taxConfig?.isTaxEnabled == true) {
+    val totalServiceCharge: BigDecimal = if (taxConfig?.isServiceChargeEnabled == true) {
         cartItems.fold(BigDecimal.ZERO) { acc, item ->
-            acc.add(item.taxAmount)
+            acc.add(item.calculateServiceCharge(taxConfig.serviceChargeRate))
         }
     } else BigDecimal.ZERO
 
-    val amountBeforeRounding: BigDecimal = subtotal.subtract(totalDiscount).add(totalTax)
+    val totalTax: BigDecimal = if (taxConfig?.isTaxEnabled == true) {
+        val baseForTax = subtotal.subtract(totalDiscount).add(totalServiceCharge)
+        baseForTax.multiply(taxConfig.defaultTaxRate)
+            .divide(BigDecimal("100"), 2, java.math.RoundingMode.HALF_EVEN)
+    } else BigDecimal.ZERO
+
+    val amountBeforeRounding: BigDecimal = subtotal.subtract(totalDiscount).add(totalServiceCharge).add(totalTax)
     
     private val roundingResult = RoundingUtils.calculateBNMRounding(amountBeforeRounding)
     
@@ -113,6 +119,7 @@ enum class DiscountType {
 sealed class AdminAuthAction {
     data class RemoveItem(val item: CartItem) : AdminAuthAction()
     data class ApplyDiscount(val item: CartItem?, val discount: Discount?) : AdminAuthAction()
+    object OpenDrawer : AdminAuthAction()
 }
 
 data class CartItem(
@@ -123,11 +130,17 @@ data class CartItem(
     val taxRate: BigDecimal,
     val assignedStaffId: String? = null,
     val assignedStaffName: String? = null,
-    val modifiers: List<String> = emptyList(),
+    val selectedModifiers: List<com.extrotarget.extroposv2.core.data.model.Modifier> = emptyList(),
     val discount: Discount? = null,
     val isSentToKitchen: Boolean = false
 ) {
-    val totalBeforeDiscount: BigDecimal = unitPrice.multiply(quantity)
+    val modifiersTotal: BigDecimal = selectedModifiers.fold(BigDecimal.ZERO) { acc, mod ->
+        acc.add(mod.priceAdjustment)
+    }
+
+    val unitPriceWithModifiers: BigDecimal = unitPrice.add(modifiersTotal)
+
+    val totalBeforeDiscount: BigDecimal = unitPriceWithModifiers.multiply(quantity)
     
     val discountAmount: BigDecimal = discount?.calculateDiscount(totalBeforeDiscount) ?: BigDecimal.ZERO
 
@@ -135,4 +148,9 @@ data class CartItem(
 
     val taxAmount: BigDecimal = totalPrice.multiply(taxRate)
         .divide(BigDecimal("100"), 2, java.math.RoundingMode.HALF_EVEN)
+
+    fun calculateServiceCharge(serviceChargeRate: BigDecimal): BigDecimal {
+        return totalPrice.multiply(serviceChargeRate)
+            .divide(BigDecimal("100"), 2, java.math.RoundingMode.HALF_EVEN)
+    }
 }

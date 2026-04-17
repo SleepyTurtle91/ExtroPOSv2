@@ -7,5 +7,6 @@ import androidx.room.PrimaryKey
 data class Category(
     @PrimaryKey val id: String,
     val name: String,
-    val description: String? = null
+    val description: String? = null,
+    val isAvailable: Boolean = true
 )

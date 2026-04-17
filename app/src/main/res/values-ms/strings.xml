@@ -61,4 +61,25 @@
     <string name="btn_confirm">Sahkan</string>
     <string name="btn_save">Simpan</string>
     <string name="btn_delete">Padam</string>
+
+    <!-- Shift Management -->
+    <string name="shift_open_new">Buka Syif Baru</string>
+    <string name="shift_enter_float">Masukkan tunai apungan permulaan dalam laci</string>
+    <string name="shift_start_float_label">Tunai Apungan Permulaan (MYR)</string>
+    <string name="shift_start_btn">MULAKAN SYIF</string>
+    <string name="shift_active">Syif Aktif</string>
+    <string name="shift_closed">Syif Ditutup</string>
+    <string name="shift_history">Sejarah Syif</string>
+    <string name="shift_details">Butiran Syif</string>
+    <string name="shift_start_time">Masa Mula</string>
+    <string name="shift_end_time">Masa Tamat</string>
+    <string name="shift_staff">Pekerja</string>
+    <string name="shift_expected_cash">Jangkaan Tunai</string>
+    <string name="shift_actual_cash">Tunai Sebenar</string>
+    <string name="shift_difference">Perbezaan</string>
+    <string name="shift_total_sales">Jumlah Jualan</string>
+    <string name="shift_total_tax">Jumlah Cukai</string>
+    <string name="shift_z_report">Laporan Z</string>
+    <string name="shift_print_z_report">Cetak Laporan Z</string>
+    <string name="shift_no_history">Tiada rekod sejarah syif ditemui.</string>
 </resources>

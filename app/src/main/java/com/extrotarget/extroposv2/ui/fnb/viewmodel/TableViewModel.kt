@@ -13,7 +13,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TableViewModel @Inject constructor(
-    private val tableRepository: TableRepository
+    private val tableRepository: TableRepository,
+    private val printReceiptUseCase: com.extrotarget.extroposv2.core.domain.usecase.PrintReceiptUseCase
 ) : ViewModel() {
 
     private val _selectedZone = MutableStateFlow("Indoor")
@@ -71,6 +72,12 @@ class TableViewModel @Inject constructor(
     fun deleteTable(tableId: String) {
         viewModelScope.launch {
             tableRepository.deleteTable(tableId)
+        }
+    }
+
+    fun printTableQr(table: Table, qrContent: String) {
+        viewModelScope.launch {
+            printReceiptUseCase.printTableQr(table.name, qrContent)
         }
     }
 }

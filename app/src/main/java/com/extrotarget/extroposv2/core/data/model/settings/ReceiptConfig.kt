@@ -17,5 +17,11 @@ data class ReceiptConfig(
     val logoPath: String? = null,
     val showTaxSummary: Boolean = true,
     val showRounding: Boolean = true,
-    val showLhdnQr: Boolean = true
+    val showLhdnQr: Boolean = true,
+    val paperWidth: PaperWidth = PaperWidth.MM80
 )
+
+enum class PaperWidth(val value: Int, val charWidth: Int) {
+    MM58(58, 32),
+    MM80(80, 48)
+}

@@ -20,7 +20,8 @@ class SyncViewModel @Inject constructor(
     private val syncServer: SyncServer,
     private val syncClient: SyncClient,
     private val nsdHelper: com.extrotarget.extroposv2.core.network.NsdHelper,
-    private val saleRepository: com.extrotarget.extroposv2.core.data.repository.SaleRepository
+    private val saleRepository: com.extrotarget.extroposv2.core.data.repository.SaleRepository,
+    private val branchRepository: com.extrotarget.extroposv2.core.data.repository.inventory.BranchRepository
 ) : ViewModel() {
 
     private val _isServerRunning = MutableStateFlow(syncServer.isRunning())
@@ -47,8 +48,9 @@ class SyncViewModel @Inject constructor(
                             val data = message["data"] as Map<*, *>
                             val productId = data["productId"] as String
                             val newQuantity = java.math.BigDecimal(data["newQuantity"].toString())
+                            val isAvailable = data["isAvailable"] as? Boolean
                             
-                            saleRepository.updateLocalStock(productId, newQuantity)
+                            saleRepository.updateLocalStock(productId, newQuantity, isAvailable)
                             _syncStatus.value = "Stock updated for product $productId"
                         }
                     }
@@ -90,11 +92,12 @@ class SyncViewModel @Inject constructor(
     fun syncFromMaster(masterIp: String, force: Boolean = false) {
         viewModelScope.launch {
             _syncStatus.value = "Syncing from Master..."
-            val result = syncClient.syncFromMaster(masterIp, force = force)
+            val hq = branchRepository.getHQBranch()
+            val result = syncClient.syncFromMaster(masterIp, force = force, syncToken = hq?.syncToken)
             if (result.isSuccess) {
                 _syncStatus.value = "Sync Successful! Connecting to Real-time..."
                 viewModelScope.launch {
-                    syncClient.connectToRealtime(masterIp)
+                    syncClient.connectToRealtime(masterIp, syncToken = hq?.syncToken)
                 }
                 kotlinx.coroutines.delay(2000)
                 syncClient.restartApp()

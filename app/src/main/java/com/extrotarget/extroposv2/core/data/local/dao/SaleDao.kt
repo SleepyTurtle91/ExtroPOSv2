@@ -31,17 +31,20 @@ interface SaleDao {
         
         // Update stock for each item and record movement
         items.forEach { item ->
-            decreaseStock(item.productId, item.quantity)
-            insertStockMovement(
-                com.extrotarget.extroposv2.core.data.model.inventory.StockMovement(
-                    id = java.util.UUID.randomUUID().toString(),
-                    productId = item.productId,
-                    quantity = item.quantity.negate(),
-                    type = "SALE",
-                    timestamp = sale.timestamp,
-                    note = "Sale ${sale.id}"
+            // Only decrease stock for completed sales
+            if (sale.status == "COMPLETED") {
+                decreaseStock(item.productId, item.quantity)
+                insertStockMovement(
+                    com.extrotarget.extroposv2.core.data.model.inventory.StockMovement(
+                        id = java.util.UUID.randomUUID().toString(),
+                        productId = item.productId,
+                        quantity = item.quantity.negate(),
+                        type = "SALE",
+                        timestamp = sale.timestamp,
+                        note = "Sale ${sale.id}"
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -86,4 +89,14 @@ interface SaleDao {
 
     @Query("SELECT * FROM sales WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp DESC")
     fun getSalesInRange(start: Long, end: Long): Flow<List<Sale>>
+
+    @Query("SELECT * FROM sales WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp DESC")
+    suspend fun getSalesInRangeNow(start: Long, end: Long): List<Sale>
+
+    @Query("SELECT * FROM sales WHERE id NOT IN (SELECT saleId FROM sale_einvoice_submission) AND timestamp >= :start AND timestamp <= :end AND status = 'COMPLETED'")
+    suspend fun getSalesWithoutLhdnSubmission(start: Long, end: Long): List<Sale>
+
+    @Transaction
+    @Query("SELECT * FROM sales WHERE id NOT IN (SELECT saleId FROM sale_einvoice_submission) AND timestamp >= :start AND timestamp <= :end AND status = 'COMPLETED'")
+    suspend fun getSalesWithItemsWithoutLhdnSubmission(start: Long, end: Long): List<SaleWithItems>
 }

@@ -19,6 +19,9 @@ import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.DuitNowDao
 import com.extrotarget.extroposv2.core.data.local.dao.lhdn.LhdnDao
 import com.extrotarget.extroposv2.core.data.local.dao.AutoCountDao
+import com.extrotarget.extroposv2.core.data.local.dao.ShiftDao
+import com.extrotarget.extroposv2.core.data.local.dao.BranchDao
+import com.extrotarget.extroposv2.core.data.local.dao.StockTransferDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -95,4 +98,19 @@ object DatabaseModule {
 
     @Provides
     fun provideLoyaltyDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.loyalty.LoyaltyDao = database.loyaltyDao()
+
+    @Provides
+    fun provideShiftDao(database: AppDatabase): ShiftDao = database.shiftDao()
+
+    @Provides
+    fun provideBranchDao(database: AppDatabase): BranchDao = database.branchDao()
+
+    @Provides
+    fun provideStockTransferDao(database: AppDatabase): StockTransferDao = database.stockTransferDao()
+
+    @Provides
+    fun provideModifierDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.ModifierDao = database.modifierDao()
+
+    @Provides
+    fun provideEndOfDayDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.EndOfDayDao = database.endOfDayDao()
 }

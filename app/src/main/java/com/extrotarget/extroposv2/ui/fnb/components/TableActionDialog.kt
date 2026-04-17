@@ -2,11 +2,13 @@ package com.extrotarget.extroposv2.ui.fnb.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import com.extrotarget.extroposv2.core.data.model.fnb.Table
 import com.extrotarget.extroposv2.core.data.model.fnb.TableStatus
 
@@ -26,7 +28,7 @@ fun TableActionDialog(
                         onClick = { onAction("OPEN") },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Default.OpenInNew, contentDescription = null)
+                        Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Open Order")
                     }
@@ -82,6 +84,18 @@ fun TableActionDialog(
                         Spacer(Modifier.width(8.dp))
                         Text("Mark Dirty")
                     }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                Button(
+                    onClick = { onAction("QR_GEN") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                ) {
+                    Icon(Icons.Default.QrCode, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Generate Order QR")
                 }
             }
         },

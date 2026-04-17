@@ -58,7 +58,8 @@ data class LhdnConfig(
     val clientId: String? = null,
     val clientSecret: String? = null,
     val isSandbox: Boolean = true,
-    val isEnabled: Boolean = false
+    val isEnabled: Boolean = false,
+    val einvoiceThresholdAmount: BigDecimal = BigDecimal("10000.00")
 )
 
 /**

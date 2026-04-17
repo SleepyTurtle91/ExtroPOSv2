@@ -3,29 +3,32 @@ package com.extrotarget.extroposv2.core.network
 import android.content.Context
 import android.content.Intent
 import com.extrotarget.extroposv2.core.data.local.AppDatabase
+import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.core.util.audit.AuditManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.serialization.gson.*
+import io.ktor.client.plugins.websocket.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import io.ktor.client.plugins.websocket.*
+import io.ktor.http.*
+import io.ktor.serialization.gson.*
 import io.ktor.util.cio.*
 import io.ktor.utils.io.*
+import io.ktor.utils.io.jvm.javaio.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.*
-import java.io.File
-import java.io.FileOutputStream
-import kotlin.io.path.Path
-import kotlin.io.copyTo
-import com.extrotarget.extroposv2.core.data.model.SaleWithItems
+import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -43,19 +46,27 @@ class SyncClient @Inject constructor(
     }
 
     private val _realtimeUpdates = MutableSharedFlow<String>()
-    val realtimeUpdates = _realtimeUpdates.asSharedFlow()
+    val realtimeUpdates: SharedFlow<String> = _realtimeUpdates.asSharedFlow()
 
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.IDLE)
-    val syncStatus = _syncStatus.asStateFlow()
+    val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
 
     private var session: DefaultClientWebSocketSession? = null
 
-    suspend fun connectToRealtime(masterIp: String, port: Int = 8080) {
+    suspend fun connectToRealtime(masterIp: String, port: Int = 8080, syncToken: String? = null) {
         var delayMs = 1000L
         while (true) {
             _syncStatus.value = SyncStatus.CONNECTING
             try {
-                client.webSocket(method = io.ktor.http.HttpMethod.Get, host = masterIp, port = port, path = "/sync/realtime") {
+                client.webSocket(
+                    method = HttpMethod.Get,
+                    host = masterIp,
+                    port = port,
+                    path = "/sync/realtime",
+                    request = {
+                        syncToken?.let { header("X-Sync-Token", it) }
+                    }
+                ) {
                     session = this
                     _syncStatus.value = SyncStatus.CONNECTED
                     
@@ -94,7 +105,7 @@ class SyncClient @Inject constructor(
         }
     }
 
-    suspend fun syncFromMaster(masterIp: String, port: Int = 8080, force: Boolean = false): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun syncFromMaster(masterIp: String, port: Int = 8080, force: Boolean = false, syncToken: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             // Dirty Check
             val unsyncedCount = database.saleDao().getUnsyncedCount()
@@ -102,7 +113,9 @@ class SyncClient @Inject constructor(
                 return@withContext Result.failure(Exception("DIRTY_DATA: $unsyncedCount unsynced sales found."))
             }
 
-            val response: HttpResponse = client.get("http://$masterIp:$port/sync/database")
+            val response: HttpResponse = client.get("http://$masterIp:$port/sync/database") {
+                syncToken?.let { header("X-Sync-Token", it) }
+            }
             
             if (response.status.value == 200) {
                 // Close DB before replacement
@@ -113,7 +126,10 @@ class SyncClient @Inject constructor(
                 val shmFile = File(dbPath.path + "-shm")
                 val tempFile = File(context.cacheDir, "temp_db")
                 
-                response.bodyAsChannel().copyAndClose(tempFile.writeChannel())
+                val channel = response.bodyAsChannel()
+                tempFile.outputStream().use { output ->
+                    channel.toInputStream().copyTo(output)
+                }
 
                 // Safer replacement
                 if (tempFile.exists()) {

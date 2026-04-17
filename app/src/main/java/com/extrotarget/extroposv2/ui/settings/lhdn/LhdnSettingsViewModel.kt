@@ -37,7 +37,8 @@ class LhdnSettingsViewModel @Inject constructor(
         clientIdValue: String,
         clientSecretValue: String,
         isSandbox: Boolean,
-        isEnabled: Boolean
+        isEnabled: Boolean,
+        thresholdAmount: java.math.BigDecimal
     ) {
         viewModelScope.launch {
             // Save sensitive credentials to encrypted storage
@@ -54,7 +55,8 @@ class LhdnSettingsViewModel @Inject constructor(
                 clientId = null, // Don't store in DB
                 clientSecret = null, // Don't store in DB
                 isSandbox = isSandbox,
-                isEnabled = isEnabled
+                isEnabled = isEnabled,
+                einvoiceThresholdAmount = thresholdAmount
             )
             repository.saveConfig(newConfig)
         }

@@ -30,10 +30,11 @@ fun ProductCard(
             .height(140.dp)
             .padding(4.dp),
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
         border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
         shadowElevation = 2.dp,
-        onClick = { onProductClick(product) }
+        onClick = { onProductClick(product) },
+        enabled = product.isAvailable,
+        color = if (product.isAvailable) Color.White else Color(0xFFF1F5F9)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -43,7 +44,7 @@ fun ProductCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
-                    .background(Color(0xFF3B82F6)) // Dynamic category color could go here
+                    .background(if (product.isAvailable) Color(0xFF3B82F6) else Color(0xFFCBD5E1))
             )
 
             Column(
@@ -59,7 +60,7 @@ fun ProductCard(
                         fontWeight = FontWeight.Black,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = Color(0xFF1E293B),
+                        color = if (product.isAvailable) Color(0xFF1E293B) else Color(0xFF94A3B8),
                         lineHeight = 16.sp
                     )
                     

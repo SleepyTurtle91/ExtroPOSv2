@@ -9,8 +9,10 @@ interface PrinterInterface {
 
 sealed class PrintCommand {
     data class Text(val content: String, val alignment: Alignment = Alignment.LEFT, val isBold: Boolean = false) : PrintCommand()
+    data class BigText(val content: String, val alignment: Alignment = Alignment.LEFT) : PrintCommand()
     data class Header(val content: String) : PrintCommand()
     object Divider : PrintCommand()
+    object Buzzer : PrintCommand()
     data class Feed(val lines: Int = 1) : PrintCommand()
     object Cut : PrintCommand()
     object DrawerKick : PrintCommand()

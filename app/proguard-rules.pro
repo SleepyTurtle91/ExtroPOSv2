@@ -1,39 +1,50 @@
-# --- ExtroPOS v2 ProGuard Rules ---
+# Add project specific ProGuard rules here.
+# By default, the flags in this file are appended to flags specified
+# in C:\Users\User\AppData\Local\Android\Sdk\tools\proguard\proguard-android.txt
+# You can edit the include path and order by changing the proguardFiles
+# directive in build.gradle.kts.
+#
+# For more details, see
+#   http://developer.android.com/guide/developing/tools/proguard.html
 
-# Preserve Line Numbers for Debugging
--keepattributes SourceFile,LineNumberTable
--renamesourcefileattribute SourceFile
-
-# --- Room Persistence ---
+# --- Room ---
+-keepclassmembers class * extends androidx.room.RoomDatabase {
+   public <init>(...);
+}
 -keep class * extends androidx.room.RoomDatabase
--keep class * { @androidx.room.Dao *; }
--keep class * { @androidx.room.Entity *; }
--keep class * { @androidx.room.PrimaryKey *; }
+-keep class com.extrotarget.extroposv2.core.data.local.dao.** { *; }
+-keep class com.extrotarget.extroposv2.core.data.model.** { *; }
 
-# --- Hilt / Dagger ---
+# --- Hilt ---
 -keep class dagger.hilt.android.internal.managers.** { *; }
--keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$ComponentManager
--keep @dagger.hilt.android.EntryPoint class *
--keep @dagger.hilt.InstallIn class *
+-keep class * { @dagger.hilt.InstallIn <classes>; }
+-keep class * extends androidx.lifecycle.ViewModel
 
-# --- Gson / Retrofit / OkHttp ---
--keepattributes Signature
--keepattributes *Annotation*
--keep class sun.misc.Unsafe { *; }
--keep class com.google.gson.stream.** { *; }
+# --- Retrofit / OkHttp ---
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepattributes RuntimeVisibleTypeAnnotations, AnnotationDefault
+-keep class retrofit2.** { *; }
+-keep class okhttp3.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-dontwarn javax.annotation.**
 
-# Preserve LHDN and DuitNow Models for JSON Mapping
--keep class com.extrotarget.extroposv2.core.data.model.lhdn.** { *; }
--keep class com.extrotarget.extroposv2.core.network.api.lhdn.** { *; }
--keep class com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig { *; }
+# --- GSON ---
+-keep class com.google.gson.** { *; }
+-keep class com.extrotarget.extroposv2.core.network.api.** { *; }
 
 # --- Ktor ---
 -keep class io.ktor.** { *; }
--keep class kotlinx.serialization.json.** { *; }
+-dontwarn io.ktor.**
+-keep class kotlinx.serialization.** { *; }
 
-# --- Security & Crypto ---
--keep class androidx.security.crypto.** { *; }
+# --- Timber (Keep only high-level logging in release) ---
+-assumenosideeffects class timber.log.Timber {
+    public static *** d(...);
+    public static *** v(...);
+}
 
-# --- Android Hardware & ML Kit ---
--keep class com.google.mlkit.** { *; }
--keep class androidx.camera.** { *; }
+# --- General ---
+-keep class com.extrotarget.extroposv2.core.util.security.SecurityManager { *; }
+-keep class com.extrotarget.extroposv2.core.util.lhdn.** { *; }

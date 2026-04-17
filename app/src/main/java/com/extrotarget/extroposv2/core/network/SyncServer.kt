@@ -15,6 +15,9 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
+import com.extrotarget.extroposv2.core.data.model.inventory.StockTransfer
+import com.extrotarget.extroposv2.core.data.model.loyalty.Member
+import io.ktor.http.*
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
@@ -47,6 +50,15 @@ class SyncServer @Inject constructor(
             install(WebSockets)
             
             routing {
+                intercept(ApplicationCallPipeline.Call) {
+                    val token = call.request.header("X-Sync-Token")
+                    val hq = database.branchDao().getHQBranch()
+                    if (hq != null && hq.syncToken != null && hq.syncToken != token) {
+                        call.respond(HttpStatusCode.Unauthorized, "Invalid Sync Token")
+                        finish()
+                    }
+                }
+
                 get("/") {
                     call.respond(mapOf("status" to "ExtroPOS Sync Server Running", "version" to "v2.0"))
                 }
@@ -85,9 +97,6 @@ class SyncServer @Inject constructor(
                                         val saleWithItems = com.google.gson.Gson().fromJson(dataJson, SaleWithItems::class.java)
                                         
                                         scope.launch {
-                                            // Handle multi-terminal stock consistency: 
-                                            // Ensure we check current stock on Master before committing if needed, 
-                                            // or broadcast the update to everyone to decrement.
                                             database.saleDao().completeSale(saleWithItems.sale, saleWithItems.items)
                                             
                                             // Broadcast STOCK_UPDATE to all other slaves
@@ -112,6 +121,40 @@ class SyncServer @Inject constructor(
                         }
                     } finally {
                         sessions -= this
+                    }
+                }
+
+                // --- BRANCH SYNC ENDPOINTS (2026) ---
+
+                route("/sync/branch") {
+                    get("/member/{id}") {
+                        val id = call.parameters["id"] ?: return@get call.respond(HttpStatusCode.BadRequest)
+                        val member = database.loyaltyDao().getMemberById(id)
+                        if (member != null) call.respond(member)
+                        else call.respond(HttpStatusCode.NotFound)
+                    }
+
+                    get("/stock") {
+                        val products = database.productDao().getAllProductsNow()
+                        call.respond(products)
+                    }
+
+                    post("/sale") {
+                        val saleWithItems = call.receive<SaleWithItems>()
+                        database.saleDao().completeSale(saleWithItems.sale, saleWithItems.items)
+                        
+                        // Notify local terminals if any
+                        broadcastUpdate("SALE_COMPLETED", saleWithItems)
+                        call.respond(HttpStatusCode.Created)
+                    }
+
+                    post("/transfer") {
+                        val transfer = call.receive<StockTransfer>()
+                        database.stockTransferDao().insertTransfer(transfer)
+                        
+                        // If we are HQ, we should ideally approve or process this
+                        // For now, just record it.
+                        call.respond(HttpStatusCode.OK)
                     }
                 }
             }

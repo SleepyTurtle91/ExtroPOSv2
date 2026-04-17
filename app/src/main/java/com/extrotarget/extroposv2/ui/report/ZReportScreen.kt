@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -24,10 +25,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.data.repository.EndOfDayRepository
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.core.data.repository.SaleRepository
+import com.extrotarget.extroposv2.core.data.repository.ShiftRepository
 import com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository
 import com.extrotarget.extroposv2.core.data.model.settings.TaxConfig
+import com.extrotarget.extroposv2.core.data.model.Shift
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -90,14 +95,19 @@ data class ZReportUiState(
 class ZReportViewModel @Inject constructor(
     private val saleRepository: SaleRepository,
     private val taxRepository: TaxRepository,
+    private val shiftRepository: ShiftRepository,
+    private val endOfDayRepository: EndOfDayRepository,
+    private val printReceiptUseCase: com.extrotarget.extroposv2.core.domain.usecase.PrintReceiptUseCase,
     private val sessionManager: com.extrotarget.extroposv2.core.auth.SessionManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ZReportUiState())
     val uiState: StateFlow<ZReportUiState> = _uiState.asStateFlow()
 
+    private var activeShift: Shift? = null
+
     init {
         loadInitialData()
-        observeSales()
+        observeShiftAndSales()
         updateTime()
     }
 
@@ -106,19 +116,30 @@ class ZReportViewModel @Inject constructor(
         _uiState.update { it.copy(staffName = staff?.name ?: "Unknown") }
     }
 
-    private fun observeSales() {
+    private fun observeShiftAndSales() {
         viewModelScope.launch {
-            val calendar = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
+            shiftRepository.getActiveShift().collectLatest { shift ->
+                activeShift = shift
+                if (shift != null) {
+                    _uiState.update { 
+                        it.copy(
+                            floatAmount = shift.startFloat.toString(),
+                            cashIn = shift.cashIn.toString(),
+                            cashOut = shift.cashOut.toString()
+                        )
+                    }
+                    observeSales(shift.startTime)
+                } else {
+                    // No active shift found, handle appropriately (e.g., redirect to shift open)
+                }
             }
-            val startOfDay = calendar.timeInMillis
-            val endOfDay = startOfDay + 86400000L // 24 hours
+        }
+    }
 
+    private fun observeSales(startTime: Long) {
+        viewModelScope.launch {
             combine(
-                saleRepository.getSalesInRange(startOfDay, endOfDay),
+                saleRepository.getSalesInRange(startTime, System.currentTimeMillis()),
                 taxRepository.getTaxConfig()
             ) { sales, taxConfig ->
                 val gross = sales.sumOf { it.totalAmount }
@@ -177,7 +198,46 @@ class ZReportViewModel @Inject constructor(
     fun printZReport() {
         viewModelScope.launch {
             _uiState.update { it.copy(isPrinting = true) }
-            delay(2000) // Simulate printer HAL activity
+            
+            // 1. Get final sales data to ensure accuracy at the moment of closing
+            val finalSales = activeShift?.let { shift ->
+                saleRepository.getSalesInRangeNow(shift.startTime, System.currentTimeMillis())
+            } ?: emptyList()
+
+            val tax = finalSales.sumOf { it.taxAmount }
+            val rounding = finalSales.sumOf { it.roundingAdjustment }
+            val cashSales = finalSales.filter { it.paymentMethod == "CASH" }.sumOf { it.totalAmount.add(it.roundingAdjustment) }
+            val otherSales = finalSales.filter { it.paymentMethod != "CASH" }.sumOf { it.totalAmount }
+
+            // 2. Persist the closed shift data
+            activeShift?.let { shift ->
+                val state = _uiState.value
+                val closedShift = shift.copy(
+                    endTime = System.currentTimeMillis(),
+                    endActualCash = try { BigDecimal(state.actualDrawerCash) } catch (e: Exception) { BigDecimal.ZERO },
+                    endExpectedCash = state.calculatedExpectedCash,
+                    totalCashSales = cashSales,
+                    totalOtherSales = otherSales,
+                    totalTax = tax,
+                    totalRounding = rounding,
+                    cashIn = try { BigDecimal(state.cashIn) } catch (e: Exception) { BigDecimal.ZERO },
+                    cashOut = try { BigDecimal(state.cashOut) } catch (e: Exception) { BigDecimal.ZERO },
+                    isClosed = true
+                )
+                shiftRepository.closeShift(closedShift)
+                
+                // 3. Print the Z-Report
+                printReceiptUseCase.printZReport(closedShift)
+
+                // 4. Trigger EOD if this is the last shift of the day (optional logic)
+                // For now, let's just expose a manual EOD button or logic here
+                val staff = sessionManager.getCurrentStaff()
+                if (staff != null) {
+                    endOfDayRepository.generateEndOfDay(staff.id, staff.name)
+                }
+            }
+
+            delay(1000)
             _uiState.update { it.copy(isPrinting = false) }
         }
     }
@@ -232,7 +292,7 @@ fun ZReportContent(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Shift Closeout / Z-Report", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.shift_z_report), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Text(
                             text = "Terminal: ${uiState.terminalId} | ${dateFormatter.format(uiState.currentTime)}",
                             style = MaterialTheme.typography.bodySmall,
@@ -307,15 +367,15 @@ fun CashDrawerCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.AccountBalanceWallet, contentDescription = null, tint = Color(0xFF38BDF8))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Cash Drawer Reconciliation", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(stringResource(R.string.shift_recon_title), style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
             
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color.White.copy(alpha = 0.1f))
 
-            FinancialInputField(label = "Starting Float", value = uiState.floatAmount, onValueChange = onFloatChange)
-            FinancialInputField(label = "Total Cash Sales", value = CurrencyUtils.format(uiState.totalCashSales), enabled = false)
-            FinancialInputField(label = "Cash In (Additions)", value = uiState.cashIn, onValueChange = onCashInChange)
-            FinancialInputField(label = "Cash Out (Withdrawals)", value = uiState.cashOut, onValueChange = onCashOutChange)
+            FinancialInputField(label = stringResource(R.string.shift_start_float_label), value = uiState.floatAmount, onValueChange = onFloatChange)
+            FinancialInputField(label = stringResource(R.string.sales_total) + " " + stringResource(R.string.sales_cash), value = CurrencyUtils.format(uiState.totalCashSales), enabled = false)
+            FinancialInputField(label = stringResource(R.string.shift_cash_in), value = uiState.cashIn, onValueChange = onCashInChange)
+            FinancialInputField(label = stringResource(R.string.shift_cash_out), value = uiState.cashOut, onValueChange = onCashOutChange)
             
             Spacer(modifier = Modifier.height(16.dp))
             
@@ -330,7 +390,7 @@ fun CashDrawerCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("System Expected Cash", style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = 0.7f))
+                    Text(stringResource(R.string.shift_system_expected), style = MaterialTheme.typography.bodyLarge, color = Color.White.copy(alpha = 0.7f))
                     Text(
                         text = CurrencyUtils.format(uiState.calculatedExpectedCash),
                         style = MaterialTheme.typography.headlineSmall,
@@ -342,7 +402,7 @@ fun CashDrawerCard(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Actual Drawer Cash", style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))
+            Text(stringResource(R.string.shift_actual_drawer), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.6f))
             OutlinedTextField(
                 value = uiState.actualDrawerCash,
                 onValueChange = onActualCashChange,
@@ -386,9 +446,9 @@ fun DiscrepancyCard(discrepancy: BigDecimal) {
             Column {
                 Text(
                     text = when {
-                        isShort -> "CASH SHORTAGE"
-                        isOver -> "CASH OVERAGE"
-                        else -> "CASH BALANCED"
+                        isShort -> stringResource(R.string.shift_shortage)
+                        isOver -> stringResource(R.string.shift_overage)
+                        else -> stringResource(R.string.shift_balanced)
                     },
                     style = MaterialTheme.typography.labelMedium,
                     color = color,
@@ -425,36 +485,42 @@ fun DailySummaryCard(uiState: ZReportUiState) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Summarize, contentDescription = null, tint = Color(0xFF818CF8))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Daily Financial Summary", style = MaterialTheme.typography.titleMedium, color = Color.White)
+                Text(stringResource(R.string.shift_financial_summary), style = MaterialTheme.typography.titleMedium, color = Color.White)
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = Color.White.copy(alpha = 0.1f))
 
-            SummaryRow("Gross Sales", CurrencyUtils.format(uiState.grossSales), isMain = true)
+            SummaryRow(stringResource(R.string.shift_gross_sales), CurrencyUtils.format(uiState.grossSales), isMain = true)
             
             val taxLabel = if (uiState.taxConfig != null) {
-                "${uiState.taxConfig.taxName} Collected"
+                stringResource(R.string.shift_tax_collected, uiState.taxConfig.taxName)
             } else if (uiState.taxCollected > BigDecimal.ZERO) {
-                "Tax Collected"
+                stringResource(R.string.sales_tax)
             } else {
-                "Tax (N/A)"
+                stringResource(R.string.sales_tax) + " (N/A)"
             }
             SummaryRow(taxLabel, CurrencyUtils.format(uiState.taxCollected))
             
-            SummaryRow("Rounding", CurrencyUtils.format(uiState.roundingAdjustment))
+            SummaryRow(stringResource(R.string.shift_rounding), CurrencyUtils.format(uiState.roundingAdjustment))
             
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Sales by Payment Method", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
+            Text(stringResource(R.string.shift_by_payment), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(8.dp))
 
             uiState.salesByPaymentMethod.forEach { (method, amount) ->
-                val icon = when (method) {
-                    "Cash" -> Icons.Default.Payments
-                    "DuitNow" -> Icons.Default.QrCodeScanner
-                    "Card" -> Icons.Default.CreditCard
+                val localizedMethod = when (method.uppercase()) {
+                    "CASH" -> stringResource(R.string.sales_cash)
+                    "CARD" -> stringResource(R.string.sales_card)
+                    "DUITNOW" -> stringResource(R.string.sales_qr)
+                    else -> method
+                }
+                val icon = when (method.uppercase()) {
+                    "CASH" -> Icons.Default.Payments
+                    "DUITNOW" -> Icons.Default.QrCodeScanner
+                    "CARD" -> Icons.Default.CreditCard
                     else -> Icons.Default.Money
                 }
-                PaymentMethodRow(method, CurrencyUtils.format(amount), icon)
+                PaymentMethodRow(localizedMethod, CurrencyUtils.format(amount), icon)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -466,7 +532,7 @@ fun DailySummaryCard(uiState: ZReportUiState) {
                     .padding(20.dp)
             ) {
                 Column {
-                    Text("Total Net Revenue", style = MaterialTheme.typography.bodySmall, color = Color(0xFFC7D2FE))
+                    Text(stringResource(R.string.shift_net_revenue), style = MaterialTheme.typography.bodySmall, color = Color(0xFFC7D2FE))
                     Text(
                         text = CurrencyUtils.format(uiState.grossSales.add(uiState.taxCollected).add(uiState.roundingAdjustment)),
                         style = MaterialTheme.typography.headlineMedium,
@@ -584,7 +650,7 @@ fun ZReportFooter(
                 } else {
                     Icon(Icons.Default.FileDownload, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Export to CSV", fontSize = 18.sp)
+                    Text(stringResource(R.string.shift_export_csv), fontSize = 18.sp)
                 }
             }
 
@@ -600,7 +666,7 @@ fun ZReportFooter(
                 } else {
                     Icon(Icons.Default.Print, contentDescription = null)
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("Print Z-Report & Close Shift", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.shift_print_z_report), fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

@@ -10,7 +10,9 @@ data class Sale(
     @PrimaryKey val id: String,
     val timestamp: Long = System.currentTimeMillis(),
     val totalAmount: BigDecimal,
-    val taxAmount: BigDecimal,
+    val subtotal: BigDecimal = BigDecimal.ZERO,
+    val taxAmount: BigDecimal = BigDecimal.ZERO,
+    val serviceChargeAmount: BigDecimal = BigDecimal.ZERO,
     val discountAmount: BigDecimal = BigDecimal.ZERO,
     val discountLabel: String? = null,
     val roundingAdjustment: BigDecimal = BigDecimal.ZERO,
@@ -25,5 +27,6 @@ data class Sale(
     val approvalCode: String? = null,
     val autoCountSyncStatus: String = "NOT_SYNCED", // NOT_SYNCED, SYNCED, FAILED
     val autoCountDocNo: String? = null,
-    val localSyncStatus: String = "SYNCED" // SYNCED, PENDING (Slaves use PENDING for local-only sales)
+    val localSyncStatus: String = "SYNCED", // SYNCED, PENDING (Slaves use PENDING for local-only sales)
+    val branchId: String? = null
 )

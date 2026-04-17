@@ -4,6 +4,8 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.extrotarget.extroposv2.core.data.local.converter.Converters
+import com.extrotarget.extroposv2.core.data.local.dao.EndOfDayDao
+import com.extrotarget.extroposv2.core.data.model.EndOfDay
 import com.extrotarget.extroposv2.core.data.local.dao.AuditDao
 import com.extrotarget.extroposv2.core.data.local.dao.AutoCountDao
 import com.extrotarget.extroposv2.core.data.local.dao.CategoryDao
@@ -13,11 +15,16 @@ import com.extrotarget.extroposv2.core.data.local.dao.SaleDao
 import com.extrotarget.extroposv2.core.data.local.dao.StockMovementDao
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.CommissionRecordDao
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.StaffDao
+import com.extrotarget.extroposv2.core.data.local.dao.ShiftDao
+import com.extrotarget.extroposv2.core.data.local.dao.BranchDao
+import com.extrotarget.extroposv2.core.data.local.dao.StockTransferDao
 import com.extrotarget.extroposv2.core.data.model.AuditLog
 import com.extrotarget.extroposv2.core.data.model.Category
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
+import com.extrotarget.extroposv2.core.data.model.Shift
+import com.extrotarget.extroposv2.core.data.model.ShiftAdjustment
 import com.extrotarget.extroposv2.core.data.local.dao.loyalty.LoyaltyDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.PaymentMethodDao
@@ -33,6 +40,8 @@ import com.extrotarget.extroposv2.core.data.model.fnb.Table
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
 import com.extrotarget.extroposv2.core.data.model.carwash.Staff
 import com.extrotarget.extroposv2.core.data.model.hardware.PrinterConfig
+import com.extrotarget.extroposv2.core.data.model.inventory.Branch
+import com.extrotarget.extroposv2.core.data.model.inventory.StockTransfer
 import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnConfig
 import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnToken
 import com.extrotarget.extroposv2.core.data.model.lhdn.SaleEInvoiceSubmission
@@ -46,11 +55,18 @@ import com.extrotarget.extroposv2.core.data.model.settings.PaymentMethod
 import com.extrotarget.extroposv2.core.data.model.settings.TaxConfig
 import com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig
 
+import com.extrotarget.extroposv2.core.data.model.Modifier
+import com.extrotarget.extroposv2.core.data.model.ModifierLink
+import com.extrotarget.extroposv2.core.data.local.dao.ModifierDao
+
 @Database(
     entities = [
         Product::class,
         Category::class,
+        Modifier::class,
+        ModifierLink::class,
         Sale::class,
+        // ... rest of entities
         SaleItem::class,
         StockMovement::class,
         Staff::class,
@@ -70,9 +86,14 @@ import com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig
         AutoCountConfig::class,
         Member::class,
         LoyaltyPointTransaction::class,
-        LoyaltyConfig::class
+        LoyaltyConfig::class,
+        Shift::class,
+        ShiftAdjustment::class,
+        EndOfDay::class,
+        Branch::class,
+        StockTransfer::class
     ],
-    version = 19,
+    version = 25,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -95,6 +116,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun duitNowDao(): DuitNowDao
     abstract fun autoCountDao(): AutoCountDao
     abstract fun loyaltyDao(): LoyaltyDao
+    abstract fun shiftDao(): ShiftDao
+    abstract fun endOfDayDao(): EndOfDayDao
+    abstract fun branchDao(): BranchDao
+    abstract fun stockTransferDao(): StockTransferDao
+    abstract fun modifierDao(): ModifierDao
+
 
     companion object {
         const val DATABASE_NAME = "extro_pos_db"

@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import com.extrotarget.extroposv2.ui.sales.SalesScreen
 import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 import com.extrotarget.extroposv2.ui.inventory.InventoryScreen
+import com.extrotarget.extroposv2.core.auth.SessionManager
 import com.extrotarget.extroposv2.ui.carwash.staff.StaffManagementScreen
 import com.extrotarget.extroposv2.ui.dobi.LaundryOrderScreen
 import com.extrotarget.extroposv2.ui.carwash.CarWashJobQueueScreen
@@ -34,10 +35,18 @@ import com.extrotarget.extroposv2.ui.loyalty.LoyaltySettingsScreen
 import com.extrotarget.extroposv2.ui.inventory.viewmodel.InventoryViewModel
 import com.extrotarget.extroposv2.ui.lhdn.history.LhdnHistoryScreen
 import com.extrotarget.extroposv2.ui.lhdn.history.LhdnHistoryViewModel
+import com.extrotarget.extroposv2.ui.report.ZReportScreen
+import com.extrotarget.extroposv2.ui.report.ShiftManagementScreen
+import com.extrotarget.extroposv2.ui.report.history.ShiftHistoryScreen
+
+import com.extrotarget.extroposv2.ui.inventory.transfer.StockTransferScreen
+import com.extrotarget.extroposv2.ui.settings.branch.BranchSettingsScreen
+import com.extrotarget.extroposv2.ui.inventory.InventoryManagementScreen
 
 @Composable
 fun NavGraph(
     navController: NavHostController,
+    sessionManager: SessionManager,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -46,11 +55,36 @@ fun NavGraph(
         modifier = modifier
     ) {
         composable(Screen.Sales.route) {
-            SalesScreen(viewModel = hiltViewModel())
+            SalesScreen(
+                viewModel = hiltViewModel(),
+                sessionManager = sessionManager,
+                onNavigateToShift = { navController.navigate(Screen.ShiftManagement.route) }
+            )
         }
         
         composable(Screen.Inventory.route) {
-            InventoryScreen(viewModel = hiltViewModel())
+            InventoryScreen(
+                onNavigateToStockTransfer = { navController.navigate(Screen.StockTransfer.route) },
+                viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Screen.StockTransfer.route) {
+            StockTransferScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = hiltViewModel()
+            )
+        }
+
+        composable(Screen.ProductManagement.route) {
+            InventoryManagementScreen(viewModel = hiltViewModel())
+        }
+
+        composable(Screen.BranchSettings.route) {
+            BranchSettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = hiltViewModel()
+            )
         }
 
         composable(Screen.Staff.route) {
@@ -172,6 +206,27 @@ fun NavGraph(
 
         composable(Screen.LoyaltySettings.route) {
             LoyaltySettingsScreen(viewModel = hiltViewModel())
+        }
+
+        composable(Screen.ShiftManagement.route) {
+            ShiftManagementScreen(
+                onShiftOpened = { navController.navigate(Screen.Sales.route) { popUpTo(Screen.ShiftManagement.route) { inclusive = true } } },
+                onViewActiveShift = { navController.navigate(Screen.ZReport.route) }
+            )
+        }
+
+        composable(Screen.ZReport.route) {
+            ZReportScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.ShiftHistory.route) {
+            ShiftHistoryScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

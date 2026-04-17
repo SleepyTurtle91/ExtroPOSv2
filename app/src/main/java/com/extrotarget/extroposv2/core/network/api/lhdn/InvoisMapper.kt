@@ -78,17 +78,23 @@ object InvoisMapper {
             "documentVersion" to "1.1",
             "internalId" to LhdnInvoicingUtils.generateInternalId(sale, config.sellerSstId ?: "NA"),
             "documentItems" to items.map { item ->
+                val taxRateVal = item.taxRate.toDouble()
+                val (taxCategory, taxType) = when {
+                    taxRateVal == 0.0 -> "Z" to "01" // Zero-rated
+                    else -> "S" to "01" // Standard Rated (Defaulting to 01 for Sales Tax, 02 for Service Tax)
+                }
+
                 mapOf(
                     "description" to item.productName,
                     "quantity" to item.quantity.toDouble(),
                     "unitPrice" to item.unitPrice.toDouble(),
-                    "taxType" to "01", // 01 = SST
-                    "taxRate" to item.taxRate.toDouble(),
+                    "taxType" to taxType,
+                    "taxRate" to taxRateVal,
                     "taxAmount" to item.taxAmount.toDouble(),
-                    "taxCategory" to "S", // S = Standard Rated
-                    "taxExemptionReason" to if (item.taxRate.toDouble() == 0.0) "Zero-rated" else null,
+                    "taxCategory" to taxCategory,
+                    "taxExemptionReason" to if (taxCategory == "Z") "Zero-rated" else null,
                     "subtotal" to item.totalAmount.toDouble(),
-                    "classification" to "022" // 022 = Retail
+                    "classification" to "022" // 022 = Retail, 023 = Service (Needs to be dynamic in future)
                 )
             },
             "totalExcludingTax" to (sale.totalAmount - sale.taxAmount).toDouble(),

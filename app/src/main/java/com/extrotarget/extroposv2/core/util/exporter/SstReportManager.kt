@@ -24,33 +24,46 @@ class SstReportManager @Inject constructor(
             val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
             
             // Header
-            writer.write("Date,Sale ID,Payment Method,Net Amount,Rounding,Tax Amount,Total Amount")
+            writer.write("Date,Sale ID,Table,Payment Method,Subtotal,Discount,Service Charge,Tax Amount,Rounding,Total Amount")
             writer.newLine()
             
             var count = 0
-            var totalNet = BigDecimal.ZERO
-            var totalRounding = BigDecimal.ZERO
+            var totalSubtotal = BigDecimal.ZERO
+            var totalDiscount = BigDecimal.ZERO
+            var totalServiceCharge = BigDecimal.ZERO
             var totalTax = BigDecimal.ZERO
+            var totalRounding = BigDecimal.ZERO
             var totalGross = BigDecimal.ZERO
+            val taxBreakdown = mutableMapOf<BigDecimal, BigDecimal>() // Rate -> Tax Amount
 
             salesWithItems.forEach { saleWithItems ->
                 val sale = saleWithItems.sale
+                val items = saleWithItems.items
                 
-                val netAmount = sale.totalAmount.subtract(sale.taxAmount).subtract(sale.roundingAdjustment)
-
                 // Accumulate totals
-                totalNet = totalNet.add(netAmount)
-                totalRounding = totalRounding.add(sale.roundingAdjustment)
+                totalSubtotal = totalSubtotal.add(sale.subtotal)
+                totalDiscount = totalDiscount.add(sale.discountAmount)
+                totalServiceCharge = totalServiceCharge.add(sale.serviceChargeAmount)
                 totalTax = totalTax.add(sale.taxAmount)
+                totalRounding = totalRounding.add(sale.roundingAdjustment)
                 totalGross = totalGross.add(sale.totalAmount)
+
+                // Accumulate tax breakdown
+                items.forEach { item ->
+                    val currentTax = taxBreakdown.getOrDefault(item.taxRate, BigDecimal.ZERO)
+                    taxBreakdown[item.taxRate] = currentTax.add(item.taxAmount)
+                }
 
                 val line = StringBuilder()
                 line.append(dateFormat.format(Date(sale.timestamp))).append(",")
                 line.append(sale.id).append(",")
+                line.append(sale.tableId ?: "").append(",")
                 line.append(sale.paymentMethod).append(",")
-                line.append(netAmount.toPlainString()).append(",")
-                line.append(sale.roundingAdjustment.toPlainString()).append(",")
+                line.append(sale.subtotal.toPlainString()).append(",")
+                line.append(sale.discountAmount.toPlainString()).append(",")
+                line.append(sale.serviceChargeAmount.toPlainString()).append(",")
                 line.append(sale.taxAmount.toPlainString()).append(",")
+                line.append(sale.roundingAdjustment.toPlainString()).append(",")
                 line.append(sale.totalAmount.toPlainString())
                 
                 writer.write(line.toString())
@@ -58,14 +71,26 @@ class SstReportManager @Inject constructor(
                 count++
             }
             
-            // Summary Row
+            // Summary Section
+            writer.newLine()
+            writer.write("SUMMARY BY TAX RATE")
+            writer.newLine()
+            writer.write("Tax Rate,Tax Amount")
+            writer.newLine()
+            taxBreakdown.forEach { (rate, amount) ->
+                writer.write("${rate.toPlainString()}%,${amount.toPlainString()}")
+                writer.newLine()
+            }
+
             writer.newLine()
             val summary = StringBuilder()
             summary.append("TOTAL,,,")
-            summary.append(totalNet.toPlainString()).append(",")
-            summary.append(totalRounding.toPlainString()).append(",")
-            summary.append(totalTax.toPlainString()).append(",")
-            summary.append(totalGross.toPlainString())
+            summary.append(",").append(totalSubtotal.toPlainString())
+            summary.append(",").append(totalDiscount.toPlainString())
+            summary.append(",").append(totalServiceCharge.toPlainString())
+            summary.append(",").append(totalTax.toPlainString())
+            summary.append(",").append(totalRounding.toPlainString())
+            summary.append(",").append(totalGross.toPlainString())
             writer.write(summary.toString())
             
             writer.flush()

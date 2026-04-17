@@ -39,10 +39,14 @@ object KitchenSlipGenerator {
             ))
             
             // Modifiers (Step 3)
-            if (item.modifiers.isNotEmpty()) {
-                item.modifiers.forEach { modifier ->
+            if (item.selectedModifiers.isNotEmpty()) {
+                item.selectedModifiers.forEach { modifier ->
+                    val priceLabel = if (modifier.priceAdjustment > java.math.BigDecimal.ZERO) {
+                        " (+RM${String.format(Locale.getDefault(), "%.2f", modifier.priceAdjustment)})"
+                    } else ""
+                    
                     commands.add(PrintCommand.Text(
-                        "  - $modifier",
+                        "  - ${modifier.name}$priceLabel",
                         alignment = Alignment.LEFT,
                         isBold = false
                     ))

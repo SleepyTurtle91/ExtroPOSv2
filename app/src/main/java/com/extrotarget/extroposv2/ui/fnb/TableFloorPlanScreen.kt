@@ -20,6 +20,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import com.extrotarget.extroposv2.ui.fnb.components.TableActionDialog
 import com.extrotarget.extroposv2.ui.fnb.components.MoveJoinDialog
+import com.extrotarget.extroposv2.ui.fnb.components.TableQrDialog
 import com.extrotarget.extroposv2.core.data.model.fnb.Table
 import com.extrotarget.extroposv2.core.data.model.fnb.TableStatus
 import com.extrotarget.extroposv2.ui.fnb.viewmodel.TableViewModel
@@ -37,6 +38,7 @@ fun TableFloorPlanScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var selectedTableForActions by remember { mutableStateOf<Table?>(null) }
     var showMoveJoinDialog by remember { mutableStateOf<Pair<Table, Boolean>?>(null) } // Table, isMove
+    var showQrDialog by remember { mutableStateOf<Table?>(null) }
 
     Scaffold(
         topBar = {
@@ -95,8 +97,19 @@ fun TableFloorPlanScreen(
                     "CLEAN" -> viewModel.updateTableStatus(table, TableStatus.AVAILABLE)
                     "OPEN" -> onTableClick(table)
                     "DELETE" -> viewModel.deleteTable(table.id)
+                    "QR_GEN" -> showQrDialog = table
                 }
                 selectedTableForActions = null
+            }
+        )
+    }
+
+    showQrDialog?.let { table ->
+        TableQrDialog(
+            table = table,
+            onDismiss = { showQrDialog = null },
+            onPrint = { qrContent ->
+                viewModel.printTableQr(table, qrContent)
             }
         )
     }

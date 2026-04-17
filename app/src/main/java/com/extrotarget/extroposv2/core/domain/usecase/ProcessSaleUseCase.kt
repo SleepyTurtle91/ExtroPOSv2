@@ -9,6 +9,7 @@ import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashJob
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashStatus
+import com.extrotarget.extroposv2.core.data.repository.ShiftRepository
 import com.extrotarget.extroposv2.core.data.repository.SaleRepository
 import com.extrotarget.extroposv2.core.data.repository.carwash.StaffRepository
 import com.extrotarget.extroposv2.core.data.repository.carwash.CarWashRepository
@@ -33,6 +34,7 @@ class ProcessSaleUseCase @Inject constructor(
     private val lhdnRepository: LhdnRepository,
     private val autoCountRepository: AutoCountRepository,
     private val loyaltyRepository: LoyaltyRepository,
+    private val shiftRepository: ShiftRepository,
     @ApplicationContext private val context: Context
 ) {
     operator suspend fun invoke(
@@ -54,8 +56,11 @@ class ProcessSaleUseCase @Inject constructor(
         val lhdnConfig = lhdnRepository.getConfig().firstOrNull()
         if (lhdnConfig != null && lhdnConfig.isEnabled) {
             // Determine if it should be consolidated or individual
-            // Rule: If buyerInfo is provided and has a name/TIN other than default, it's individual
-            val isConsolidated = buyerInfo == null || (buyerInfo.tin == "EI00000000010" && buyerInfo.name == "General Public")
+            // Rule 1: If buyerInfo is provided and has a name/TIN other than default, it's individual
+            // Rule 2: (Malaysian 2026 Mandate) If total amount >= threshold, it MUST be individual
+            val isHighValue = sale.totalAmount >= lhdnConfig.einvoiceThresholdAmount
+            val isConsolidated = !isHighValue && (buyerInfo == null || (buyerInfo.tin == "EI00000000010" && buyerInfo.name == "General Public"))
+            
             enqueueEInvoiceSubmission(sale.id, isConsolidated)
         }
 
@@ -99,6 +104,22 @@ class ProcessSaleUseCase @Inject constructor(
                     val pointsEarned = sale.totalAmount.multiply(loyaltyConfig.pointsPerCurrencyUnit).multiply(multiplier)
                     loyaltyRepository.addPoints(memberId, pointsEarned, sale.id, "Earned from sale ${sale.id}")
                 }
+            }
+        }
+
+        // 8. Update Shift Totals
+        if (sale.status == "COMPLETED") {
+            shiftRepository.getActiveShiftNow()?.let { activeShift ->
+                val cashAmount = if (sale.paymentMethod == "CASH") sale.totalAmount else BigDecimal.ZERO
+                val otherAmount = if (sale.paymentMethod != "CASH") sale.totalAmount else BigDecimal.ZERO
+                
+                shiftRepository.recordSale(
+                    shiftId = activeShift.id,
+                    cashAmount = cashAmount,
+                    otherAmount = otherAmount,
+                    taxAmount = sale.taxAmount,
+                    rounding = sale.roundingAdjustment
+                )
             }
         }
     }

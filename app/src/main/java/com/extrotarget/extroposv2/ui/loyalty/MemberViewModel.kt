@@ -23,23 +23,27 @@ data class LoyaltyUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MemberViewModel @Inject constructor(
-    private val repository: LoyaltyRepository
+    private val repository: LoyaltyRepository,
+    private val branchSyncManager: com.extrotarget.extroposv2.core.network.BranchSyncManager
 ) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
     private val _selectedMemberId = MutableStateFlow<String?>(null)
+    private val _isSyncing = MutableStateFlow(false)
 
     val uiState: StateFlow<LoyaltyUiState> = combine(
         repository.getAllMembers(),
         _searchQuery,
-        _selectedMemberId
-    ) { members, query, selectedId ->
+        _selectedMemberId,
+        _isSyncing
+    ) { members, query, selectedId, syncing ->
         LoyaltyUiState(
             members = if (query.isBlank()) members else members.filter { 
                 it.name.contains(query, ignoreCase = true) || it.phoneNumber.contains(query)
             },
             searchQuery = query,
-            selectedMember = members.find { it.id == selectedId }
+            selectedMember = members.find { it.id == selectedId },
+            isLoading = syncing
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LoyaltyUiState())
 
@@ -74,5 +78,12 @@ class MemberViewModel @Inject constructor(
 
     fun selectMember(memberId: String?) {
         _selectedMemberId.value = memberId
+        if (memberId != null) {
+            viewModelScope.launch {
+                _isSyncing.value = true
+                branchSyncManager.pullMemberFromHQ(memberId)
+                _isSyncing.value = false
+            }
+        }
     }
 }

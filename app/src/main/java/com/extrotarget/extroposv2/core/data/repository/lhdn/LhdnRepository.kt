@@ -67,6 +67,71 @@ class LhdnRepository @Inject constructor(
         lhdnDao.getSubmissionsByStatus(EInvoiceStatus.SUBMITTED)
 
     /**
+     * Consolidates low-value B2C transactions for a given period.
+     */
+    suspend fun submitConsolidatedEInvoice(
+        sales: List<Sale>,
+        salesWithItems: List<com.extrotarget.extroposv2.core.data.model.SaleWithItems>,
+        businessDate: Long
+    ): Result<String> {
+        if (sales.isEmpty()) return Result.failure(Exception("No sales to consolidate"))
+        
+        val config = lhdnDao.getConfig().firstOrNull() ?: return Result.failure(Exception("LHDN not configured"))
+        
+        try {
+            // Aggregate all items from all sales
+            val allItems = salesWithItems.flatMap { it.items }
+            
+            // Create a dummy sale object representing the consolidation
+            val totalAmount = sales.sumOf { it.totalAmount }
+            val totalTax = sales.sumOf { it.taxAmount }
+            val totalDisc = sales.sumOf { it.discountAmount }
+            val totalRounding = sales.sumOf { it.roundingAdjustment }
+            
+            val consolidationSale = Sale(
+                id = "CONSOL-${System.currentTimeMillis()}",
+                timestamp = businessDate,
+                totalAmount = totalAmount,
+                taxAmount = totalTax,
+                discountAmount = totalDisc,
+                roundingAdjustment = totalRounding,
+                paymentMethod = "CONSOLIDATED"
+            )
+
+            // Submit using InvoisMapper with isConsolidated = true
+            val invoiceJson = InvoisMapper.mapToDocument(
+                consolidationSale, 
+                allItems, 
+                config, 
+                isConsolidated = true
+            )
+            
+            val jsonString = gson.toJson(invoiceJson)
+            val jsonHash = LhdnInvoicingUtils.calculateDocumentHash(jsonString)
+            val document = DocumentItem(
+                format = "JSON",
+                document = Base64.encodeToString(jsonString.toByteArray(), Base64.NO_WRAP),
+                documentHash = jsonHash,
+                codeNumber = consolidationSale.id
+            )
+
+            val token = getValidToken() ?: return Result.failure(Exception("Failed to authenticate with LHDN"))
+            val response = getApi(config.isSandbox).submitDocuments(token, DocumentSubmissionRequest(listOf(document)))
+            
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.acceptedDocuments.isNotEmpty()) {
+                    return Result.success(body.acceptedDocuments.first().uuid)
+                }
+            }
+            return Result.failure(Exception("LHDN API Error: ${response.code()}"))
+        } catch (e: Exception) {
+            Timber.e(e, "LHDN Consolidation Exception")
+            return Result.failure(e)
+        }
+    }
+
+    /**
      * Polls the status of a specific document from LHDN.
      */
     suspend fun pollDocumentStatus(uuid: String): Result<DocumentDetailsResponse> {

@@ -33,6 +33,8 @@ data class SaleItem(
     val unitPrice: BigDecimal,
     val taxRate: BigDecimal,
     val taxAmount: BigDecimal,
+    val serviceChargeRate: BigDecimal = BigDecimal.ZERO,
+    val serviceChargeAmount: BigDecimal = BigDecimal.ZERO,
     val discountAmount: BigDecimal = BigDecimal.ZERO,
     val discountLabel: String? = null,
     val totalAmount: BigDecimal,

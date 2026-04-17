@@ -6,6 +6,7 @@ import com.extrotarget.extroposv2.core.data.local.dao.PrinterDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
+import com.extrotarget.extroposv2.core.data.model.Shift
 import com.extrotarget.extroposv2.core.data.model.hardware.PrinterConfig
 import com.extrotarget.extroposv2.core.data.repository.lhdn.LhdnRepository
 import com.extrotarget.extroposv2.core.hardware.printer.*
@@ -76,6 +77,54 @@ class PrintReceiptUseCase @Inject constructor(
                         tag = printerConfig.printerTag ?: "ORDER"
                     )
                 }
+            }
+        }
+    }
+
+    suspend fun printZReport(shift: Shift) {
+        val receiptConfig = receiptDao.getReceiptConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig()
+        val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
+        val defaultPrinter = allPrinters.find { it.isDefault } ?: allPrinters.firstOrNull()
+
+        defaultPrinter?.let { config ->
+            printToPrinter(config) {
+                ReceiptGenerator.generateZReport(shift, receiptConfig)
+            }
+        }
+    }
+
+    suspend fun printEodReport(eod: com.extrotarget.extroposv2.core.data.model.EndOfDay) {
+        val receiptConfig = receiptDao.getReceiptConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig()
+        val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
+        val defaultPrinter = allPrinters.find { it.isDefault } ?: allPrinters.firstOrNull()
+
+        defaultPrinter?.let { config ->
+            printToPrinter(config) {
+                ReceiptGenerator.generateEodReport(eod, receiptConfig)
+            }
+        }
+    }
+
+    suspend fun openCashDrawer() {
+        val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
+        val drawerPrinter = allPrinters.find { it.printerTag == "RECEIPT" } 
+            ?: allPrinters.find { it.isDefault } 
+            ?: allPrinters.firstOrNull()
+
+        drawerPrinter?.let { config ->
+            printToPrinter(config) {
+                listOf(PrintCommand.DrawerKick)
+            }
+        }
+    }
+
+    suspend fun printTableQr(tableName: String, qrContent: String) {
+        val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
+        val defaultPrinter = allPrinters.find { it.isDefault } ?: allPrinters.firstOrNull()
+
+        defaultPrinter?.let { config ->
+            printToPrinter(config) {
+                ReceiptGenerator.generateTableQrSticker(tableName, qrContent)
             }
         }
     }

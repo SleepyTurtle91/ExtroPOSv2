@@ -24,6 +24,28 @@
     <string name="sales_qr">DuitNow QR</string>
     <string name="sales_staff_selection">Select Staff</string>
     <string name="sales_receipt_id">Receipt ID</string>
+    <string name="sales_select_modifiers">Select Modifiers</string>
+    <string name="sales_save_selection">Save Selection</string>
+    <string name="sales_cash_received">Cash Received</string>
+    <string name="sales_total_payable">Total Payable</string>
+    <string name="sales_amount_received">Amount Received</string>
+    <string name="sales_change_to_give">Change to Give</string>
+    <string name="sales_confirm_payment">Confirm Payment</string>
+    <string name="sales_processing_card">Processing Card Payment</string>
+    <string name="sales_terminal_comm">Communicating with terminal...</string>
+    <string name="sales_order_paid">Order Paid</string>
+    <string name="sales_transaction_success">Transaction Successful</string>
+    <string name="sales_scan_e_receipt">Scan for E-Receipt</string>
+    <string name="sales_ticket_summary">Ticket Summary</string>
+    <string name="sales_total_paid">Total Paid</string>
+    <string name="sales_print_receipt">Print Receipt</string>
+    <string name="sales_next_order">Next Order</string>
+    <string name="sales_duitnow_qr">DuitNow QR</string>
+    <string name="sales_e_wallet">E-Wallet</string>
+    <string name="sales_lhdn_compliance">All transactions are recorded securely for LHDN compliance.</string>
+    <string name="sales_clear_cart">Clear Cart</string>
+    <string name="sales_clear_cart_confirm">Are you sure you want to clear the current cart items?</string>
+    <string name="sales_clear_all">Clear All</string>
 
     <!-- Inventory -->
     <string name="inv_products">Products</string>
@@ -61,4 +83,60 @@
     <string name="btn_confirm">Confirm</string>
     <string name="btn_save">Save</string>
     <string name="btn_delete">Delete</string>
+    <string name="invalid_pin">Invalid PIN</string>
+    <string name="invalid_admin_pin">Invalid Admin PIN</string>
+
+    <!-- Header & Status -->
+    <string name="header_extropos">EXTROPOS</string>
+    <string name="header_table_label">TABLE %1$s</string>
+    <string name="status_online">ONLINE</string>
+    <string name="status_offline">OFFLINE</string>
+    <string name="status_connecting">CONNECTING</string>
+    <string name="status_synced">SYNCED</string>
+    <string name="status_idle">IDLE</string>
+    <string name="status_error">ERROR</string>
+    <string name="role_administrator">ADMINISTRATOR</string>
+
+    <!-- Shift Management -->
+    <string name="shift_open_new">Open New Shift</string>
+    <string name="shift_enter_float">Enter the starting cash float in the drawer</string>
+    <string name="shift_start_float_label">Starting Float (MYR)</string>
+    <string name="shift_start_btn">START SHIFT</string>
+    <string name="shift_active">Active Shift</string>
+    <string name="shift_closed">Shift Closed</string>
+    <string name="shift_history">Shift History</string>
+    <string name="shift_details">Shift Details</string>
+    <string name="shift_start_time">Start Time</string>
+    <string name="shift_end_time">End Time</string>
+    <string name="shift_staff">Staff</string>
+    <string name="shift_expected_cash">Expected Cash</string>
+    <string name="shift_actual_cash">Actual Cash</string>
+    <string name="shift_difference">Difference</string>
+    <string name="shift_total_sales">Total Sales</string>
+    <string name="shift_total_tax">Total Tax</string>
+    <string name="shift_z_report">Z-Report</string>
+    <string name="shift_print_z_report">Print Z-Report</string>
+    <string name="shift_no_history">No shift history found.</string>
+    <string name="shift_terminal">Terminal</string>
+    <string name="shift_recon_title">Cash Drawer Reconciliation</string>
+    <string name="shift_cash_in">Cash In (Additions)</string>
+    <string name="shift_cash_out">Cash Out (Withdrawals)</string>
+    <string name="shift_system_expected">System Expected Cash</string>
+    <string name="shift_actual_drawer">Actual Drawer Cash</string>
+    <string name="shift_shortage">CASH SHORTAGE</string>
+    <string name="shift_overage">CASH OVERAGE</string>
+    <string name="shift_balanced">CASH BALANCED</string>
+    <string name="shift_financial_summary">Daily Financial Summary</string>
+    <string name="shift_gross_sales">Gross Sales</string>
+    <string name="shift_tax_collected">%1$s Collected</string>
+    <string name="shift_rounding">Rounding</string>
+    <string name="shift_by_payment">Sales by Payment Method</string>
+    <string name="shift_net_revenue">Total Net Revenue</string>
+    <string name="shift_export_csv">Export to CSV</string>
+    <string name="shift_select_to_view">Select a shift to view details</string>
+    <string name="active_shift">Active Shift</string>
+    <string name="close_shift_z_report">Close Shift &amp; Z-Report</string>
+    <string name="cash_in">Cash In</string>
+    <string name="cash_out">Cash Out</string>
+    <string name="recent_adjustments">Recent Adjustments</string>
 </resources>

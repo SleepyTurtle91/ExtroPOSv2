@@ -11,6 +11,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.res.stringResource
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.ui.components.qr.QrCodeView
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,15 +30,24 @@ import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 import com.extrotarget.extroposv2.ui.sales.components.*
 import com.extrotarget.extroposv2.ui.fnb.TableFloorPlanScreen
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.extrotarget.extroposv2.core.auth.SessionManager
 import com.extrotarget.extroposv2.ui.loyalty.MemberManagementScreen
 
 @Composable
 fun SalesScreen(
+    modifier: Modifier = Modifier,
     viewModel: SalesViewModel,
-    modifier: Modifier = Modifier
+    sessionManager: SessionManager,
+    onNavigateToShift: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var currentTime by remember { mutableStateOf(java.util.Date()) }
+
+    LaunchedEffect(uiState.terminalStatus) {
+        if (uiState.terminalStatus == "SHIFT_CLOSED") {
+            onNavigateToShift()
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -61,7 +72,10 @@ fun SalesScreen(
                 activeMode = activeMode,
                 uiState = uiState,
                 currentTime = currentTime,
-                syncStatus = uiState.syncStatus
+                syncStatus = uiState.syncStatus,
+                sessionManager = sessionManager,
+                onOpenShift = { onNavigateToShift() },
+                onOpenDrawer = { viewModel.openDrawer() }
             )
 
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
@@ -121,19 +135,19 @@ fun SalesScreen(
     if (uiState.showConfirmClearCart) {
         AlertDialog(
             onDismissRequest = { viewModel.cancelClearCart() },
-            title = { Text("CLEAR CART", fontWeight = FontWeight.Black) },
-            text = { Text("Are you sure you want to clear the current cart items?") },
+            title = { Text(stringResource(R.string.sales_clear_cart).uppercase(), fontWeight = FontWeight.Black) },
+            text = { Text(stringResource(R.string.sales_clear_cart_confirm)) },
             confirmButton = {
                 TextButton(
                     onClick = { viewModel.executeClearCart() },
                     colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))
                 ) {
-                    Text("CLEAR ALL", fontWeight = FontWeight.Black)
+                    Text(stringResource(R.string.sales_clear_all).uppercase(), fontWeight = FontWeight.Black)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.cancelClearCart() }) {
-                    Text("CANCEL", fontWeight = FontWeight.Black, color = Color(0xFF64748B))
+                    Text(stringResource(R.string.btn_cancel).uppercase(), fontWeight = FontWeight.Black, color = Color(0xFF64748B))
                 }
             },
             shape = RoundedCornerShape(24.dp)

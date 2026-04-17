@@ -49,9 +49,17 @@ class SaleRepository @Inject constructor(
     fun getSalesInRange(start: Long, end: Long): Flow<List<Sale>> =
         saleDao.getSalesInRange(start, end)
 
-    suspend fun updateLocalStock(productId: String, quantity: java.math.BigDecimal) {
+    suspend fun getSalesInRangeNow(start: Long, end: Long): List<Sale> =
+        saleDao.getSalesInRangeNow(start, end)
+
+    suspend fun updateLocalStock(productId: String, quantity: java.math.BigDecimal, isAvailable: Boolean? = null) {
         val product = productDao.getProductById(productId)
         productDao.setStockQuantity(productId, quantity)
+        if (isAvailable != null) {
+            product?.let {
+                productDao.updateProduct(it.copy(isAvailable = isAvailable))
+            }
+        }
         
         // Check for low stock alert
         if (product != null && quantity <= product.minStockLevel && product.minStockLevel > java.math.BigDecimal.ZERO) {

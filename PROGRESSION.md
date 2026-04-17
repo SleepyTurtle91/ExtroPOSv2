@@ -33,9 +33,9 @@ This file tracks the implementation status of features defined in the developmen
 - [x] **Integration**: Automatic job creation upon sales checkout for car wash services.
 
 ### ☕ F&B Module (Cafe / Restaurant)
-- [x] **Table Management**: Visual floor plan with order status.
-- [x] **Kitchen Printing**: Split routing (Food to Kitchen, Drinks to Bar).
-- [x] **Order Modifiers**: Support for "Bungkus", "Ikat Tepi", and custom add-ons.
+- [x] **Table Management**: Visual floor plan with order status and "Tambah Order" sync.
+- [x] **Kitchen Printing**: Split routing (Food to Kitchen, Drinks to Bar) with high-visibility formatting.
+- [x] **Hierarchical Modifiers**: Multi-level binding (Category-linked with Product-level bypass) and `BigDecimal` price adjustment integration.
 
 ### 🧺 Dobi / Laundry Module
 - [x] **Order Tracking**: Received -> Processing -> Ready -> Collected (Data Layer).
@@ -55,12 +55,14 @@ This file tracks the implementation status of features defined in the developmen
 - [x] **SST Reporting**: Automated calculation of 6%/8%/10% tax for Malaysian filing with CSV Export.
 - [x] **Backup & Restore**: Secure database export/import via Storage Access Framework (SAF) with automatic checkpointing and app restart.
 
-## Phase 7: Security, Licensing & Multi-User
+## Phase 7: Security, Licensing & Beta Readiness
 - [x] **Software Licensing**: Device-bound encrypted license activation and hardware ID (SSAID) binding.
 - [x] **Trial Management**: Automated 14-day trial logic with offline grace periods.
 - [x] **POS Screen Lock**: PIN-based high-speed user switching for shared terminals.
 - [x] **Biometric Authentication**: Fingerprint/Face unlock for high-speed terminal switching.
 - [x] **Role-Based Access Control (RBAC)**: Permission enforcement for Voids, Discounts, and Settings.
+- [x] **Inventory Availability**: Real-time "Out of Stock" toggles and sales UI grey-out logic.
+- [x] **Table QR Infrastructure**: Secure unique QR generation and physical sticker printing.
 
 ## Phase 8: Genius POS UI/UX Refactor
 - [x] **Professional Aesthetic**: Slate 800/900 theme with primary blue accents.

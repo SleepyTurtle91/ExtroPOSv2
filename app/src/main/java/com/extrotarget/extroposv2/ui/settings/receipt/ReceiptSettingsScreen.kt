@@ -136,6 +136,23 @@ fun ReceiptSettingsScreen(
                     )
                 }
             )
+
+            HorizontalDivider()
+            Text("Paper Size", style = MaterialTheme.typography.titleMedium)
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                com.extrotarget.extroposv2.core.data.model.settings.PaperWidth.entries.forEach { width ->
+                    FilterChip(
+                        selected = editableConfig.paperWidth == width,
+                        onClick = { editableConfig = editableConfig.copy(paperWidth = width) },
+                        label = { Text(width.value.toString() + "mm") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         }
     }
 }

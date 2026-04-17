@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -48,13 +49,19 @@ fun SettingsScreen(
                 SettingsItem(
                     title = "Receipt Layout",
                     subtitle = "Customize header, footer, and tax display",
-                    icon = Icons.Default.ReceiptLong,
+                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
                     onClick = { onNavigateTo(Screen.ReceiptSettings.route) }
                 )
             }
 
             item {
                 SettingsCategoryHeader("Business Configuration")
+                SettingsItem(
+                    title = "Products & Catalog",
+                    subtitle = "Manage Categories, Products and Modifiers",
+                    icon = Icons.Default.Inventory,
+                    onClick = { onNavigateTo(Screen.ProductManagement.route) }
+                )
                 SettingsItem(
                     title = "Payment Methods",
                     subtitle = "Manage Cash, DuitNow, and Custom E-Wallets",
@@ -84,6 +91,12 @@ fun SettingsScreen(
                     subtitle = "Configure points and member rewards",
                     icon = Icons.Default.CardMembership,
                     onClick = { onNavigateTo(Screen.LoyaltySettings.route) }
+                )
+                SettingsItem(
+                    title = "Branch Management",
+                    subtitle = "Setup HQ/Branch Sync and Inter-Branch Stock",
+                    icon = Icons.Default.Sync,
+                    onClick = { onNavigateTo(Screen.BranchSettings.route) }
                 )
             }
 
@@ -140,6 +153,22 @@ fun SettingsScreen(
                     subtitle = "Sync data between Master and Slave devices",
                     icon = Icons.Default.CastConnected,
                     onClick = { onNavigateTo(Screen.TerminalSync.route) }
+                )
+            }
+
+            item {
+                SettingsCategoryHeader("Reports & Audits")
+                SettingsItem(
+                    title = "Shift History",
+                    subtitle = "View and print past Z-Reports",
+                    icon = Icons.Default.History,
+                    onClick = { onNavigateTo(Screen.ShiftHistory.route) }
+                )
+                SettingsItem(
+                    title = "LHDN Compliance History",
+                    subtitle = "View submitted e-Invoices to LHDN",
+                    icon = Icons.AutoMirrored.Filled.ReceiptLong,
+                    onClick = { onNavigateTo(Screen.LhdnHistory.route) }
                 )
             }
         }

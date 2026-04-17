@@ -14,7 +14,7 @@ class CartUseCase @Inject constructor() {
             it.product.id == product.id && 
             it.assignedStaffId == assignedStaffId && 
             !it.product.isWeightBased &&
-            it.modifiers.isEmpty() &&
+            it.selectedModifiers.isEmpty() &&
             it.discount == null
         }
 
@@ -60,16 +60,17 @@ class CartUseCase @Inject constructor() {
         }
     }
 
-    fun toggleModifier(cartItems: List<CartItem>, itemToUpdate: CartItem, modifier: String): List<CartItem> {
+    fun toggleModifier(cartItems: List<CartItem>, itemToUpdate: CartItem, modifier: com.extrotarget.extroposv2.core.data.model.Modifier): List<CartItem> {
         return cartItems.map {
             if (it.id == itemToUpdate.id) {
-                val currentModifiers = it.modifiers.toMutableList()
-                if (currentModifiers.contains(modifier)) {
-                    currentModifiers.remove(modifier)
+                val currentModifiers = it.selectedModifiers.toMutableList()
+                val existing = currentModifiers.find { m -> m.id == modifier.id }
+                if (existing != null) {
+                    currentModifiers.remove(existing)
                 } else {
                     currentModifiers.add(modifier)
                 }
-                it.copy(modifiers = currentModifiers)
+                it.copy(selectedModifiers = currentModifiers)
             } else it
         }
     }

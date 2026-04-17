@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ListAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.sp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryScreen(
+    onNavigateToStockTransfer: () -> Unit = {},
     viewModel: InventoryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -124,6 +126,11 @@ fun InventoryScreen(
                                 onClick = { showImportDialog = true }
                             )
                             InventoryActionButton(
+                                icon = Icons.Default.Sync,
+                                label = "Transfer",
+                                onClick = onNavigateToStockTransfer
+                            )
+                            InventoryActionButton(
                                 icon = Icons.Default.QrCodeScanner,
                                 label = "Scan",
                                 onClick = { showScanner = true },
@@ -169,7 +176,7 @@ fun InventoryScreen(
                         modifier = Modifier.weight(1f),
                         label = "TOTAL PRODUCTS",
                         value = "${uiState.filteredProducts.size}",
-                        icon = Icons.Default.ListAlt,
+                        icon = Icons.AutoMirrored.Filled.ListAlt,
                         color = Color(0xFF3B82F6)
                     )
                     InventoryStatCard(
