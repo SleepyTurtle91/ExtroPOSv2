@@ -20,8 +20,8 @@ class NsdHelper @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
-    private val SERVICE_TYPE = "_extropos._tcp."
-    private val SERVICE_NAME = "ExtroPOS_Master"
+    private val SERVICE_TYPE = SyncConfig.SERVICE_TYPE
+    private val SERVICE_NAME = SyncConfig.SERVICE_NAME
 
     private var registrationListener: NsdManager.RegistrationListener? = null
 

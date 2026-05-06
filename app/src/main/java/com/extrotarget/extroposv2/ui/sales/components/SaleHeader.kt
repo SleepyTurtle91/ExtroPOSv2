@@ -8,11 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -41,7 +37,8 @@ fun SaleHeader(
     syncStatus: SyncStatus,
     sessionManager: SessionManager,
     onOpenShift: () -> Unit = {},
-    onOpenDrawer: () -> Unit = {}
+    onOpenDrawer: () -> Unit = {},
+    onSearchQueryChange: (String) -> Unit = {}
 ) {
     val currentUser by sessionManager.currentUser.collectAsState()
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -129,6 +126,23 @@ fun SaleHeader(
                     )
                 }
             }
+
+            // Search Bar in Header (Loyverse style)
+            OutlinedTextField(
+                value = uiState.searchQuery,
+                onValueChange = onSearchQueryChange,
+                modifier = Modifier.width(300.dp).height(48.dp).padding(start = 16.dp),
+                placeholder = { Text("Search product...", fontSize = 12.sp) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                shape = RoundedCornerShape(12.dp),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF3B82F6),
+                    unfocusedBorderColor = Color(0xFFE2E8F0),
+                    focusedContainerColor = Color(0xFFF8FAFC),
+                    unfocusedContainerColor = Color(0xFFF8FAFC)
+                ),
+                singleLine = true
+            )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(32.dp)) {

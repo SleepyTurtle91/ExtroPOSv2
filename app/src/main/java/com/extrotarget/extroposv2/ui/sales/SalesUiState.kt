@@ -49,7 +49,10 @@ data class SalesUiState(
     val tables: List<com.extrotarget.extroposv2.core.data.model.fnb.Table> = emptyList(),
     val syncStatus: com.extrotarget.extroposv2.core.network.SyncStatus = com.extrotarget.extroposv2.core.network.SyncStatus.IDLE,
     val showCashReceivedDialog: Boolean = false,
-    val cashReceived: BigDecimal = BigDecimal.ZERO
+    val cashReceived: BigDecimal = BigDecimal.ZERO,
+    val isTrainingMode: Boolean = false,
+    val terminalRole: com.extrotarget.extroposv2.core.data.model.settings.TerminalRole = com.extrotarget.extroposv2.core.data.model.settings.TerminalRole.MASTER,
+    val operationMode: com.extrotarget.extroposv2.core.data.model.settings.OperationMode = com.extrotarget.extroposv2.core.data.model.settings.OperationMode.HYBRID
 ) {
     val filteredProducts: List<Product> = products.filter { product ->
         (product.businessMode == null || product.businessMode == activeMode.id) &&

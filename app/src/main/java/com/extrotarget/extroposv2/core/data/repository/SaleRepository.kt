@@ -5,25 +5,37 @@ import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
+import com.extrotarget.extroposv2.core.network.SyncMessageType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import com.extrotarget.extroposv2.core.network.SyncServer
 import javax.inject.Singleton
 
 @Singleton
 class SaleRepository @Inject constructor(
-    private val saleDao: SaleDao,
-    private val productDao: ProductDao,
-    private val syncServer: SyncServer
+    private val saleDao: com.extrotarget.extroposv2.core.data.local.dao.SaleDao,
+    private val productDao: com.extrotarget.extroposv2.core.data.local.dao.ProductDao,
+    private val syncServer: com.extrotarget.extroposv2.core.network.SyncServer,
+    private val syncClient: com.extrotarget.extroposv2.core.network.SyncClient,
+    private val settingsRepository: com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
 ) {
     fun getAllSalesWithItems(): Flow<List<SaleWithItems>> =
         saleDao.getAllSalesWithItems()
 
     suspend fun completeSale(sale: Sale, items: List<SaleItem>) {
         saleDao.completeSale(sale, items)
+        
+        // Broadcast to Slaves if we are Master
         if (syncServer.isRunning()) {
-            syncServer.broadcastUpdate("SALE_COMPLETED", SaleWithItems(sale, items))
+            syncServer.broadcastUpdate(SyncMessageType.SALE_COMPLETED, SaleWithItems(sale, items))
+        }
+        
+        // Push to Master if we are Slave
+        val role = settingsRepository.terminalRole.first()
+        if (role == com.extrotarget.extroposv2.core.data.model.settings.TerminalRole.SLAVE) {
+            syncClient.sendRealtimeMessage(SyncMessageType.PUSH_SALE, SaleWithItems(sale, items))
         }
     }
 
@@ -36,6 +48,41 @@ class SaleRepository @Inject constructor(
         saleDao.getPendingSaleWithItemsForTable(tableId)
 
     suspend fun updateSale(sale: Sale) = saleDao.updateSale(sale)
+
+    suspend fun voidSale(saleId: String) {
+        val sale = saleDao.getSaleById(saleId) ?: return
+        if (sale.status == "VOIDED") return
+
+        val items = saleDao.getItemsBySaleId(saleId)
+        
+        // Update sale status
+        saleDao.updateSale(sale.copy(status = "VOIDED"))
+
+        // Restore stock
+        items.forEach { item ->
+            val product = productDao.getProductById(item.productId)
+            if (product != null) {
+                val newStock = product.stockQuantity.add(item.quantity)
+                productDao.setStockQuantity(item.productId, newStock)
+                
+                // Record stock movement (RESTORE)
+                saleDao.insertStockMovement(
+                    com.extrotarget.extroposv2.core.data.model.inventory.StockMovement(
+                        id = java.util.UUID.randomUUID().toString(),
+                        productId = item.productId,
+                        quantity = item.quantity,
+                        type = "VOID_RESTORE",
+                        timestamp = System.currentTimeMillis(),
+                        note = "Voided Sale $saleId"
+                    )
+                )
+            }
+        }
+
+        if (syncServer.isRunning()) {
+            syncServer.broadcastUpdate(SyncMessageType.SALE_VOIDED, saleId)
+        }
+    }
 
     suspend fun getItemsBySaleId(saleId: String): List<SaleItem> = 
         saleDao.getItemsBySaleId(saleId)

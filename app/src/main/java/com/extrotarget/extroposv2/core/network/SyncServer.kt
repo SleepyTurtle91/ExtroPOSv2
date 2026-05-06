@@ -38,7 +38,7 @@ class SyncServer @Inject constructor(
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val sessions = Collections.synchronizedSet(LinkedHashSet<DefaultWebSocketServerSession>())
 
-    fun start(port: Int = 8080) {
+    fun start(port: Int = SyncConfig.DEFAULT_PORT) {
         if (server != null) return
 
         server = embeddedServer(Netty, port = port) {
@@ -51,7 +51,7 @@ class SyncServer @Inject constructor(
             
             routing {
                 intercept(ApplicationCallPipeline.Call) {
-                    val token = call.request.header("X-Sync-Token")
+                    val token = call.request.header(SyncConfig.HEADER_SYNC_TOKEN)
                     val hq = database.branchDao().getHQBranch()
                     if (hq != null && hq.syncToken != null && hq.syncToken != token) {
                         call.respond(HttpStatusCode.Unauthorized, "Invalid Sync Token")
@@ -92,26 +92,52 @@ class SyncServer @Inject constructor(
                                 val text = frame.readText()
                                 try {
                                     val message = com.google.gson.Gson().fromJson(text, Map::class.java)
-                                    if (message["type"] == "PUSH_SALE") {
-                                        val dataJson = com.google.gson.Gson().toJson(message["data"])
-                                        val saleWithItems = com.google.gson.Gson().fromJson(dataJson, SaleWithItems::class.java)
-                                        
-                                        scope.launch {
-                                            database.saleDao().completeSale(saleWithItems.sale, saleWithItems.items)
+                                    when (message["type"]) {
+                                        SyncMessageType.PUSH_SALE -> {
+                                            val dataJson = com.google.gson.Gson().toJson(message["data"])
+                                            val saleWithItems = com.google.gson.Gson().fromJson(dataJson, SaleWithItems::class.java)
                                             
-                                            // Broadcast STOCK_UPDATE to all other slaves
-                                            saleWithItems.items.forEach { item ->
-                                                val product = database.productDao().getProductById(item.productId)
-                                                product?.let {
-                                                    broadcastUpdate("STOCK_UPDATE", mapOf(
-                                                        "productId" to it.id,
-                                                        "newQuantity" to it.stockQuantity
+                                            scope.launch {
+                                                database.saleDao().completeSale(saleWithItems.sale, saleWithItems.items)
+                                                
+                                                // Broadcast STOCK_UPDATE to all other slaves
+                                                saleWithItems.items.forEach { item ->
+                                                    val product = database.productDao().getProductById(item.productId)
+                                                    product?.let {
+                                                        broadcastUpdate(SyncMessageType.STOCK_UPDATE, StockUpdateData(
+                                                            productId = it.id,
+                                                            newQuantity = it.stockQuantity
+                                                        ))
+                                                    }
+                                                }
+
+                                                // Re-broadcast to all other slaves
+                                                broadcastUpdate(SyncMessageType.SALE_COMPLETED, saleWithItems)
+                                            }
+                                        }
+                                        SyncMessageType.UPDATE_PRODUCT -> {
+                                            val dataJson = com.google.gson.Gson().toJson(message["data"])
+                                            val product = com.google.gson.Gson().fromJson(dataJson, com.extrotarget.extroposv2.core.data.model.Product::class.java)
+                                            scope.launch {
+                                                database.productDao().updateProduct(product)
+                                                broadcastUpdate(SyncMessageType.PRODUCT_SYNC, product)
+                                            }
+                                        }
+                                        SyncMessageType.UPDATE_STOCK -> {
+                                            val dataJson = com.google.gson.Gson().toJson(message["data"])
+                                            val stockUpdate = com.google.gson.Gson().fromJson(dataJson, Map::class.java)
+                                            val productId = stockUpdate["productId"] as String
+                                            val adj = (stockUpdate["adjustment"] as Double).toBigDecimal()
+                                            scope.launch {
+                                                database.productDao().updateStockQuantity(productId, adj)
+                                                val updated = database.productDao().getProductById(productId)
+                                                updated?.let {
+                                                    broadcastUpdate(SyncMessageType.STOCK_UPDATE, StockUpdateData(
+                                                        productId = it.id,
+                                                        newQuantity = it.stockQuantity
                                                     ))
                                                 }
                                             }
-
-                                            // Re-broadcast to all other slaves
-                                            broadcastUpdate("SALE_COMPLETED", saleWithItems)
                                         }
                                     }
                                 } catch (e: Exception) {
@@ -144,7 +170,7 @@ class SyncServer @Inject constructor(
                         database.saleDao().completeSale(saleWithItems.sale, saleWithItems.items)
                         
                         // Notify local terminals if any
-                        broadcastUpdate("SALE_COMPLETED", saleWithItems)
+                        broadcastUpdate(SyncMessageType.SALE_COMPLETED, saleWithItems)
                         call.respond(HttpStatusCode.Created)
                     }
 
@@ -164,7 +190,7 @@ class SyncServer @Inject constructor(
 
     fun broadcastUpdate(type: String, data: Any) {
         scope.launch {
-            val message = mapOf("type" to type, "data" to data)
+            val message = SyncMessage(type = type, data = data)
             val json = com.google.gson.Gson().toJson(message)
             val sessionsToNotify = sessions.toList()
             sessionsToNotify.forEach { session ->

@@ -7,6 +7,7 @@ import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.core.data.repository.SaleRepository
 import com.extrotarget.extroposv2.core.network.SyncClient
+import com.extrotarget.extroposv2.core.network.SyncMessageType
 import com.google.gson.Gson
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -42,7 +43,7 @@ class KdsViewModel @Inject constructor(
             syncClient.realtimeUpdates.collect { json ->
                 try {
                     val update = Gson().fromJson(json, Map::class.java)
-                    if (update["type"] == "SALE_COMPLETED") {
+                    if (update["type"] == SyncMessageType.SALE_COMPLETED) {
                         // In a real KDS, we might want to trigger a sound or highlight
                         // Since we are observing the DB flow in uiState, 
                         // the change to DB will automatically refresh the list if the slave synced.

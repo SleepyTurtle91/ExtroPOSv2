@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -18,6 +19,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.extrotarget.extroposv2.ui.navigation.Screen
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
+import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,6 +29,11 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val activeMode = uiState.activeMode
+    
+    // Collecting training mode state from ViewModel's repository access if we add it to SalesUiState
+    // or just collecting directly here from settingsRepository if available.
+    // For now, let's use the ViewModel to handle the state.
+    val isTrainingMode by viewModel.settingsRepository.isTrainingModeEnabled.collectAsState(initial = false)
 
     Scaffold(
         topBar = {
@@ -38,6 +45,34 @@ fun SettingsScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
+            item {
+                SettingsCategoryHeader("Operational Mode")
+                SettingsItem(
+                    title = "Switch Business Mode",
+                    subtitle = "Current: ${activeMode.displayName}",
+                    icon = Icons.Default.SwapHoriz,
+                    onClick = { onNavigateTo(Screen.ModeSelection.route) }
+                )
+
+                ListItem(
+                    headlineContent = { Text("Training Mode") },
+                    supportingContent = { Text("Practice without affecting actual data. Data clears on exit.") },
+                    leadingContent = { 
+                        Icon(
+                            Icons.Default.School, 
+                            contentDescription = null, 
+                            tint = if (isTrainingMode) Color(0xFFF59E0B) else MaterialTheme.colorScheme.primary
+                        ) 
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = isTrainingMode,
+                            onCheckedChange = { viewModel.setTrainingMode(it) }
+                        )
+                    }
+                )
+            }
+
             item {
                 SettingsCategoryHeader("Hardware & Printing")
                 SettingsItem(

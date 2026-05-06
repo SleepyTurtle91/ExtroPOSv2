@@ -67,7 +67,19 @@ fun SalesScreen(
     val activeMode = uiState.activeMode
 
     Row(modifier = modifier.fillMaxSize().background(Color(0xFFF1F5F9))) {
+        // 1. Navigation Sidebar (Loyverse Style)
+        SidebarNavigation(
+            activeTab = uiState.activeTab,
+            onTabSelect = { viewModel.setActiveTab(it) },
+            activeMode = activeMode,
+            onToggleSettings = { viewModel.toggleSettingsModal(it) },
+            onLock = { viewModel.lock() },
+            isTrainingMode = uiState.isTrainingMode,
+            operationMode = uiState.operationMode
+        )
+
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            // 2. Top Header
             SaleHeader(
                 activeMode = activeMode,
                 uiState = uiState,
@@ -75,24 +87,18 @@ fun SalesScreen(
                 syncStatus = uiState.syncStatus,
                 sessionManager = sessionManager,
                 onOpenShift = { onNavigateToShift() },
-                onOpenDrawer = { viewModel.openDrawer() }
+                onOpenDrawer = { viewModel.openDrawer() },
+                onSearchQueryChange = { viewModel.updateSearchQuery(it) }
             )
 
+            // 3. Main Content Area (Product Grid / Tables / etc.)
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 when (uiState.activeTab) {
                     "pos" -> {
-                        PosContent(
+                        PosContentGrid(
                             uiState = uiState,
-                            onSearchQueryChange = { viewModel.updateSearchQuery(it) },
                             onProductClick = { viewModel.addToCart(it) },
-                            onUpdateQuantity = { item, qty -> viewModel.updateQuantity(item, qty) },
-                            onShowModifiers = { viewModel.showModifierSelection(it) },
-                            onRemoveFromCart = { viewModel.removeFromCart(it) },
-                            onClearCart = { viewModel.clearCartWithConfirm() },
-                            onSendToKitchen = { viewModel.sendToKitchen() },
-                            onCompleteSale = { viewModel.completeSale(it) },
-                            onAddCustomer = { viewModel.setShowMemberSelection(true) },
-                            onRedeemPoints = { viewModel.setRedeemedPoints(it) }
+                            onSelectCategory = { viewModel.selectCategory(it) }
                         )
                     }
                     "tables" -> {
@@ -114,6 +120,19 @@ fun SalesScreen(
                 }
             }
         }
+
+        // 4. Right Cart Sidebar (Permanent)
+        CartSidebar(
+            uiState = uiState,
+            onUpdateQuantity = { item, qty -> viewModel.updateQuantity(item, qty) },
+            onShowModifiers = { viewModel.showModifierSelection(it) },
+            onRemoveFromCart = { viewModel.removeFromCart(it) },
+            onClearCart = { viewModel.clearCartWithConfirm() },
+            onSendToKitchen = { viewModel.sendToKitchen() },
+            onCompleteSale = { viewModel.completeSale(it) },
+            onAddCustomer = { viewModel.setShowMemberSelection(true) },
+            onRedeemPoints = { viewModel.setRedeemedPoints(it) }
+        )
     }
 
     if (uiState.showPaymentMethodDialog) {

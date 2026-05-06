@@ -24,13 +24,21 @@ import com.extrotarget.extroposv2.ui.sales.BusinessMode
 fun SidebarNavigation(
     activeMode: BusinessMode,
     activeTab: String,
-    onTabSelected: (String) -> Unit,
+    onTabSelect: (String) -> Unit,
     onToggleSettings: (Boolean) -> Unit,
-    onLock: () -> Unit
+    onLock: () -> Unit,
+    isTrainingMode: Boolean = false,
+    operationMode: com.extrotarget.extroposv2.core.data.model.settings.OperationMode = com.extrotarget.extroposv2.core.data.model.settings.OperationMode.HYBRID
 ) {
+    val sidebarColor = when {
+        isTrainingMode -> Color(0xFFF59E0B)
+        operationMode == com.extrotarget.extroposv2.core.data.model.settings.OperationMode.BACKEND_ONLY -> Color(0xFF475569) // Office Grey
+        else -> Color(0xFF1E293B) // Standard Slate
+    }
+
     Surface(
         modifier = Modifier.width(100.dp).fillMaxHeight(),
-        color = Color(0xFF1E293B),
+        color = sidebarColor,
         tonalElevation = 8.dp
     ) {
         Column(
@@ -54,11 +62,21 @@ fun SidebarNavigation(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                if (isTrainingMode) {
+                    Text(
+                        "TRAINING",
+                        color = Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        modifier = Modifier.background(Color.Black.copy(alpha = 0.2f), RoundedCornerShape(4.dp)).padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+
                 NavButton(
                     icon = if (activeMode.hasTables) Icons.Default.Restaurant else Icons.Default.ShoppingCart,
                     label = if (activeMode.hasTables) "FLOOR" else "SALES",
                     isSelected = activeTab == "pos",
-                    onClick = { onTabSelected("pos") }
+                    onClick = { onTabSelect("pos") }
                 )
                 
                 if (activeMode.hasTables) {
@@ -66,7 +84,7 @@ fun SidebarNavigation(
                         icon = Icons.Default.Layers,
                         label = "TABLES",
                         isSelected = activeTab == "tables",
-                        onClick = { onTabSelected("tables") }
+                        onClick = { onTabSelect("tables") }
                     )
                 }
 
@@ -75,7 +93,7 @@ fun SidebarNavigation(
                         icon = Icons.Default.Calculate,
                         label = "STAFF",
                         isSelected = activeTab == "staff",
-                        onClick = { onTabSelected("staff") }
+                        onClick = { onTabSelect("staff") }
                     )
                 }
                 
@@ -83,7 +101,7 @@ fun SidebarNavigation(
                     icon = Icons.Default.Inventory,
                     label = "STOCK",
                     isSelected = activeTab == "inventory",
-                    onClick = { onTabSelected("inventory") }
+                    onClick = { onTabSelect("inventory") }
                 )
             }
 

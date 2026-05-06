@@ -38,6 +38,10 @@ import com.extrotarget.extroposv2.ui.lhdn.history.LhdnHistoryViewModel
 import com.extrotarget.extroposv2.ui.report.ZReportScreen
 import com.extrotarget.extroposv2.ui.report.ShiftManagementScreen
 import com.extrotarget.extroposv2.ui.report.history.ShiftHistoryScreen
+import com.extrotarget.extroposv2.ui.report.SalesHistoryScreen
+import com.extrotarget.extroposv2.ui.report.viewmodel.SalesHistoryViewModel
+import com.extrotarget.extroposv2.ui.fnb.kds.KdsScreen
+import com.extrotarget.extroposv2.ui.settings.ModeSelectionScreen
 
 import com.extrotarget.extroposv2.ui.inventory.transfer.StockTransferScreen
 import com.extrotarget.extroposv2.ui.settings.branch.BranchSettingsScreen
@@ -140,6 +144,13 @@ fun NavGraph(
             )
         }
 
+        composable(Screen.ModeSelection.route) {
+            ModeSelectionScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = hiltViewModel()
+            )
+        }
+
         composable("printer_settings") {
             PrinterSettingsScreen(viewModel = hiltViewModel())
         }
@@ -183,6 +194,17 @@ fun NavGraph(
                 viewModel = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+
+        composable(Screen.SalesHistory.route) {
+            SalesHistoryScreen(
+                viewModel = hiltViewModel(),
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Kds.route) {
+            KdsScreen(viewModel = hiltViewModel())
         }
 
         composable(Screen.SecurityAudit.route) {

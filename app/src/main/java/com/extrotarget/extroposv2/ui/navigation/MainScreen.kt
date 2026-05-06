@@ -77,18 +77,35 @@ fun MainScreen(
     }
 
     val activeBusinessMode by viewModel.activeBusinessMode.collectAsState()
+    val operationMode by viewModel.operationMode.collectAsState()
 
-    val screens = remember(activeBusinessMode) {
-        listOfNotNull(
-            Screen.Sales,
-            if (activeBusinessMode.hasTables) Screen.Tables else null,
-            if (activeBusinessMode == BusinessMode.CARWASH) Screen.CarWash else null,
-            if (activeBusinessMode == BusinessMode.LAUNDRY) Screen.Laundry else null,
-            Screen.Inventory,
-            Screen.Analytics,
-            if (activeBusinessMode.hasStaffAssignment) Screen.Staff else null,
-            Screen.Settings
-        )
+    val screens = remember(activeBusinessMode, operationMode) {
+        val allScreens = mutableListOf<Screen>()
+        
+        // 1. Sales & Operations (Hidden in Backend Mode)
+        if (operationMode != com.extrotarget.extroposv2.core.data.model.settings.OperationMode.BACKEND_ONLY) {
+            allScreens.add(Screen.Sales)
+            if (activeBusinessMode.hasTables) allScreens.add(Screen.Tables)
+            if (activeBusinessMode.hasTables) allScreens.add(Screen.Kds)
+            if (activeBusinessMode == BusinessMode.CARWASH) allScreens.add(Screen.CarWash)
+            if (activeBusinessMode == BusinessMode.LAUNDRY) allScreens.add(Screen.Laundry)
+        }
+
+        // 2. Office & Management (Always visible in Backend & Hybrid, hidden in Counter)
+        if (operationMode != com.extrotarget.extroposv2.core.data.model.settings.OperationMode.POS_ONLY) {
+            allScreens.add(Screen.SalesHistory)
+            allScreens.add(Screen.Inventory)
+            allScreens.add(Screen.Analytics)
+            if (activeBusinessMode.hasStaffAssignment) allScreens.add(Screen.Staff)
+        } else {
+            // Limited history for counters
+            allScreens.add(Screen.SalesHistory)
+        }
+
+        // 3. Settings (Always available)
+        allScreens.add(Screen.Settings)
+        
+        allScreens.toList()
     }
 
     Scaffold(

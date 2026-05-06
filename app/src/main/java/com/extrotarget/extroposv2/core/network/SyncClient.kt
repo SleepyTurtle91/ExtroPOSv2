@@ -45,7 +45,7 @@ class SyncClient @Inject constructor(
         install(WebSockets)
     }
 
-    private val _realtimeUpdates = MutableSharedFlow<String>()
+    private val _realtimeUpdates = MutableSharedFlow<String>(extraBufferCapacity = 10)
     val realtimeUpdates: SharedFlow<String> = _realtimeUpdates.asSharedFlow()
 
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.IDLE)
@@ -53,7 +53,17 @@ class SyncClient @Inject constructor(
 
     private var session: DefaultClientWebSocketSession? = null
 
-    suspend fun connectToRealtime(masterIp: String, port: Int = 8080, syncToken: String? = null) {
+    fun isConnected(): Boolean = _syncStatus.value == SyncStatus.CONNECTED
+
+    suspend fun sendRealtimeMessage(type: String, data: Any) {
+        session?.let {
+            val message = SyncMessage(type = type, data = data)
+            val json = com.google.gson.Gson().toJson(message)
+            it.send(Frame.Text(json))
+        }
+    }
+
+    suspend fun connectToRealtime(masterIp: String, port: Int = SyncConfig.DEFAULT_PORT, syncToken: String? = null) {
         var delayMs = 1000L
         while (true) {
             _syncStatus.value = SyncStatus.CONNECTING
@@ -64,7 +74,7 @@ class SyncClient @Inject constructor(
                     port = port,
                     path = "/sync/realtime",
                     request = {
-                        syncToken?.let { header("X-Sync-Token", it) }
+                        syncToken?.let { header(SyncConfig.HEADER_SYNC_TOKEN, it) }
                     }
                 ) {
                     session = this
@@ -76,7 +86,8 @@ class SyncClient @Inject constructor(
                     delayMs = 1000L // Reset delay on success
                     for (frame in incoming) {
                         if (frame is Frame.Text) {
-                            _realtimeUpdates.emit(frame.readText())
+                            val text = frame.readText()
+                            _realtimeUpdates.emit(text)
                         }
                     }
                 }
@@ -98,14 +109,12 @@ class SyncClient @Inject constructor(
     private suspend fun pushUnsyncedSales() {
         val unsynced = database.saleDao().getUnsyncedSalesWithItems()
         unsynced.forEach { saleWithItems ->
-            val message = mapOf("type" to "PUSH_SALE", "data" to saleWithItems)
-            val json = com.google.gson.Gson().toJson(message)
-            session?.send(Frame.Text(json))
+            sendRealtimeMessage(SyncMessageType.PUSH_SALE, saleWithItems)
             database.saleDao().markSaleAsSynced(saleWithItems.sale.id)
         }
     }
 
-    suspend fun syncFromMaster(masterIp: String, port: Int = 8080, force: Boolean = false, syncToken: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun syncFromMaster(masterIp: String, port: Int = SyncConfig.DEFAULT_PORT, force: Boolean = false, syncToken: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             // Dirty Check
             val unsyncedCount = database.saleDao().getUnsyncedCount()
@@ -114,7 +123,7 @@ class SyncClient @Inject constructor(
             }
 
             val response: HttpResponse = client.get("http://$masterIp:$port/sync/database") {
-                syncToken?.let { header("X-Sync-Token", it) }
+                syncToken?.let { header(SyncConfig.HEADER_SYNC_TOKEN, it) }
             }
             
             if (response.status.value == 200) {

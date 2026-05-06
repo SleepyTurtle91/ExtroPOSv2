@@ -20,12 +20,13 @@ object InvoisMapper {
         items: List<SaleItem>,
         config: LhdnConfig,
         buyer: BuyerInfo = BuyerInfo(),
-        isConsolidated: Boolean = false
+        isConsolidated: Boolean = false,
+        isCreditNote: Boolean = false
     ): Map<String, Any> {
         val sdfDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         // LHDN requires Z (UTC) or specific offset. Using UTC for sandbox simplicity.
         val sdfTime = SimpleDateFormat("HH:mm:ss'Z'", Locale.getDefault())
-        val now = Date(sale.timestamp)
+        val now = Date(if (isCreditNote) System.currentTimeMillis() else sale.timestamp)
 
         val receiver = if (isConsolidated) {
             mapOf(
@@ -74,7 +75,11 @@ object InvoisMapper {
             ),
             "receiver" to receiver,
             "dateTimeIssued" to sdfDate.format(now) + "T" + sdfTime.format(now),
-            "documentType" to if (isConsolidated) "11" else "01", // 11 = Consolidated Invoice
+            "documentType" to when {
+                isCreditNote -> "03" // Credit Note
+                isConsolidated -> "11" // Consolidated Invoice
+                else -> "01" // Standard Invoice
+            },
             "documentVersion" to "1.1",
             "internalId" to LhdnInvoicingUtils.generateInternalId(sale, config.sellerSstId ?: "NA"),
             "documentItems" to items.map { item ->

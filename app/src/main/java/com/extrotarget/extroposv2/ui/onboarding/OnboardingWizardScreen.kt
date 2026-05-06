@@ -340,39 +340,42 @@ fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel)
         
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            BusinessMode.values().forEach { mode ->
+            BusinessMode.entries.forEach { mode ->
                 val isSelected = uiState.businessMode == mode
                 Surface(
                     modifier = Modifier
                         .weight(1f)
-                        .height(80.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isSelected) mode.color.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f))
+                        .height(110.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable { viewModel.updateBusinessMode(mode) }
                         .border(
-                            1.dp,
+                            2.dp,
                             if (isSelected) mode.color else Color.White.copy(alpha = 0.1f),
-                            RoundedCornerShape(12.dp)
-                        )
-                        .clickable { viewModel.updateBusinessMode(mode) },
-                    color = Color.Transparent
+                            RoundedCornerShape(20.dp)
+                        ),
+                    color = if (isSelected) mode.color.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f)
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
+                        modifier = Modifier.padding(8.dp)
                     ) {
                         Icon(
                             mode.icon, 
                             contentDescription = null, 
                             tint = if (isSelected) mode.color else Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(32.dp)
                         )
+                        Spacer(Modifier.height(8.dp))
                         Text(
-                            mode.displayName.split(" ").first(),
+                            mode.displayName,
                             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Black
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Black,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 14.sp
                         )
                     }
                 }

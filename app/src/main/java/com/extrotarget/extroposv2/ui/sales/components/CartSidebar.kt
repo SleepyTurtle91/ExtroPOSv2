@@ -201,6 +201,9 @@ fun CartSidebar(
                             val scLabel = "SERVICE CHARGE (${scRate}%)"
                             SummaryRow(scLabel, CurrencyUtils.format(uiState.totalServiceCharge))
                         }
+                        if (uiState.roundingAdjustment != BigDecimal.ZERO) {
+                            SummaryRow("ROUNDING (BNM)", CurrencyUtils.format(uiState.roundingAdjustment), valueColor = Color(0xFFF59E0B))
+                        }
                     }
                     
                     HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), color = Color(0xFFE2E8F0))
@@ -211,13 +214,22 @@ fun CartSidebar(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(stringResource(R.string.sales_total_payable).uppercase(), color = Color(0xFF0F172A), fontWeight = FontWeight.Black, fontSize = 14.sp)
-                        Text(
-                            CurrencyUtils.format(uiState.totalAmount),
-                            color = Color(0xFF3B82F6),
-                            fontWeight = FontWeight.Black,
-                            fontSize = 32.sp,
-                            letterSpacing = (-1).sp
-                        )
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                CurrencyUtils.format(uiState.totalAmountCash),
+                                color = Color(0xFF3B82F6),
+                                fontWeight = FontWeight.Black,
+                                fontSize = 32.sp,
+                                letterSpacing = (-1).sp
+                            )
+                            if (uiState.roundingAdjustment != BigDecimal.ZERO) {
+                                Text(
+                                    "Excl. Rounding: ${CurrencyUtils.format(uiState.totalAmount)}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
                     }
                     
                     Spacer(Modifier.height(24.dp))

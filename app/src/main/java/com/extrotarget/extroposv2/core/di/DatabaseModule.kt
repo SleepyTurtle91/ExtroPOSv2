@@ -22,6 +22,7 @@ import com.extrotarget.extroposv2.core.data.local.dao.AutoCountDao
 import com.extrotarget.extroposv2.core.data.local.dao.ShiftDao
 import com.extrotarget.extroposv2.core.data.local.dao.BranchDao
 import com.extrotarget.extroposv2.core.data.local.dao.StockTransferDao
+import com.extrotarget.extroposv2.core.data.local.training.TrainingDbManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -46,71 +47,107 @@ object DatabaseModule {
     }
 
     @Provides
-    fun provideProductDao(database: AppDatabase): ProductDao = database.productDao()
+    fun provideProductDao(
+        mainDb: AppDatabase,
+        trainingDbManager: TrainingDbManager
+    ): ProductDao {
+        return if (trainingDbManager.isTrainingMode.value) {
+            trainingDbManager.getTrainingDatabase().productDao()
+        } else {
+            mainDb.productDao()
+        }
+    }
 
     @Provides
-    fun provideCategoryDao(database: AppDatabase): CategoryDao = database.categoryDao()
+    fun provideCategoryDao(
+        mainDb: AppDatabase,
+        trainingDbManager: TrainingDbManager
+    ): CategoryDao {
+        return if (trainingDbManager.isTrainingMode.value) {
+            trainingDbManager.getTrainingDatabase().categoryDao()
+        } else {
+            mainDb.categoryDao()
+        }
+    }
 
     @Provides
-    fun provideSaleDao(database: AppDatabase): SaleDao = database.saleDao()
+    fun provideSaleDao(
+        mainDb: AppDatabase,
+        trainingDbManager: TrainingDbManager
+    ): SaleDao {
+        return if (trainingDbManager.isTrainingMode.value) {
+            trainingDbManager.getTrainingDatabase().saleDao()
+        } else {
+            mainDb.saleDao()
+        }
+    }
 
     @Provides
-    fun provideStockMovementDao(database: AppDatabase): StockMovementDao = database.stockMovementDao()
+    fun provideStockMovementDao(
+        mainDb: AppDatabase,
+        trainingDbManager: TrainingDbManager
+    ): StockMovementDao {
+        return if (trainingDbManager.isTrainingMode.value) {
+            trainingDbManager.getTrainingDatabase().stockMovementDao()
+        } else {
+            mainDb.stockMovementDao()
+        }
+    }
 
     @Provides
-    fun provideStaffDao(database: AppDatabase): StaffDao = database.staffDao()
+    fun provideStaffDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): StaffDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().staffDao() else mainDb.staffDao()
 
     @Provides
-    fun provideCommissionRecordDao(database: AppDatabase): CommissionRecordDao = database.commissionRecordDao()
+    fun provideCommissionRecordDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): CommissionRecordDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().commissionRecordDao() else mainDb.commissionRecordDao()
 
     @Provides
-    fun providePrinterDao(database: AppDatabase): PrinterDao = database.printerDao()
+    fun providePrinterDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): PrinterDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().printerDao() else mainDb.printerDao()
 
     @Provides
-    fun provideTableDao(database: AppDatabase): TableDao = database.tableDao()
+    fun provideTableDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): TableDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().tableDao() else mainDb.tableDao()
 
     @Provides
-    fun provideLaundryDao(database: AppDatabase): LaundryDao = database.laundryDao()
+    fun provideLaundryDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): LaundryDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().laundryDao() else mainDb.laundryDao()
 
     @Provides
-    fun provideCarWashDao(database: AppDatabase): CarWashDao = database.carWashDao()
+    fun provideCarWashDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): CarWashDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().carWashDao() else mainDb.carWashDao()
 
     @Provides
-    fun provideReceiptDao(database: AppDatabase): ReceiptDao = database.receiptDao()
+    fun provideReceiptDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): ReceiptDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().receiptDao() else mainDb.receiptDao()
 
     @Provides
-    fun providePaymentMethodDao(database: AppDatabase): PaymentMethodDao = database.paymentMethodDao()
+    fun providePaymentMethodDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): PaymentMethodDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().paymentMethodDao() else mainDb.paymentMethodDao()
 
     @Provides
-    fun provideTaxDao(database: AppDatabase): TaxDao = database.taxDao()
+    fun provideTaxDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): TaxDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().taxDao() else mainDb.taxDao()
 
     @Provides
-    fun provideLhdnDao(database: AppDatabase): LhdnDao = database.lhdnDao()
+    fun provideLhdnDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): LhdnDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().lhdnDao() else mainDb.lhdnDao()
 
     @Provides
-    fun provideDuitNowDao(database: AppDatabase): DuitNowDao = database.duitNowDao()
+    fun provideDuitNowDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): DuitNowDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().duitNowDao() else mainDb.duitNowDao()
 
     @Provides
-    fun provideAutoCountDao(database: AppDatabase): AutoCountDao = database.autoCountDao()
+    fun provideAutoCountDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): AutoCountDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().autoCountDao() else mainDb.autoCountDao()
 
     @Provides
-    fun provideAuditDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.AuditDao = database.auditDao()
+    fun provideAuditDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): com.extrotarget.extroposv2.core.data.local.dao.AuditDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().auditDao() else mainDb.auditDao()
 
     @Provides
-    fun provideLoyaltyDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.loyalty.LoyaltyDao = database.loyaltyDao()
+    fun provideLoyaltyDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): com.extrotarget.extroposv2.core.data.local.dao.loyalty.LoyaltyDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().loyaltyDao() else mainDb.loyaltyDao()
 
     @Provides
-    fun provideShiftDao(database: AppDatabase): ShiftDao = database.shiftDao()
+    fun provideShiftDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): ShiftDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().shiftDao() else mainDb.shiftDao()
 
     @Provides
-    fun provideBranchDao(database: AppDatabase): BranchDao = database.branchDao()
+    fun provideBranchDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): BranchDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().branchDao() else mainDb.branchDao()
 
     @Provides
-    fun provideStockTransferDao(database: AppDatabase): StockTransferDao = database.stockTransferDao()
+    fun provideStockTransferDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): StockTransferDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().stockTransferDao() else mainDb.stockTransferDao()
 
     @Provides
-    fun provideModifierDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.ModifierDao = database.modifierDao()
+    fun provideModifierDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): com.extrotarget.extroposv2.core.data.local.dao.ModifierDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().modifierDao() else mainDb.modifierDao()
 
     @Provides
-    fun provideEndOfDayDao(database: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.EndOfDayDao = database.endOfDayDao()
+    fun provideEndOfDayDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): com.extrotarget.extroposv2.core.data.local.dao.EndOfDayDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().endOfDayDao() else mainDb.endOfDayDao()
 }

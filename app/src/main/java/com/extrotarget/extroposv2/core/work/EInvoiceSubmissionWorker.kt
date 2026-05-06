@@ -22,13 +22,14 @@ class EInvoiceSubmissionWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val saleId = inputData.getString(KEY_SALE_ID) ?: return Result.failure()
         val isConsolidated = inputData.getBoolean(KEY_IS_CONSOLIDATED, false)
+        val isCreditNote = inputData.getBoolean("is_credit_note", false)
 
         val sale = saleRepository.getSaleById(saleId) ?: return Result.failure()
         val items = saleRepository.getItemsBySaleId(saleId)
         
         val buyer = BuyerInfo() 
 
-        val result = lhdnRepository.submitEInvoice(sale, items, buyer, isConsolidated)
+        val result = lhdnRepository.submitEInvoice(sale, items, buyer, isConsolidated, isCreditNote)
 
         return if (result.isSuccess) {
             Result.success()

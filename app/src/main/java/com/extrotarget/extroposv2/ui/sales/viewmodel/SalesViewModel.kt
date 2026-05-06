@@ -57,10 +57,12 @@ class SalesViewModel @Inject constructor(
     private val printReceiptUseCase: PrintReceiptUseCase,
     private val cartUseCase: CartUseCase,
     private val loyaltyRepository: com.extrotarget.extroposv2.core.data.repository.loyalty.LoyaltyRepository,
-    private val settingsRepository: SettingsRepository,
+    val settingsRepository: SettingsRepository,
     private val taxRepository: com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository,
     private val shiftRepository: ShiftRepository,
     private val modifierRepository: com.extrotarget.extroposv2.core.data.repository.fnb.ModifierRepository,
+    private val trainingDbManager: com.extrotarget.extroposv2.core.data.local.training.TrainingDbManager,
+    private val dataSeeder: com.extrotarget.extroposv2.core.data.seeder.DataSeeder,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -119,6 +121,21 @@ class SalesViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            settingsRepository.isTrainingModeEnabled.collect { isTraining ->
+                _uiState.update { it.copy(isTrainingMode = isTraining) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.terminalRole.collect { role ->
+                _uiState.update { it.copy(terminalRole = role) }
+            }
+        }
+        viewModelScope.launch {
+            settingsRepository.operationMode.collect { mode ->
+                _uiState.update { it.copy(operationMode = mode) }
+            }
+        }
     }
 
     fun unlock(pin: String) {
@@ -143,6 +160,10 @@ class SalesViewModel @Inject constructor(
 
     fun updateSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun selectCategory(categoryId: String?) {
+        _uiState.update { it.copy(selectedCategoryId = categoryId) }
     }
 
     fun clearCartWithConfirm() {
@@ -174,6 +195,37 @@ class SalesViewModel @Inject constructor(
                 )
             }
             auditManager.logAction("SETTINGS", "Changed business mode to ${mode.displayName}", "SYSTEM")
+        }
+    }
+
+    fun setTrainingMode(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setTrainingMode(enabled)
+            _uiState.update { it.copy(cartItems = emptyList(), selectedTable = null) }
+            
+            // Log the transition
+            val msg = if (enabled) "Training Mode ENABLED" else "Training Mode DISABLED (Data Cleared)"
+            auditManager.logAction("TRAINING", msg, "SYSTEM")
+            
+            if (enabled) {
+                // Seed training DB with current active mode templates
+                val activeMode = _uiState.value.activeMode
+                dataSeeder.seedForMode(activeMode)
+            } else {
+                trainingDbManager.clearTrainingData()
+            }
+        }
+    }
+
+    fun setTerminalRole(role: com.extrotarget.extroposv2.core.data.model.settings.TerminalRole) {
+        viewModelScope.launch {
+            settingsRepository.updateTerminalRole(role)
+        }
+    }
+
+    fun setOperationMode(mode: com.extrotarget.extroposv2.core.data.model.settings.OperationMode) {
+        viewModelScope.launch {
+            settingsRepository.updateOperationMode(mode)
         }
     }
 

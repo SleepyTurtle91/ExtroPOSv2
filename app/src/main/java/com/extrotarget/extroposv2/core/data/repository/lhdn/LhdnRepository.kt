@@ -231,13 +231,14 @@ class LhdnRepository @Inject constructor(
         sale: Sale,
         items: List<SaleItem>,
         buyer: BuyerInfo,
-        isConsolidated: Boolean = false
+        isConsolidated: Boolean = false,
+        isCreditNote: Boolean = false
     ): Result<String> {
         val config = lhdnDao.getConfig().firstOrNull() ?: return Result.failure(Exception("LHDN not configured"))
 
         try {
             // 1. Map to LHDN JSON format
-            val invoiceJson = InvoisMapper.mapToDocument(sale, items, config, buyer, isConsolidated)
+            val invoiceJson = InvoisMapper.mapToDocument(sale, items, config, buyer, isConsolidated, isCreditNote)
             val jsonString = gson.toJson(invoiceJson)
 
             // 2. Calculate JSON Canonicalization Hash (Simplified for Sandbox)

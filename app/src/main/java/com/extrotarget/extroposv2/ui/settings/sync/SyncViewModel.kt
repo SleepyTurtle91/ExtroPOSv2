@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.extrotarget.extroposv2.core.network.SyncClient
 import com.extrotarget.extroposv2.core.network.SyncServer
+import com.extrotarget.extroposv2.core.network.SyncMessageType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,10 +42,10 @@ class SyncViewModel @Inject constructor(
                 try {
                     val message = com.google.gson.Gson().fromJson(messageJson, Map::class.java)
                     when (message["type"]) {
-                        "SALE_COMPLETED" -> {
+                        SyncMessageType.SALE_COMPLETED -> {
                             _syncStatus.value = "New sale synced from Master."
                         }
-                        "STOCK_UPDATE" -> {
+                        SyncMessageType.STOCK_UPDATE -> {
                             val data = message["data"] as Map<*, *>
                             val productId = data["productId"] as String
                             val newQuantity = java.math.BigDecimal(data["newQuantity"].toString())

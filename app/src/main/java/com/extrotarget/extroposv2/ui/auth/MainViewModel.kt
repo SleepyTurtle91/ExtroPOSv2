@@ -34,6 +34,12 @@ class MainViewModel @Inject constructor(
     val activeBusinessMode: StateFlow<BusinessMode> = settingsRepository.activeBusinessMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), BusinessMode.RETAIL)
 
+    val operationMode: StateFlow<com.extrotarget.extroposv2.core.data.model.settings.OperationMode> = settingsRepository.operationMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.extrotarget.extroposv2.core.data.model.settings.OperationMode.HYBRID)
+
+    val terminalRole: StateFlow<com.extrotarget.extroposv2.core.data.model.settings.TerminalRole> = settingsRepository.terminalRole
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.extrotarget.extroposv2.core.data.model.settings.TerminalRole.MASTER)
+
     val isOnboardingCompleted: StateFlow<Boolean> = settingsRepository.isOnboardingCompleted
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true) // Default to true to avoid flicker if not needed
 
