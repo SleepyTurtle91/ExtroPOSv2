@@ -24,7 +24,8 @@ data class TaxReportItem(
 
 data class ChartDataPoint(
     val label: String,
-    val value: Float
+    val value: Float,
+    val displayValue: BigDecimal = BigDecimal.ZERO
 )
 
 data class AnalyticsUiState(
@@ -71,13 +72,15 @@ class AnalyticsViewModel @Inject constructor(
             val trendFormat = SimpleDateFormat("HH:00", Locale.getDefault())
             val salesTrend = filtered.groupBy { trendFormat.format(Date(it.sale.timestamp)) }
                 .map { (label, salesInGroup) ->
-                    ChartDataPoint(label, salesInGroup.map { it.sale }.sumOfSales { it.totalAmount }.toFloat())
+                    val total = salesInGroup.map { it.sale }.sumOfSales { it.totalAmount }
+                    ChartDataPoint(label, total.toFloat(), total)
                 }.sortedBy { it.label }
 
             // Calculate Category Split
             val categorySplit = items.groupBy { it.productName } // Should use category if available in SaleItem
                 .map { (name, itemsInGroup) ->
-                    ChartDataPoint(name, itemsInGroup.sumOfItems { it.totalAmount }.toFloat())
+                    val total = itemsInGroup.sumOfItems { it.totalAmount }
+                    ChartDataPoint(name, total.toFloat(), total)
                 }.sortedByDescending { it.value }.take(5)
 
             AnalyticsUiState(

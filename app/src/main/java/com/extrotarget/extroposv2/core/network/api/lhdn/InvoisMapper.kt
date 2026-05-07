@@ -83,31 +83,31 @@ object InvoisMapper {
             "documentVersion" to "1.1",
             "internalId" to LhdnInvoicingUtils.generateInternalId(sale, config.sellerSstId ?: "NA"),
             "documentItems" to items.map { item ->
-                val taxRateVal = item.taxRate.toDouble()
+                val taxRateVal = item.taxRate
                 val (taxCategory, taxType) = when {
-                    taxRateVal == 0.0 -> "Z" to "01" // Zero-rated
+                    taxRateVal.compareTo(BigDecimal.ZERO) == 0 -> "Z" to "01" // Zero-rated
                     else -> "S" to "01" // Standard Rated (Defaulting to 01 for Sales Tax, 02 for Service Tax)
                 }
 
                 mapOf(
                     "description" to item.productName,
-                    "quantity" to item.quantity.toDouble(),
-                    "unitPrice" to item.unitPrice.toDouble(),
+                    "quantity" to item.quantity,
+                    "unitPrice" to item.unitPrice,
                     "taxType" to taxType,
                     "taxRate" to taxRateVal,
-                    "taxAmount" to item.taxAmount.toDouble(),
+                    "taxAmount" to item.taxAmount,
                     "taxCategory" to taxCategory,
                     "taxExemptionReason" to if (taxCategory == "Z") "Zero-rated" else null,
-                    "subtotal" to item.totalAmount.toDouble(),
+                    "subtotal" to item.totalAmount,
                     "classification" to "022" // 022 = Retail, 023 = Service (Needs to be dynamic in future)
                 )
             },
-            "totalExcludingTax" to (sale.totalAmount - sale.taxAmount).toDouble(),
-            "totalTaxAmount" to sale.taxAmount.toDouble(),
-            "totalPayableAmount" to sale.totalAmount.toDouble(),
-            "totalDiscountAmount" to sale.discountAmount.toDouble(),
-            "totalRoundingAmount" to sale.roundingAdjustment.toDouble(),
-            "netAmount" to sale.totalAmount.toDouble(),
+            "totalExcludingTax" to (sale.totalAmount - sale.taxAmount),
+            "totalTaxAmount" to sale.taxAmount,
+            "totalPayableAmount" to sale.totalAmount,
+            "totalDiscountAmount" to sale.discountAmount,
+            "totalRoundingAmount" to sale.roundingAdjustment,
+            "netAmount" to sale.totalAmount,
             "invoiceCurrencyCode" to "MYR",
             "billingReference" to listOf(
                 mapOf(

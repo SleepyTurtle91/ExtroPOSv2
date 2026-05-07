@@ -35,6 +35,21 @@ fun LhdnSettingsScreen(
     var isEnabled by remember(config) { mutableStateOf(config?.isEnabled ?: false) }
     var thresholdAmount by remember(config) { mutableStateOf(config?.einvoiceThresholdAmount?.toPlainString() ?: "10000.00") }
 
+    val testResult by viewModel.testResult.collectAsState()
+
+    if (testResult != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearTestResult() },
+            title = { Text(if (testResult!!.isSuccess) "Success" else "Error") },
+            text = { Text(testResult?.getOrNull() ?: testResult?.exceptionOrNull()?.message ?: "Unknown error") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.clearTestResult() }) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -134,6 +149,13 @@ fun LhdnSettingsScreen(
                 label = { Text("Client Secret") },
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Button(
+                onClick = { viewModel.testConnection(clientId, clientSecret, isSandbox) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Test LHDN Connection")
+            }
 
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Checkbox(checked = isSandbox, onCheckedChange = { isSandbox = it })

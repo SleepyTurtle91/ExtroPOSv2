@@ -67,19 +67,8 @@ fun SalesScreen(
     val activeMode = uiState.activeMode
 
     Row(modifier = modifier.fillMaxSize().background(Color(0xFFF1F5F9))) {
-        // 1. Navigation Sidebar (Loyverse Style)
-        SidebarNavigation(
-            activeTab = uiState.activeTab,
-            onTabSelect = { viewModel.setActiveTab(it) },
-            activeMode = activeMode,
-            onToggleSettings = { viewModel.toggleSettingsModal(it) },
-            onLock = { viewModel.lock() },
-            isTrainingMode = uiState.isTrainingMode,
-            operationMode = uiState.operationMode
-        )
-
         Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            // 2. Top Header
+            // 1. Top Header
             SaleHeader(
                 activeMode = activeMode,
                 uiState = uiState,
@@ -91,37 +80,17 @@ fun SalesScreen(
                 onSearchQueryChange = { viewModel.updateSearchQuery(it) }
             )
 
-            // 3. Main Content Area (Product Grid / Tables / etc.)
+            // 2. Main Content Area (Product Grid / Tables / etc.)
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                when (uiState.activeTab) {
-                    "pos" -> {
-                        PosContentGrid(
-                            uiState = uiState,
-                            onProductClick = { viewModel.addToCart(it) },
-                            onSelectCategory = { viewModel.selectCategory(it) }
-                        )
-                    }
-                    "tables" -> {
-                        TableFloorPlanScreen(
-                            viewModel = hiltViewModel<com.extrotarget.extroposv2.ui.fnb.viewmodel.TableViewModel>(),
-                            onTableClick = { table ->
-                                viewModel.selectTable(table)
-                                viewModel.setActiveTab("pos")
-                            }
-                        )
-                    }
-                    "staff" -> {
-                        val staffEarningsViewModel: com.extrotarget.extroposv2.ui.analytics.viewmodel.StaffEarningsViewModel = hiltViewModel()
-                        val staffEarningsState by staffEarningsViewModel.uiState.collectAsState()
-                        StaffEarnings(
-                            staffEarnings = staffEarningsState.staffEarnings
-                        )
-                    }
-                }
+                PosContentGrid(
+                    uiState = uiState,
+                    onProductClick = { viewModel.addToCart(it) },
+                    onSelectCategory = { viewModel.selectCategory(it) }
+                )
             }
         }
 
-        // 4. Right Cart Sidebar (Permanent)
+        // 3. Right Cart Sidebar (Permanent)
         CartSidebar(
             uiState = uiState,
             onUpdateQuantity = { item, qty -> viewModel.updateQuantity(item, qty) },

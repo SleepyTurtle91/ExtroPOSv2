@@ -42,6 +42,8 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object StockTransfer : Screen("stock_transfer", "Stock Transfer", Icons.Default.Inventory)
     object ProductManagement : Screen("product_management", "Products & Modifiers", Icons.Default.EditNote)
     object ModeSelection : Screen("mode_selection", "Switch Business Mode", Icons.Default.SwapHoriz)
+    object Help : Screen("help", "User Manual & Help", Icons.Default.Info)
+    object About : Screen("about", "About ExtroPOS", Icons.Default.Info)
     
     // Analytics Sub-screens
     object InventoryAnalytics : Screen("inventory_analytics", "Low Stock", Icons.Default.Inventory)

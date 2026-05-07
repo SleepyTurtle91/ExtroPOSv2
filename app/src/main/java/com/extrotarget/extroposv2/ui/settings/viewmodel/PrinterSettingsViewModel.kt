@@ -10,10 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.extrotarget.extroposv2.core.data.local.dao.PrinterDao
 import com.extrotarget.extroposv2.core.data.model.hardware.PrinterConfig
-import com.extrotarget.extroposv2.core.hardware.printer.BluetoothPrinter
-import com.extrotarget.extroposv2.core.hardware.printer.NetworkPrinter
-import com.extrotarget.extroposv2.core.hardware.printer.PrintCommand
-import com.extrotarget.extroposv2.core.hardware.printer.UsbPrinter
+import com.extrotarget.extroposv2.core.hardware.printer.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
@@ -25,6 +22,8 @@ import java.util.UUID
 @HiltViewModel
 class PrinterSettingsViewModel @Inject constructor(
     private val printerDao: PrinterDao,
+    private val receiptDao: com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao,
+    private val printerFactory: PrinterFactory,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -78,16 +77,8 @@ class PrinterSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             _printStatus.value = "Connecting to ${config.name}..."
             
-            val printer = when (config.connectionType) {
-                "BLUETOOTH" -> BluetoothPrinter(config.address)
-                "USB" -> {
-                    val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-                    val device = usbManager.deviceList.values.find { it.deviceName == config.address }
-                    if (device != null) UsbPrinter(context, device) else null
-                }
-                "NETWORK" -> NetworkPrinter(config.address, config.port)
-                else -> null
-            }
+            val receiptConfig = receiptDao.getReceiptConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig()
+            val printer = printerFactory.create(config)
 
             if (printer != null) {
                 try {
@@ -104,7 +95,7 @@ class PrinterSettingsViewModel @Inject constructor(
                             PrintCommand.Feed(3),
                             PrintCommand.Cut
                         )
-                        printer.printReceipt(testContent)
+                        printer.printReceipt(testContent, receiptConfig.paperWidth.charWidth)
                         _printStatus.value = "Test print sent successfully"
                     } else {
                         _printStatus.value = "Failed to connect to printer"
@@ -119,6 +110,8 @@ class PrinterSettingsViewModel @Inject constructor(
             }
         }
     }
+
+
 
     fun clearStatus() {
         _printStatus.value = null

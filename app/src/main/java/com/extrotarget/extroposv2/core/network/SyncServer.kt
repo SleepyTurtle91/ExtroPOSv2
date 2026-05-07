@@ -127,7 +127,11 @@ class SyncServer @Inject constructor(
                                             val dataJson = com.google.gson.Gson().toJson(message["data"])
                                             val stockUpdate = com.google.gson.Gson().fromJson(dataJson, Map::class.java)
                                             val productId = stockUpdate["productId"] as String
-                                            val adj = (stockUpdate["adjustment"] as Double).toBigDecimal()
+                                            val adj = try { 
+                                                java.math.BigDecimal(stockUpdate["adjustment"].toString()) 
+                                            } catch (e: Exception) { 
+                                                java.math.BigDecimal.ZERO 
+                                            }
                                             scope.launch {
                                                 database.productDao().updateStockQuantity(productId, adj)
                                                 val updated = database.productDao().getProductById(productId)

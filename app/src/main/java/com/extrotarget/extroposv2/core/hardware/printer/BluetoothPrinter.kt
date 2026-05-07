@@ -16,26 +16,37 @@ class BluetoothPrinter(private val deviceAddress: String) : PrinterInterface {
 
     @SuppressLint("MissingPermission")
     override suspend fun connect(): Boolean = withContext(Dispatchers.IO) {
-        try {
-            val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
-            val device: BluetoothDevice = bluetoothAdapter.getRemoteDevice(deviceAddress)
-            socket = device.createRfcommSocketToServiceRecord(uuid)
-            socket?.connect()
-            outputStream = socket?.outputStream
-            true
-        } catch (e: Exception) {
-            e.printStackTrace()
+        kotlinx.coroutines.withTimeoutOrNull(10000) { // 10s timeout
+            var retryCount = 0
+            while (retryCount < 2) {
+                try {
+                    val bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
+                    val device: BluetoothDevice = bluetoothAdapter.getRemoteDevice(deviceAddress)
+                    socket = device.createRfcommSocketToServiceRecord(uuid)
+                    socket?.connect()
+                    outputStream = socket?.outputStream
+                    return@withTimeoutOrNull true
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    retryCount++
+                    kotlinx.coroutines.delay(1000)
+                }
+            }
             false
-        }
+        } ?: false
     }
 
     override suspend fun disconnect() {
         withContext(Dispatchers.IO) {
             try {
+                outputStream?.flush()
                 outputStream?.close()
                 socket?.close()
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                outputStream = null
+                socket = null
             }
         }
     }
@@ -44,15 +55,16 @@ class BluetoothPrinter(private val deviceAddress: String) : PrinterInterface {
         return socket?.isConnected ?: false
     }
 
-    override suspend fun printReceipt(content: List<PrintCommand>) {
-        withContext(Dispatchers.IO) {
-            try {
-                val bytes = EscPosEncoder.encode(content)
-                outputStream?.write(bytes)
-                outputStream?.flush()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    override suspend fun printReceipt(content: List<PrintCommand>, charWidth: Int): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val bytes = EscPosEncoder.encode(content, charWidth)
+            outputStream?.write(bytes)
+            outputStream?.flush()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
+
 }

@@ -2,6 +2,7 @@ package com.extrotarget.extroposv2.core.util.lhdn
 
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
+import java.math.BigDecimal
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.util.*
@@ -21,8 +22,8 @@ object LhdnInvoicingUtils {
     /**
      * For B2C Consolidated e-Invoices, LHDN requires grouping by tax rate.
      */
-    fun groupItemsByTax(items: List<SaleItem>): Map<Double, List<SaleItem>> {
-        return items.groupBy { it.taxRate.toDouble() }
+    fun groupItemsByTax(items: List<SaleItem>): Map<BigDecimal, List<SaleItem>> {
+        return items.groupBy { it.taxRate }
     }
 
     /**

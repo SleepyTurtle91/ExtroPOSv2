@@ -1,7 +1,6 @@
 package com.extrotarget.extroposv2.core.domain.usecase
 
 import android.content.Context
-import android.hardware.usb.UsbManager
 import com.extrotarget.extroposv2.core.data.local.dao.PrinterDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
 import com.extrotarget.extroposv2.core.data.model.Sale
@@ -20,6 +19,7 @@ class PrintReceiptUseCase @Inject constructor(
     private val receiptDao: ReceiptDao,
     private val lhdnRepository: LhdnRepository,
     private val taxRepository: com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository,
+    private val printerFactory: PrinterFactory,
     @ApplicationContext private val context: Context
 ) {
     suspend operator fun invoke(sale: Sale, items: List<SaleItem>, tableName: String? = null) {
@@ -33,7 +33,7 @@ class PrintReceiptUseCase @Inject constructor(
         // 1. Print Main Receipt
         val lhdnSubmission = lhdnRepository.getSubmissionFlow(sale.id).firstOrNull()
         defaultPrinter?.let { config ->
-            printToPrinter(config) {
+            printToPrinter(config, receiptConfig.paperWidth.charWidth) {
                 ReceiptGenerator.generateSaleReceipt(
                     sale = sale,
                     items = items,
@@ -50,7 +50,7 @@ class PrintReceiptUseCase @Inject constructor(
         allPrinters.filter { it.printerTag != null && it.printerTag != "RECEIPT" }.forEach { printerConfig ->
             val itemsForThisPrinter = itemsByTag[printerConfig.printerTag] ?: emptyList()
             if (itemsForThisPrinter.isNotEmpty()) {
-                printToPrinter(printerConfig) {
+                printToPrinter(printerConfig, receiptConfig.paperWidth.charWidth) {
                     ReceiptGenerator.generateOrderSlip(
                         saleId = sale.id,
                         tableName = tableName,
@@ -63,13 +63,14 @@ class PrintReceiptUseCase @Inject constructor(
     }
 
     suspend fun printOrderSlip(saleId: String, tableName: String?, items: List<SaleItem>) {
+        val receiptConfig = receiptDao.getReceiptConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig()
         val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
         val itemsByTag = items.groupBy { it.printerTag }
         
         allPrinters.filter { it.printerTag != null && it.printerTag != "RECEIPT" }.forEach { printerConfig ->
             val itemsForThisPrinter = itemsByTag[printerConfig.printerTag] ?: emptyList()
             if (itemsForThisPrinter.isNotEmpty()) {
-                printToPrinter(printerConfig) {
+                printToPrinter(printerConfig, receiptConfig.paperWidth.charWidth) {
                     ReceiptGenerator.generateOrderSlip(
                         saleId = saleId,
                         tableName = tableName,
@@ -87,7 +88,7 @@ class PrintReceiptUseCase @Inject constructor(
         val defaultPrinter = allPrinters.find { it.isDefault } ?: allPrinters.firstOrNull()
 
         defaultPrinter?.let { config ->
-            printToPrinter(config) {
+            printToPrinter(config, receiptConfig.paperWidth.charWidth) {
                 ReceiptGenerator.generateZReport(shift, receiptConfig)
             }
         }
@@ -99,7 +100,7 @@ class PrintReceiptUseCase @Inject constructor(
         val defaultPrinter = allPrinters.find { it.isDefault } ?: allPrinters.firstOrNull()
 
         defaultPrinter?.let { config ->
-            printToPrinter(config) {
+            printToPrinter(config, receiptConfig.paperWidth.charWidth) {
                 ReceiptGenerator.generateEodReport(eod, receiptConfig)
             }
         }
@@ -119,36 +120,33 @@ class PrintReceiptUseCase @Inject constructor(
     }
 
     suspend fun printTableQr(tableName: String, qrContent: String) {
+        val receiptConfig = receiptDao.getReceiptConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig()
         val allPrinters = printerDao.getAllPrinters().firstOrNull() ?: emptyList()
         val defaultPrinter = allPrinters.find { it.isDefault } ?: allPrinters.firstOrNull()
 
         defaultPrinter?.let { config ->
-            printToPrinter(config) {
+            printToPrinter(config, receiptConfig.paperWidth.charWidth) {
                 ReceiptGenerator.generateTableQrSticker(tableName, qrContent)
             }
         }
     }
 
-    private suspend fun printToPrinter(config: PrinterConfig, generateCommands: () -> List<PrintCommand>) {
-        val printer: PrinterInterface? = when (config.connectionType) {
-            "BLUETOOTH" -> BluetoothPrinter(config.address)
-            "NETWORK" -> NetworkPrinter(config.address, config.port)
-            "USB" -> {
-                val usbManager = context.getSystemService(Context.USB_SERVICE) as UsbManager
-                val device = usbManager.deviceList.values.find { it.deviceName == config.address }
-                device?.let { UsbPrinter(context, it) }
-            }
-            else -> null
-        }
+    private suspend fun printToPrinter(
+        config: PrinterConfig, 
+        charWidth: Int = 32, 
+        generateCommands: () -> List<PrintCommand>
+    ) {
+        val printer = printerFactory.create(config)
 
         printer?.let {
             if (it.connect()) {
                 val commands = generateCommands()
-                if (config.id == "default_printer" || config.printerTag == "RECEIPT") {
-                    it.printReceipt(listOf(PrintCommand.DrawerKick) + commands)
+                val finalCommands = if (config.printerTag == "RECEIPT" || config.isDefault) {
+                    listOf(PrintCommand.DrawerKick) + commands
                 } else {
-                    it.printReceipt(commands)
+                    commands
                 }
+                it.printReceipt(finalCommands, charWidth)
                 it.disconnect()
             }
         }

@@ -55,7 +55,7 @@ fun DiscountDialog(
 
                 OutlinedTextField(
                     value = discountValue,
-                    onValueChange = { if (it.isEmpty() || it.toDoubleOrNull() != null) discountValue = it },
+                    onValueChange = { if (it.isEmpty() || it.toBigDecimalOrNull() != null) discountValue = it },
                     label = { Text("Value") },
                     suffix = { Text(if (discountType == DiscountType.PERCENTAGE) "%" else currencySymbol) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),

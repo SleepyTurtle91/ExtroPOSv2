@@ -1,16 +1,18 @@
 package com.extrotarget.extroposv2.core.hardware.printer
 
+import android.graphics.Bitmap
+import android.graphics.Color
 import java.io.ByteArrayOutputStream
 
 /**
- * Basic ESC/POS encoder for POSMAC and HPRT printers.
+ * Enhanced ESC/POS encoder for POSMAC and HPRT printers.
  */
 object EscPosEncoder {
     private const val ESC: Byte = 0x1B
     private const val GS: Byte = 0x1D
     private const val LF: Byte = 0x0A
 
-    fun encode(commands: List<PrintCommand>): ByteArray {
+    fun encode(commands: List<PrintCommand>, charWidth: Int = 32): ByteArray {
         val out = ByteArrayOutputStream()
 
         // Initialize printer
@@ -44,9 +46,13 @@ object EscPosEncoder {
                     out.write(command.content.toByteArray())
                     out.write(LF.toInt())
                 }
+                is PrintCommand.Image -> {
+                    out.write(setAlignment(command.alignment))
+                    out.write(encodeImage(command.bitmap))
+                }
                 is PrintCommand.Divider -> {
                     out.write(setAlignment(Alignment.CENTER))
-                    out.write("--------------------------------".toByteArray())
+                    out.write("-".repeat(charWidth).toByteArray())
                     out.write(LF.toInt())
                 }
                 is PrintCommand.Buzzer -> {
@@ -113,6 +119,41 @@ object EscPosEncoder {
         // QR Code Function 181: Print symbol
         out.write(byteArrayOf(GS, 0x28, 0x6B, 0x03, 0x00, 0x31, 0x51, 0x30))
         
+        return out.toByteArray()
+    }
+
+    /**
+     * Encodes a bitmap to ESC/POS bit image format (GS v 0).
+     */
+    private fun encodeImage(bitmap: Bitmap): ByteArray {
+        val width = bitmap.width
+        val height = bitmap.height
+        val widthBytes = (width + 7) / 8
+        val out = ByteArrayOutputStream()
+
+        // GS v 0 m xL xH yL yH d1...dk
+        out.write(byteArrayOf(GS, 0x76, 0x30, 0x00))
+        out.write(widthBytes % 256)
+        out.write(widthBytes / 256)
+        out.write(height % 256)
+        out.write(height / 256)
+
+        for (y in 0 until height) {
+            for (x in 0 until widthBytes) {
+                var byteValue = 0
+                for (b in 0 until 8) {
+                    val pixelX = x * 8 + b
+                    if (pixelX < width) {
+                        val pixel = bitmap.getPixel(pixelX, y)
+                        val gray = (Color.red(pixel) + Color.green(pixel) + Color.blue(pixel)) / 3
+                        if (gray < 128) { // Black threshold
+                            byteValue = byteValue or (1 shl (7 - b))
+                        }
+                    }
+                }
+                out.write(byteValue)
+            }
+        }
         return out.toByteArray()
     }
 }

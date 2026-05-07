@@ -33,19 +33,28 @@ class NetworkPrinter(private val ipAddress: String, private val port: Int = 9100
         }
     }
 
-    override suspend fun isConnected(): Boolean {
-        return socket?.isConnected ?: false
-    }
-
-    override suspend fun printReceipt(content: List<PrintCommand>) {
-        withContext(Dispatchers.IO) {
-            try {
-                val bytes = EscPosEncoder.encode(content)
-                outputStream?.write(bytes)
-                outputStream?.flush()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+    override suspend fun isConnected(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            socket?.isConnected == true && !socket!!.isClosed
+        } catch (_: Exception) {
+            false
         }
     }
+
+    override suspend fun printReceipt(content: List<PrintCommand>, charWidth: Int): Boolean = withContext(Dispatchers.IO) {
+        try {
+            if (socket == null || !socket!!.isConnected) {
+                if (!connect()) return@withContext false
+            }
+            
+            val bytes = EscPosEncoder.encode(content, charWidth)
+            outputStream?.write(bytes)
+            outputStream?.flush()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
 }

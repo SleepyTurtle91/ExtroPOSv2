@@ -20,6 +20,7 @@ import com.extrotarget.extroposv2.ui.navigation.Screen
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
+import com.extrotarget.extroposv2.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +48,12 @@ fun SettingsScreen(
         ) {
             item {
                 SettingsCategoryHeader("Operational Mode")
+                SettingsItem(
+                    title = "User Manual & Help",
+                    subtitle = "Learn how to use ExtroPOS v2",
+                    icon = Icons.Default.Info,
+                    onClick = { onNavigateTo(Screen.Help.route) }
+                )
                 SettingsItem(
                     title = "Switch Business Mode",
                     subtitle = "Current: ${activeMode.displayName}",
@@ -204,6 +211,16 @@ fun SettingsScreen(
                     subtitle = "View submitted e-Invoices to LHDN",
                     icon = Icons.AutoMirrored.Filled.ReceiptLong,
                     onClick = { onNavigateTo(Screen.LhdnHistory.route) }
+                )
+            }
+
+            item {
+                SettingsCategoryHeader("About & Support")
+                SettingsItem(
+                    title = "About ExtroPOS",
+                    subtitle = "Version ${BuildConfig.VERSION_NAME}",
+                    icon = Icons.Default.Info,
+                    onClick = { onNavigateTo(Screen.About.route) }
                 )
             }
         }

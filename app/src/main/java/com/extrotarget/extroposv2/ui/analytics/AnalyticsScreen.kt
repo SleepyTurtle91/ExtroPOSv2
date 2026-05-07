@@ -213,7 +213,7 @@ fun AnalyticsScreen(
                             ) {
                                 Text(point.label, style = MaterialTheme.typography.bodyMedium)
                                 Text(
-                                    CurrencyUtils.format(java.math.BigDecimal(point.value.toDouble())),
+                                    CurrencyUtils.format(point.displayValue),
                                     fontWeight = FontWeight.Bold
                                 )
                             }

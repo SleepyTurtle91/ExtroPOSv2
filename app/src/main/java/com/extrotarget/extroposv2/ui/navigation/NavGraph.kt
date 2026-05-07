@@ -21,6 +21,8 @@ import com.extrotarget.extroposv2.ui.analytics.StaffEarningsReportScreen
 import com.extrotarget.extroposv2.ui.analytics.viewmodel.AnalyticsViewModel
 import com.extrotarget.extroposv2.ui.settings.backup.BackupScreen
 import com.extrotarget.extroposv2.ui.settings.SettingsScreen
+import com.extrotarget.extroposv2.ui.settings.HelpScreen
+import com.extrotarget.extroposv2.ui.settings.AboutScreen
 import com.extrotarget.extroposv2.ui.settings.tax.TaxSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.printer.PrinterSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.payment.PaymentMethodSettingsScreen
@@ -249,6 +251,14 @@ fun NavGraph(
                 viewModel = hiltViewModel(),
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+
+        composable(Screen.Help.route) {
+            HelpScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.About.route) {
+            AboutScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }

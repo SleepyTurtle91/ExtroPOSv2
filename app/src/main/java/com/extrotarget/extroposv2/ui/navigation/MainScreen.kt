@@ -26,7 +26,7 @@ import com.extrotarget.extroposv2.core.license.LicenseStatus
 import com.extrotarget.extroposv2.ui.auth.LoginScreen
 import com.extrotarget.extroposv2.ui.auth.MainViewModel
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
-import com.extrotarget.extroposv2.ui.sales.components.NavButton
+import com.extrotarget.extroposv2.ui.components.NavButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,14 +167,14 @@ fun MainScreen(
 
                     Spacer(Modifier.weight(1f))
 
-                    // Bottom Actions (Logout/Profile)
+                    // Bottom Actions (Logout)
                     IconButton(
                         onClick = { sessionManager.logout() },
                         modifier = Modifier
                             .size(56.dp)
-                            .background(Color(0xFF334155), RoundedCornerShape(16.dp))
+                            .background(Color(0xFFEF4444).copy(alpha = 0.1f), RoundedCornerShape(16.dp))
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color(0xFF94A3B8))
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color(0xFFEF4444))
                     }
                 }
             }

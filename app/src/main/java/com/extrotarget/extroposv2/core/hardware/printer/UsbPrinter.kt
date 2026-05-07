@@ -56,14 +56,24 @@ class UsbPrinter(
         return connection != null && endpoint != null
     }
 
-    override suspend fun printReceipt(content: List<PrintCommand>) {
-        withContext(Dispatchers.IO) {
-            try {
-                val bytes = EscPosEncoder.encode(content)
-                connection?.bulkTransfer(endpoint, bytes, bytes.size, 5000)
-            } catch (e: Exception) {
-                e.printStackTrace()
+    override suspend fun printReceipt(content: List<PrintCommand>, charWidth: Int): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val bytes = EscPosEncoder.encode(content, charWidth)
+            
+            // Chunked transfer to handle large receipts (e.g. 64 byte chunks are safe for most USB printers)
+            val chunkSize = 64 
+            var offset = 0
+            while (offset < bytes.size) {
+                val length = (bytes.size - offset).coerceAtMost(chunkSize)
+                val result = connection?.bulkTransfer(endpoint, bytes, offset, length, 5000)
+                if (result == -1) return@withContext false
+                offset += length
             }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
+
 }
