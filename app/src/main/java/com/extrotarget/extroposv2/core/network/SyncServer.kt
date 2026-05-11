@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import com.extrotarget.extroposv2.core.network.NsdHelper
 import kotlinx.coroutines.*
+import timber.log.Timber
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -145,7 +146,7 @@ class SyncServer @Inject constructor(
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    Timber.e(e, "Sync server message processing error")
                                 }
                             }
                         }

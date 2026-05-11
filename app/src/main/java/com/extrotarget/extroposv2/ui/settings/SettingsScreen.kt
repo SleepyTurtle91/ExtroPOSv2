@@ -15,11 +15,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.ui.navigation.Screen
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
+import com.extrotarget.extroposv2.core.util.LocaleHelper
 import com.extrotarget.extroposv2.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,14 +37,13 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val activeMode = uiState.activeMode
     
-    // Collecting training mode state from ViewModel's repository access if we add it to SalesUiState
-    // or just collecting directly here from settingsRepository if available.
-    // For now, let's use the ViewModel to handle the state.
     val isTrainingMode by viewModel.settingsRepository.isTrainingModeEnabled.collectAsState(initial = false)
+    val currentLanguageCode by viewModel.settingsRepository.languageCode.collectAsState(initial = "en")
+    var showLanguageDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Settings") })
+            TopAppBar(title = { Text(stringResource(R.string.nav_settings)) })
         }
     ) { padding ->
         LazyColumn(
@@ -47,7 +52,7 @@ fun SettingsScreen(
                 .fillMaxSize()
         ) {
             item {
-                SettingsCategoryHeader("Operational Mode")
+                SettingsCategoryHeader(stringResource(R.string.onboarding_select_business)) // Or dynamic category if needed
                 SettingsItem(
                     title = "User Manual & Help",
                     subtitle = "Learn how to use ExtroPOS v2",
@@ -81,7 +86,17 @@ fun SettingsScreen(
             }
 
             item {
-                SettingsCategoryHeader("Hardware & Printing")
+                SettingsCategoryHeader("Regional & Language")
+                SettingsItem(
+                    title = stringResource(R.string.settings_language),
+                    subtitle = LocaleHelper.getDisplayName(currentLanguageCode),
+                    icon = Icons.Default.Language,
+                    onClick = { showLanguageDialog = true }
+                )
+            }
+
+            item {
+                SettingsCategoryHeader(stringResource(R.string.settings_printer))
                 SettingsItem(
                     title = "Printer Configuration",
                     subtitle = "Setup Bluetooth, USB, or Network printers",
@@ -225,6 +240,59 @@ fun SettingsScreen(
             }
         }
     }
+
+    if (showLanguageDialog) {
+        LanguageSelectionDialog(
+            currentLanguageCode = currentLanguageCode,
+            onDismiss = { showLanguageDialog = false },
+            onSelect = { code ->
+                viewModel.setLanguage(code)
+                showLanguageDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+fun LanguageSelectionDialog(
+    currentLanguageCode: String,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.settings_select_language)) },
+        text = {
+            Column {
+                val languages = listOf(
+                    "en" to stringResource(R.string.lang_english),
+                    "ms" to stringResource(R.string.lang_malay),
+                    "zh" to stringResource(R.string.lang_chinese)
+                )
+                languages.forEach { (code, name) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(code) }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = code == currentLanguageCode,
+                            onClick = { onSelect(code) }
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(text = name, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.btn_cancel))
+            }
+        }
+    )
 }
 
 @Composable

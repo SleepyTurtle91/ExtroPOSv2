@@ -18,8 +18,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.data.model.dobi.LaundryOrder
 import com.extrotarget.extroposv2.core.data.model.dobi.LaundryStatus
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
@@ -40,13 +42,13 @@ fun LaundryOrderScreen(
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "New Laundry Order")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.laundry_new_order))
             }
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).fillMaxSize()) {
             Text(
-                text = "Laundry Orders",
+                text = stringResource(R.string.laundry_orders),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.padding(16.dp)
             )
@@ -120,7 +122,12 @@ fun LaundryOrderCard(
                     shape = MaterialTheme.shapes.small
                 ) {
                     Text(
-                        text = order.status.name,
+                        text = when (order.status) {
+                            LaundryStatus.RECEIVED -> stringResource(R.string.laundry_status_received)
+                            LaundryStatus.PROCESSING -> stringResource(R.string.laundry_status_processing)
+                            LaundryStatus.READY -> stringResource(R.string.laundry_status_ready)
+                            LaundryStatus.COLLECTED -> stringResource(R.string.laundry_status_collected)
+                        },
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         color = Color.White,
                         style = MaterialTheme.typography.labelLarge
@@ -134,7 +141,7 @@ fun LaundryOrderCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "Weight: ${order.weightKg} KG", style = MaterialTheme.typography.bodyLarge)
+                Text(text = "${stringResource(R.string.inv_stock)}: ${order.weightKg} KG", style = MaterialTheme.typography.bodyLarge)
                 Text(
                     text = CurrencyUtils.format(order.totalPrice),
                     style = MaterialTheme.typography.titleMedium,
@@ -152,7 +159,19 @@ fun LaundryOrderCard(
                 ) {
                     if (order.customerPhone.isNotBlank()) {
                         IconButton(onClick = {
-                            val message = "Hello ${order.customerName}, your laundry order #${order.id.takeLast(4)} is ${order.status.name.lowercase()}. Total: ${CurrencyUtils.format(order.totalPrice)}. Thank you!"
+                            val statusStr = when (order.status) {
+                                LaundryStatus.RECEIVED -> context.getString(R.string.laundry_status_received)
+                                LaundryStatus.PROCESSING -> context.getString(R.string.laundry_status_processing)
+                                LaundryStatus.READY -> context.getString(R.string.laundry_status_ready)
+                                LaundryStatus.COLLECTED -> context.getString(R.string.laundry_status_collected)
+                            }.lowercase()
+                            val message = context.getString(
+                                R.string.laundry_whatsapp_msg,
+                                order.customerName,
+                                order.id.takeLast(4),
+                                statusStr,
+                                CurrencyUtils.format(order.totalPrice)
+                            )
                             val intent = Intent(Intent.ACTION_VIEW).apply {
                                 data = Uri.parse("https://api.whatsapp.com/send?phone=${order.customerPhone}&text=${URLEncoder.encode(message, "UTF-8")}")
                             }
@@ -166,7 +185,7 @@ fun LaundryOrderCard(
 
                     if (order.status == LaundryStatus.RECEIVED || order.status == LaundryStatus.PROCESSING) {
                         Button(onClick = { onStatusChange(LaundryStatus.READY) }) {
-                            Text("Mark Ready")
+                            Text(stringResource(R.string.laundry_mark_ready))
                         }
                     } else if (order.status == LaundryStatus.READY) {
                         Button(
@@ -175,7 +194,7 @@ fun LaundryOrderCard(
                         ) {
                             Icon(Icons.Default.CheckCircle, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Collect")
+                            Text(stringResource(R.string.laundry_collect))
                         }
                     }
                 }
@@ -205,7 +224,7 @@ fun AddLaundryOrderDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New Laundry Order") },
+        title = { Text(stringResource(R.string.laundry_new_order)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // Live Scale Reading Section
@@ -221,7 +240,7 @@ fun AddLaundryOrderDialog(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Live Scale Reading", style = MaterialTheme.typography.labelSmall)
+                            Text(stringResource(R.string.laundry_live_scale), style = MaterialTheme.typography.labelSmall)
                             Text(
                                 "${liveWeight.setScale(2, java.math.RoundingMode.HALF_EVEN)} KG",
                                 style = MaterialTheme.typography.headlineMedium,
@@ -231,10 +250,10 @@ fun AddLaundryOrderDialog(
                         }
                         Row {
                             TextButton(onClick = onTare) {
-                                Text("TARE")
+                                Text(stringResource(R.string.laundry_tare))
                             }
                             Button(onClick = { weight = liveWeight.toString() }) {
-                                Text("CAPTURE")
+                                Text(stringResource(R.string.laundry_capture))
                             }
                         }
                     }
@@ -243,24 +262,24 @@ fun AddLaundryOrderDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Customer Name") },
+                    label = { Text(stringResource(R.string.laundry_customer_name)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone Number") },
+                    label = { Text(stringResource(R.string.laundry_phone_number)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = weight,
                     onValueChange = { weight = it },
-                    label = { Text("Weight (KG)") },
+                    label = { Text(stringResource(R.string.laundry_weight_kg)) },
                     modifier = Modifier.fillMaxWidth(),
                     trailingIcon = { Text("KG", modifier = Modifier.padding(end = 8.dp)) }
                 )
 
-                Text("Items", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.laundry_items), style = MaterialTheme.typography.titleMedium)
                 availableProducts.forEach { product ->
                     Row(
                         modifier = Modifier
@@ -300,7 +319,7 @@ fun AddLaundryOrderDialog(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("Note (Optional)") },
+                    label = { Text(stringResource(R.string.laundry_note_optional)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -312,7 +331,7 @@ fun AddLaundryOrderDialog(
                         modifier = Modifier.padding(16.dp).fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Total Price:", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.laundry_total_price), style = MaterialTheme.typography.titleMedium)
                         Text(
                             CurrencyUtils.format(calculatedTotal),
                             style = MaterialTheme.typography.titleLarge,
@@ -331,12 +350,12 @@ fun AddLaundryOrderDialog(
                     }
                 }
             ) {
-                Text("Create Order")
+                Text(stringResource(R.string.laundry_create_order))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.btn_cancel))
             }
         }
     )

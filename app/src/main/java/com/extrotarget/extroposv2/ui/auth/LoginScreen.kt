@@ -14,11 +14,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.auth.BiometricHelper
 
 @Composable
@@ -65,7 +67,7 @@ fun LoginScreen(
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Enter POS PIN",
+            text = stringResource(R.string.login_enter_pin),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold
         )

@@ -1,5 +1,6 @@
 package com.extrotarget.extroposv2.core.di
 
+import com.extrotarget.extroposv2.BuildConfig
 import com.extrotarget.extroposv2.core.network.api.autocount.AutoCountApi
 import com.google.gson.Gson
 import com.extrotarget.extroposv2.core.network.api.lhdn.MyInvoisApi
@@ -25,7 +26,11 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
     }
 

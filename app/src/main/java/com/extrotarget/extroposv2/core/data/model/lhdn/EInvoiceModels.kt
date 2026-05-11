@@ -2,6 +2,7 @@ package com.extrotarget.extroposv2.core.data.model.lhdn
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.extrotarget.extroposv2.BuildConfig
 import com.extrotarget.extroposv2.core.data.model.Sale
 import java.math.BigDecimal
 
@@ -57,7 +58,7 @@ data class LhdnConfig(
     val businessActivityDesc: String,
     val clientId: String? = null,
     val clientSecret: String? = null,
-    val isSandbox: Boolean = true,
+    val isSandbox: Boolean = BuildConfig.DEBUG,
     val isEnabled: Boolean = false,
     val einvoiceThresholdAmount: BigDecimal = BigDecimal("10000.00")
 )

@@ -11,12 +11,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.data.model.fnb.Table
 import com.extrotarget.extroposv2.ui.components.qr.QrCodeView
 
@@ -51,7 +53,7 @@ fun TableQrDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "TABLE QR ORDER",
+                        text = stringResource(R.string.fnb_table_qr_order),
                         fontWeight = FontWeight.Black,
                         fontSize = 20.sp,
                         color = Color(0xFF0F172A)
@@ -71,7 +73,7 @@ fun TableQrDialog(
                 )
                 
                 Text(
-                    text = "Scan to view menu & order",
+                    text = stringResource(R.string.fnb_scan_to_order),
                     color = Color(0xFF64748B),
                     fontSize = 14.sp
                 )
@@ -102,11 +104,11 @@ fun TableQrDialog(
                 ) {
                     Icon(Icons.Default.Print, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("PRINT STICKER", fontWeight = FontWeight.Black)
+                    Text(stringResource(R.string.fnb_print_sticker), fontWeight = FontWeight.Black)
                 }
                 
                 Text(
-                    text = "Stickers include secure table verification tokens.",
+                    text = stringResource(R.string.fnb_secure_stickers),
                     color = Color(0xFF94A3B8),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(top = 16.dp),

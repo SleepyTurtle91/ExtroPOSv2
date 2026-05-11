@@ -19,10 +19,12 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.extrotarget.extroposv2.R
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
@@ -100,7 +102,7 @@ fun LockScreen(
                             letterSpacing = (-1).sp
                         )
                         Text(
-                            text = "SECURE TERMINAL KL-01",
+                            text = stringResource(R.string.lock_terminal_label, "KL-01"),
                             color = Color(0xFF64748B),
                             fontWeight = FontWeight.Black,
                             fontSize = 10.sp,
@@ -129,8 +131,8 @@ fun LockScreen(
 
                 // Status Cards
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                    StatusCard(Icons.Default.Fingerprint, "DEVICE STATUS", "SYSTEM SECURED", Color(0xFF10B981))
-                    StatusCard(Icons.Default.CloudUpload, "LAST SYNC", "2 MINS AGO", Color.White)
+                    StatusCard(Icons.Default.Fingerprint, stringResource(R.string.lock_device_status), stringResource(R.string.lock_system_secured), Color(0xFF10B981))
+                    StatusCard(Icons.Default.CloudUpload, stringResource(R.string.lock_last_sync), stringResource(R.string.lock_mins_ago, 2), Color.White)
                 }
             }
 
@@ -163,14 +165,14 @@ fun LockScreen(
                     Spacer(modifier = Modifier.height(40.dp))
 
                     Text(
-                        "STAFF ACCESS",
+                        stringResource(R.string.lock_staff_access),
                         color = Color.White,
                         fontWeight = FontWeight.Black,
                         fontSize = 24.sp,
                         letterSpacing = (-1).sp
                     )
                     Text(
-                        "ENTER 4-DIGIT SECURITY PIN",
+                        stringResource(R.string.lock_enter_pin),
                         color = Color(0xFF64748B),
                         fontWeight = FontWeight.Black,
                         fontSize = 10.sp,
@@ -241,7 +243,7 @@ fun LockScreen(
                     
                     TextButton(onClick = { }) {
                         Text(
-                            "FORGOT PIN? CONTACT ADMIN",
+                            stringResource(R.string.lock_forgot_pin),
                             color = Color(0xFF64748B),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,

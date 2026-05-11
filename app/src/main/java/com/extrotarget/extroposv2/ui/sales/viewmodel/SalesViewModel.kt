@@ -229,6 +229,12 @@ class SalesViewModel @Inject constructor(
         }
     }
 
+    fun setLanguage(code: String) {
+        viewModelScope.launch {
+            settingsRepository.updateLanguage(code)
+        }
+    }
+
     fun toggleSettingsModal(show: Boolean) {
         _uiState.update { it.copy(showSettingsModal = show) }
     }

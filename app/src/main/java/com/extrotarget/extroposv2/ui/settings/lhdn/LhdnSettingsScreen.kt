@@ -10,8 +10,10 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.extrotarget.extroposv2.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +33,7 @@ fun LhdnSettingsScreen(
     var businessDesc by remember(config) { mutableStateOf(config?.businessActivityDesc ?: "") }
     var clientId by remember(secureClientId) { mutableStateOf(secureClientId) }
     var clientSecret by remember(secureClientSecret) { mutableStateOf(secureClientSecret) }
-    var isSandbox by remember(config) { mutableStateOf(config?.isSandbox ?: true) }
+    var isSandbox by remember(config) { mutableStateOf(config?.isSandbox ?: BuildConfig.DEBUG) }
     var isEnabled by remember(config) { mutableStateOf(config?.isEnabled ?: false) }
     var thresholdAmount by remember(config) { mutableStateOf(config?.einvoiceThresholdAmount?.toPlainString() ?: "10000.00") }
 
@@ -88,6 +90,20 @@ fun LhdnSettingsScreen(
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (isSandbox && !BuildConfig.DEBUG) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Text(
+                        "WARNING: Sandbox mode is active in a Production build. Transactions will NOT be legally submitted.",
+                        modifier = Modifier.padding(12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+
             Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 Switch(checked = isEnabled, onCheckedChange = { isEnabled = it })
                 Spacer(Modifier.width(8.dp))

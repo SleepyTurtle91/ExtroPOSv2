@@ -14,10 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.ui.fnb.components.TableActionDialog
 import com.extrotarget.extroposv2.ui.fnb.components.MoveJoinDialog
 import com.extrotarget.extroposv2.ui.fnb.components.TableQrDialog
@@ -44,7 +46,7 @@ fun TableFloorPlanScreen(
         topBar = {
             Column {
                 Text(
-                    text = "Floor Plan",
+                    text = stringResource(R.string.fnb_floor_plan),
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(16.dp)
                 )
@@ -57,7 +59,7 @@ fun TableFloorPlanScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Table")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.fnb_add_table))
             }
         }
     ) { padding ->
@@ -182,12 +184,18 @@ fun TableCard(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${table.capacity} Pax",
+                    text = stringResource(R.string.fnb_pax_count, table.capacity),
                     color = Color.White.copy(alpha = 0.8f),
                     style = MaterialTheme.typography.bodySmall
                 )
                 Text(
-                    text = table.status.name,
+                    text = when (table.status) {
+                        TableStatus.AVAILABLE -> stringResource(R.string.fnb_status_available)
+                        TableStatus.OCCUPIED -> stringResource(R.string.fnb_status_occupied)
+                        TableStatus.BILLING -> stringResource(R.string.fnb_status_billing)
+                        TableStatus.RESERVED -> stringResource(R.string.fnb_status_reserved)
+                        TableStatus.DIRTY -> stringResource(R.string.fnb_status_dirty)
+                    },
                     color = Color.White.copy(alpha = 0.9f),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.ExtraBold
@@ -200,7 +208,7 @@ fun TableCard(
                         shape = MaterialTheme.shapes.extraSmall
                     ) {
                         Text(
-                            text = if (table.hasUnsentItems) "PENDING ORDER" else "ORDER SENT",
+                            text = if (table.hasUnsentItems) stringResource(R.string.fnb_pending_order) else stringResource(R.string.fnb_order_sent),
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                             style = MaterialTheme.typography.labelSmall,
                             color = if (table.hasUnsentItems) Color.Black else Color(0xFF2E7D32),
@@ -225,39 +233,39 @@ fun AddTableDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add New Table") },
+        title = { Text(stringResource(R.string.fnb_add_table)) },
         text = {
             Column {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Table Name (e.g. Table 1)") },
+                    label = { Text(stringResource(R.string.fnb_table_name_label)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = capacity,
                     onValueChange = { capacity = it },
-                    label = { Text("Capacity (Pax)") },
+                    label = { Text(stringResource(R.string.fnb_capacity_label)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = zone,
                     onValueChange = { zone = it },
-                    label = { Text("Zone (e.g. Indoor, Outdoor)") },
+                    label = { Text(stringResource(R.string.fnb_zone_label)) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
         },
         confirmButton = {
             Button(onClick = { onConfirm(name, capacity.toIntOrNull() ?: 4, zone) }) {
-                Text("Add")
+                Text(stringResource(R.string.staff_add))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.btn_cancel))
             }
         }
     )

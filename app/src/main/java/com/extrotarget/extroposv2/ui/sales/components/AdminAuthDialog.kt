@@ -11,10 +11,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.extrotarget.extroposv2.R
 
 @Composable
 fun AdminAuthDialog(
@@ -53,13 +55,13 @@ fun AdminAuthDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
-                    text = "Admin Authorization",
+                    text = stringResource(R.string.auth_admin_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 
                 Text(
-                    text = "This action requires Admin or Supervisor PIN",
+                    text = stringResource(R.string.auth_admin_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -149,14 +151,14 @@ fun AdminAuthDialog(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.btn_cancel))
                     }
                     Button(
                         onClick = { onConfirm(pin) },
                         modifier = Modifier.weight(1f),
                         enabled = pin.length >= 4
                     ) {
-                        Text("Confirm")
+                        Text(stringResource(R.string.btn_confirm))
                     }
                 }
             }

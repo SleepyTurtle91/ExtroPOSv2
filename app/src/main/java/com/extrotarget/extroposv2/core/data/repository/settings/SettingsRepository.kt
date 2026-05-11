@@ -24,11 +24,17 @@ class SettingsRepository @Inject constructor(
     private val TRAINING_MODE_ENABLED = androidx.datastore.preferences.core.booleanPreferencesKey("training_mode_enabled")
     private val TERMINAL_ROLE = stringPreferencesKey("terminal_role")
     private val OPERATION_MODE = stringPreferencesKey("operation_mode")
+    private val LANGUAGE_CODE = stringPreferencesKey("language_code")
 
     val activeBusinessMode: Flow<BusinessMode> = context.dataStore.data
         .map { preferences ->
             val modeId = preferences[ACTIVE_BUSINESS_MODE] ?: BusinessMode.RETAIL.id
             BusinessMode.values().find { it.id == modeId } ?: BusinessMode.RETAIL
+        }
+
+    val languageCode: Flow<String> = context.dataStore.data
+        .map { preferences ->
+            preferences[LANGUAGE_CODE] ?: "en"
         }
 
     val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data
@@ -84,6 +90,12 @@ class SettingsRepository @Inject constructor(
     suspend fun updateOperationMode(mode: com.extrotarget.extroposv2.core.data.model.settings.OperationMode) {
         context.dataStore.edit { preferences ->
             preferences[OPERATION_MODE] = mode.id
+        }
+    }
+
+    suspend fun updateLanguage(code: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LANGUAGE_CODE] = code
         }
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.extrotarget.extroposv2.R
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -128,7 +130,7 @@ class OnboardingViewModel @Inject constructor(
                 settingsRepository.setOnboardingCompleted(true)
                 onSuccess()
             } else {
-                _uiState.update { it.copy(isActivating = false, activationError = "Invalid Activation Key. Please contact support.") }
+                _uiState.update { it.copy(isActivating = false, activationError = "ERROR_ACTIVATION_FAILED") }
             }
         }
     }
@@ -220,7 +222,7 @@ fun OnboardingWizardScreen(
                             border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                         ) {
-                            Text("Back", fontSize = 18.sp)
+                            Text(stringResource(R.string.btn_back), fontSize = 18.sp)
                         }
                         Spacer(modifier = Modifier.width(16.dp))
                     }
@@ -237,7 +239,7 @@ fun OnboardingWizardScreen(
                                 else -> true
                             }
                         ) {
-                            Text("Next", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.btn_next), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.width(8.dp))
                             Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
                         }
@@ -250,17 +252,21 @@ fun OnboardingWizardScreen(
 
 @Composable
 fun OnboardingHeader(currentStep: Int) {
-    val steps = listOf("Store", "Admin", "License")
+    val steps = listOf(
+        stringResource(R.string.onboarding_step_store),
+        stringResource(R.string.onboarding_step_admin),
+        stringResource(R.string.onboarding_step_license)
+    )
     
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = "Welcome to ExtroPOS v2",
+            text = stringResource(R.string.onboarding_welcome),
             style = MaterialTheme.typography.headlineMedium,
             color = Color.White,
             fontWeight = FontWeight.ExtraBold
         )
         Text(
-            text = "Complete the initial setup to get started",
+            text = stringResource(R.string.onboarding_subtitle),
             style = MaterialTheme.typography.bodyLarge,
             color = Color.White.copy(alpha = 0.6f)
         )
@@ -332,7 +338,7 @@ fun StepIndicator(index: Int, title: String, isSelected: Boolean, isLast: Boolea
 fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
-            "Select Primary Business Type",
+            stringResource(R.string.onboarding_select_business),
             color = Color.White.copy(alpha = 0.7f),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold
@@ -370,7 +376,12 @@ fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel)
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            mode.displayName,
+                            text = when(mode) {
+                                BusinessMode.RETAIL -> stringResource(R.string.nav_inventory)
+                                BusinessMode.FNB -> "F&B"
+                                BusinessMode.CARWASH -> "CARWASH"
+                                BusinessMode.LAUNDRY -> "LAUNDRY"
+                            },
                             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Black,
@@ -385,26 +396,26 @@ fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel)
         Spacer(modifier = Modifier.height(8.dp))
 
         WizardTextField(
-            label = "Store Name",
+            label = stringResource(R.string.onboarding_store_name),
             value = uiState.storeName,
             onValueChange = viewModel::updateStoreName,
             icon = Icons.Default.Store
         )
         WizardTextField(
-            label = "Registration / SST No.",
+            label = stringResource(R.string.onboarding_reg_no),
             value = uiState.regNo,
             onValueChange = viewModel::updateRegNo,
             icon = Icons.Default.Business
         )
         WizardTextField(
-            label = "Contact Number",
+            label = stringResource(R.string.onboarding_contact_no),
             value = uiState.contactNo,
             onValueChange = viewModel::updateContactNo,
             icon = Icons.Default.Phone,
             keyboardType = KeyboardType.Phone
         )
         WizardTextField(
-            label = "Full Address",
+            label = stringResource(R.string.onboarding_address),
             value = uiState.address,
             onValueChange = viewModel::updateAddress,
             icon = Icons.Default.LocationOn,
@@ -418,26 +429,26 @@ fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel)
 fun AdminAccountStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Text(
-            "Create a SuperAdmin account to manage the system and authorize restricted actions.",
+            stringResource(R.string.onboarding_admin_desc),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         WizardTextField(
-            label = "Admin Full Name",
+            label = stringResource(R.string.onboarding_admin_name),
             value = uiState.adminName,
             onValueChange = viewModel::updateAdminName,
             icon = Icons.Default.Person
         )
         WizardTextField(
-            label = "Username",
+            label = stringResource(R.string.onboarding_username),
             value = uiState.adminUsername,
             onValueChange = viewModel::updateAdminUsername,
             icon = Icons.Default.Badge
         )
         WizardTextField(
-            label = "Security PIN (4 digits)",
+            label = stringResource(R.string.onboarding_pin_label),
             value = uiState.adminPin,
             onValueChange = viewModel::updateAdminPin,
             icon = Icons.Default.Lock,
@@ -458,7 +469,7 @@ fun ActivationStep(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "Final Step: Software Activation",
+            stringResource(R.string.onboarding_final_step),
             style = MaterialTheme.typography.titleLarge,
             color = Color.White,
             fontWeight = FontWeight.Bold
@@ -466,15 +477,17 @@ fun ActivationStep(
 
         Column(modifier = Modifier.fillMaxWidth()) {
             WizardTextField(
-                label = "Activation Key",
+                label = stringResource(R.string.onboarding_activation_key),
                 value = uiState.activationKey,
                 onValueChange = viewModel::updateActivationKey,
                 icon = Icons.Default.VpnKey,
-                placeholder = "XXXX-XXXX-XXXX-XXXX"
+                placeholder = stringResource(R.string.onboarding_placeholder_key)
             )
             if (uiState.activationError != null) {
                 Text(
-                    text = uiState.activationError,
+                    text = if (uiState.activationError == "ERROR_ACTIVATION_FAILED") 
+                        stringResource(R.string.onboarding_activation_failed)
+                    else uiState.activationError,
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp, start = 16.dp)
@@ -492,13 +505,13 @@ fun ActivationStep(
             if (uiState.isActivating) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
             } else {
-                Text("Verify & Activate System", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.onboarding_verify_activate), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
 
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
             HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.1f))
-            Text("OR", modifier = Modifier.padding(horizontal = 16.dp), color = Color.White.copy(alpha = 0.3f), style = MaterialTheme.typography.labelMedium)
+            Text(stringResource(R.string.onboarding_or), modifier = Modifier.padding(horizontal = 16.dp), color = Color.White.copy(alpha = 0.3f), style = MaterialTheme.typography.labelMedium)
             HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.1f))
         }
 
@@ -510,7 +523,7 @@ fun ActivationStep(
             colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
             enabled = !uiState.isActivating
         ) {
-            Text("Start 30-Day Free Trial", fontSize = 18.sp)
+            Text(stringResource(R.string.onboarding_start_trial), fontSize = 18.sp)
         }
     }
 }

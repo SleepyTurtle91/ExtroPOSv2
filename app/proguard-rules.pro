@@ -14,10 +14,11 @@
 -keep class * extends androidx.room.RoomDatabase
 -keep class com.extrotarget.extroposv2.core.data.local.dao.** { *; }
 -keep class com.extrotarget.extroposv2.core.data.model.** { *; }
+-keepclassmembers class com.extrotarget.extroposv2.core.data.model.** { *; }
 
 # --- Hilt ---
 -keep class dagger.hilt.android.internal.managers.** { *; }
--keep class * { @dagger.hilt.InstallIn <classes>; }
+-keep @dagger.hilt.InstallIn class *
 -keep class * extends androidx.lifecycle.ViewModel
 
 # --- Retrofit / OkHttp ---
@@ -39,6 +40,16 @@
 -dontwarn io.ktor.**
 -keep class kotlinx.serialization.** { *; }
 
+# --- Netty (Ktor Backend) ---
+-dontwarn io.netty.handler.ssl.**
+-dontwarn io.netty.util.internal.logging.**
+-dontwarn io.netty.util.internal.**
+-dontwarn org.apache.log4j.**
+-dontwarn org.apache.logging.log4j.**
+-dontwarn org.eclipse.jetty.npn.**
+-dontwarn org.slf4j.impl.StaticLoggerBinder
+-dontwarn reactor.blockhound.integration.BlockHoundIntegration
+
 # --- Timber (Keep only high-level logging in release) ---
 -assumenosideeffects class timber.log.Timber {
     public static *** d(...);
@@ -48,3 +59,14 @@
 # --- General ---
 -keep class com.extrotarget.extroposv2.core.util.security.SecurityManager { *; }
 -keep class com.extrotarget.extroposv2.core.util.lhdn.** { *; }
+
+# --- Printer Drivers & Hardware ---
+-keep class com.extrotarget.extroposv2.core.hardware.** { *; }
+-keep interface com.extrotarget.extroposv2.core.hardware.** { *; }
+-keepclassmembers class com.extrotarget.extroposv2.core.hardware.** { *; }
+
+# --- Financial Integrity ---
+-keep class java.math.BigDecimal { *; }
+
+# --- Build Config ---
+-keep class com.extrotarget.extroposv2.BuildConfig { *; }

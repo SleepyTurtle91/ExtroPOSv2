@@ -10,9 +10,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.ui.fnb.kds.viewmodel.KdsOrder
 import com.extrotarget.extroposv2.ui.fnb.kds.viewmodel.KdsViewModel
 import java.text.SimpleDateFormat
@@ -28,7 +30,7 @@ fun KdsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Kitchen Display System (KDS)") },
+                title = { Text(stringResource(R.string.fnb_kds_title)) },
                 actions = {
                     uiState.availableTags.forEach { tag ->
                         FilterChip(
@@ -44,7 +46,7 @@ fun KdsScreen(
     ) { padding ->
         if (uiState.orders.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No pending orders for ${uiState.selectedTag}", style = MaterialTheme.typography.bodyLarge)
+                Text(stringResource(R.string.fnb_no_orders, uiState.selectedTag), style = MaterialTheme.typography.bodyLarge)
             }
         } else {
             LazyVerticalGrid(
@@ -86,19 +88,19 @@ fun KdsOrderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "Order #${order.sale.id.takeLast(4)}",
+                    stringResource(R.string.fnb_order_label, order.sale.id.takeLast(4)),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    "${waitTime}m ago",
+                    stringResource(R.string.fnb_time_ago, waitTime),
                     style = MaterialTheme.typography.labelLarge,
                     color = if (waitTime > 15) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
             Text(
-                "Time: ${timeFormat.format(Date(order.sale.timestamp))}",
+                stringResource(R.string.fnb_time_label, timeFormat.format(Date(order.sale.timestamp))),
                 style = MaterialTheme.typography.bodySmall
             )
             
@@ -143,7 +145,7 @@ fun KdsOrderCard(
             ) {
                 Icon(Icons.Default.Done, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("MARK AS DONE")
+                Text(stringResource(R.string.fnb_mark_done))
             }
         }
     }

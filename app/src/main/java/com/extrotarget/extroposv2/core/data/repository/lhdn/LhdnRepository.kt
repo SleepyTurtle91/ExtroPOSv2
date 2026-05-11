@@ -1,6 +1,7 @@
 package com.extrotarget.extroposv2.core.data.repository.lhdn
 
 import android.util.Base64
+import com.extrotarget.extroposv2.BuildConfig
 import com.extrotarget.extroposv2.core.data.local.dao.lhdn.LhdnDao
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
@@ -198,7 +199,7 @@ class LhdnRepository @Inject constructor(
         }
 
         return try {
-            Timber.d("Requesting fresh LHDN token...")
+            if (BuildConfig.DEBUG) Timber.d("Requesting fresh LHDN token...")
             val response = getApi(config.isSandbox).login(
                 clientId = clientId,
                 clientSecret = clientSecret
@@ -211,7 +212,7 @@ class LhdnRepository @Inject constructor(
                     tokenType = tokenResp.token_type
                 )
                 lhdnDao.saveToken(newToken)
-                Timber.i("LHDN Token refreshed successfully. Expires in ${tokenResp.expires_in}s")
+                if (BuildConfig.DEBUG) Timber.i("LHDN Token refreshed successfully. Expires in ${tokenResp.expires_in}s")
                 "${newToken.tokenType} ${newToken.accessToken}"
             } else {
                 Timber.e("LHDN Login failed: ${response.code()} ${response.errorBody()?.string()}")
