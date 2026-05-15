@@ -29,6 +29,10 @@ ktor = "2.3.11"
 timber = "5.0.1"
 securityCrypto = "1.1.0-alpha06"
 biometric = "1.2.0-alpha05"
+kotlinCsv = "1.9.3"
+vico = "2.0.0-alpha.22"
+kotlinxDatetime = "0.5.0"
+iminPrinter = "V2.0.0.18"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -93,6 +97,12 @@ ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", v
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 androidx-biometric = { group = "androidx.biometric", name = "biometric-ktx", version.ref = "biometric" }
+kotlinCsv = { group = "com.github.doyaaaaaken", name = "kotlin-csv-jvm", version.ref = "kotlinCsv" }
+vico-compose = { group = "com.patrykandpatrick.vico", name = "compose", version.ref = "vico" }
+vico-compose-m3 = { group = "com.patrykandpatrick.vico", name = "compose-m3", version.ref = "vico" }
+vico-core = { group = "com.patrykandpatrick.vico", name = "core", version.ref = "vico" }
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
+imin-printer = { group = "com.github.iminsoftware", name = "IminPrinterLibrary", version.ref = "iminPrinter" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -231,4 +231,117 @@
     <string name="fnb_status_reserved">RESERVED</string>
     <string name="fnb_status_dirty">DIRTY</string>
 
+    <!-- Car Wash -->
+    <string name="carwash_queue_title">Car Wash Job Queue</string>
+    <string name="carwash_status_queued">QUEUED</string>
+    <string name="carwash_status_in_progress">IN PROGRESS</string>
+    <string name="carwash_status_ready">READY FOR PICKUP</string>
+    <string name="carwash_action_start">START WASH</string>
+    <string name="carwash_action_complete">COMPLETE</string>
+    <string name="carwash_action_delivered">DELIVERED</string>
+    <string name="carwash_assign_staff_title">Assign Staff for %1$s</string>
+    <string name="carwash_no_staff_available">No active staff available. Please add staff in settings.</string>
+    <string name="carwash_completed_at">COMPLETED AT %1$s</string>
+    <string name="carwash_time_format">HH:mm</string>
+    <string name="carwash_commission_desc">Wash commission for %1$s</string>
+
+    <!-- Analytics -->
+    <string name="analytics_title">Business Analytics &amp; Tax</string>
+    <string name="analytics_export_tax">Export Tax CSV</string>
+    <string name="analytics_report_period">Reporting Period</string>
+    <string name="analytics_select_date">Select Date</string>
+    <string name="analytics_gross_sales">Gross Sales</string>
+    <string name="analytics_tax_collected">Tax Collected</string>
+    <string name="analytics_tax_breakdown">Tax Breakdown by Rate</string>
+    <string name="analytics_discounts">Discounts</string>
+    <string name="analytics_rounding">Rounding</string>
+    <string name="analytics_transaction_count">Transaction Count</string>
+    <string name="analytics_sales_trend_today">Sales Trend (Today)</string>
+    <string name="analytics_top_products">Top 5 Products by Sales</string>
+    <string name="analytics_industry_reports">Industry Specific Reports</string>
+    <string name="analytics_inv_alerts">Inventory Alerts</string>
+    <string name="analytics_low_stock_desc">Low stock items</string>
+    <string name="analytics_staff_earnings">Staff Earnings</string>
+    <string name="analytics_commission_report">Commission report</string>
+    <string name="analytics_view_detailed">View Detailed Reports</string>
+    <string name="analytics_tax_compliance">Tax Compliance</string>
+    <string name="analytics_ready_filing">Ready for Tax Filing</string>
+    <string name="analytics_total_tax_collected">Total Tax Collected: %1$s</string>
+    <string name="analytics_net_sales_excl_tax">Net Sales (Excl. Tax): %1$s</string>
+    <string name="analytics_export_success">SST Report exported</string>
+    <string name="analytics_export_failed">Export failed: %1$s</string>
+
+    <!-- Receipts -->
+    <string name="receipt_tel">Tel: %1$s</string>
+    <string name="receipt_brn">BRN: %1$s</string>
+    <string name="receipt_tax_id">Tax ID: %1$s</string>
+    <string name="receipt_id">Receipt ID: %1$s</string>
+    <string name="receipt_date">Date: %1$s</string>
+    <string name="receipt_discount">Discount:</string>
+    <string name="receipt_discount_label">Discount (%1$s):</string>
+    <string name="receipt_subtotal">Subtotal:</string>
+    <string name="receipt_service_charge">Service Charge (%1$s%%):</string>
+    <string name="receipt_tax_label">%1$s (%2$s%%):</string>
+    <string name="receipt_rounding">Rounding:</string>
+    <string name="receipt_total">TOTAL:</string>
+    <string name="receipt_payment_method">Payment Method: %1$s</string>
+    <string name="receipt_lhdn_verification">LHDN E-INVOICE VERIFICATION</string>
+    <string name="receipt_uuid">UUID: %1$s...</string>
+    <string name="receipt_lhdn_signature">LHDN DIGITAL SIGNATURE</string>
+    <string name="receipt_z_report">Z-REPORT (SHIFT CLOSE)</string>
+    <string name="receipt_staff">Staff: %1$s</string>
+    <string name="receipt_terminal">Terminal: %1$s</string>
+    <string name="receipt_opened">Opened: %1$s</string>
+    <string name="receipt_closed">Closed: %1$s</string>
+    <string name="receipt_financial_summary">FINANCIAL SUMMARY</string>
+    <string name="receipt_gross_sales">Gross Sales:</string>
+    <string name="receipt_tax_collected">Tax Collected:</string>
+    <string name="receipt_total_revenue">TOTAL REVENUE:</string>
+    <string name="receipt_cash_recon">CASH RECONCILIATION</string>
+    <string name="receipt_start_float">Starting Float:</string>
+    <string name="receipt_cash_sales">Cash Sales:</string>
+    <string name="receipt_cash_in">Cash In:</string>
+    <string name="receipt_cash_out">Cash Out:</string>
+    <string name="receipt_expected_cash">Expected Cash:</string>
+    <string name="receipt_actual_cash">Actual Cash:</string>
+    <string name="receipt_shortage">SHORTAGE</string>
+    <string name="receipt_overage">OVERAGE</string>
+    <string name="receipt_signature">SIGNATURE</string>
+    <string name="receipt_eod_summary">END OF DAY SUMMARY</string>
+    <string name="receipt_business_date">Business Date: %1$s</string>
+    <string name="receipt_generated_by">Generated By: %1$s</string>
+    <string name="receipt_shifts_closed">Shifts Closed: %1$s</string>
+    <string name="receipt_sales_summary">SALES SUMMARY</string>
+    <string name="receipt_total_discount">Total Discount:</string>
+    <string name="receipt_total_service_charge">Total Service Charge:</string>
+    <string name="receipt_total_tax">Total Tax:</string>
+    <string name="receipt_net_sales">NET SALES:</string>
+    <string name="receipt_payment_breakdown">PAYMENT BREAKDOWN</string>
+    <string name="receipt_cash">Cash:</string>
+    <string name="receipt_other_payment">Other (Card/QR):</string>
+    <string name="receipt_order_tag">%1$s ORDER</string>
+    <string name="receipt_table_name">TABLE: %1$s</string>
+    <string name="receipt_order_id">Order: %1$s</string>
+    <string name="receipt_time">Time: %1$s</string>
+    <string name="receipt_scan_to_order">SCAN TO ORDER</string>
+    <string name="receipt_branch_main">Branch: MAIN</string>
+    <string name="receipt_powered_by">Powered by ExtroPOS</string>
+
+    <!-- Sales Additional -->
+    <string name="sales_ticket_label">TICKET #%1$s</string>
+    <string name="sales_no_items">NO ITEMS ADDED</string>
+    <string name="sales_pts_label">%1$d pts</string>
+    <string name="sales_redeemed_label">REDEEMED RM%1$s</string>
+    <string name="sales_redeem_points">REDEEM POINTS</string>
+    <string name="sales_rounding_bnm">ROUNDING (BNM)</string>
+    <string name="sales_excl_rounding">Excl. Rounding: %1$s</string>
+    <string name="sales_sent">SENT</string>
+    <string name="sales_send">SEND</string>
+    <string name="sales_modifier_price">+RM %1$s</string>
+    <string name="sales_service_charge">SERVICE CHARGE (%1$s%%)</string>
+
+    <string name="whatsapp_order_ready_msg">*EXTRO POS: Pesanan Dobi Sedia Diambil!* 🧺\n\nHai %1$s,\n\nPesanan anda (#%2$s) telah siap diproses dan sedia untuk diambil.\n\n*Butiran:*\nBerat: %3$s KG\nJumlah: %4$s\n\nTerima kasih kerana menggunakan perkhidmatan kami!</string>
+
+    <string name="biometric_title">Biometric Login</string>
+    <string name="biometric_subtitle">Log in using your biometric credential</string>
 </resources>

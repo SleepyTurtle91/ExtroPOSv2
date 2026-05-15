@@ -43,6 +43,8 @@ import com.extrotarget.extroposv2.ui.report.history.ShiftHistoryScreen
 import com.extrotarget.extroposv2.ui.report.SalesHistoryScreen
 import com.extrotarget.extroposv2.ui.report.viewmodel.SalesHistoryViewModel
 import com.extrotarget.extroposv2.ui.fnb.kds.KdsScreen
+import com.extrotarget.extroposv2.feature.reporting.ui.ReportingDashboard
+import com.extrotarget.extroposv2.feature.hotel.ui.HotelDashboard
 import com.extrotarget.extroposv2.ui.settings.ModeSelectionScreen
 
 import com.extrotarget.extroposv2.ui.inventory.transfer.StockTransferScreen
@@ -120,7 +122,8 @@ fun NavGraph(
             AnalyticsScreen(
                 viewModel = hiltViewModel(),
                 onNavigateToLowStock = { navController.navigate(Screen.InventoryAnalytics.route) },
-                onNavigateToStaffEarnings = { navController.navigate(Screen.StaffEarnings.route) }
+                onNavigateToStaffEarnings = { navController.navigate(Screen.StaffEarnings.route) },
+                onNavigateToReporting = { navController.navigate(Screen.ReportingDashboard.route) }
             )
         }
 
@@ -259,6 +262,18 @@ fun NavGraph(
 
         composable(Screen.About.route) {
             AboutScreen(onNavigateBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.ReportingDashboard.route) {
+            ReportingDashboard(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.HotelDashboard.route) {
+            HotelDashboard(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

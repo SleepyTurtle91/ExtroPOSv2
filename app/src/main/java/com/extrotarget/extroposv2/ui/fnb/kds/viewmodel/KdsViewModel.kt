@@ -2,6 +2,7 @@ package com.extrotarget.extroposv2.ui.fnb.kds.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
@@ -68,7 +69,7 @@ class KdsViewModel @Inject constructor(
                 it.printerTag.equals(tag, ignoreCase = true) && it.status != "READY" 
             }
             
-            if (stationItems.isNotEmpty() && (sale.status == "COMPLETED" || sale.status == "PENDING")) {
+            if (stationItems.isNotEmpty() && (sale.status == AppConfig.SaleStatus.COMPLETED || sale.status == AppConfig.SaleStatus.PENDING)) {
                 KdsOrder(sale, stationItems)
             } else null
         }.sortedBy { it.sale.timestamp }

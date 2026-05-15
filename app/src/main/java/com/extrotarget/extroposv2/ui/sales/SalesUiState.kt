@@ -40,6 +40,7 @@ data class SalesUiState(
     val adminAuthError: String? = null,
     val showSettingsModal: Boolean = false,
     val showConfirmClearCart: Boolean = false,
+    val showCameraScanner: Boolean = false,
     val isLocked: Boolean = false,
     val activeTab: String = "pos",
     val selectedMember: Member? = null,

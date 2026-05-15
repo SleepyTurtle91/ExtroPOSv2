@@ -1,5 +1,8 @@
 package com.extrotarget.extroposv2.core.util.printer
 
+import android.content.Context
+import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.Shift
@@ -15,6 +18,7 @@ import java.util.*
 object ReceiptGenerator {
     
     fun generateSaleReceipt(
+        context: Context,
         sale: Sale,
         items: List<SaleItem>,
         config: ReceiptConfig = ReceiptConfig(),
@@ -28,13 +32,13 @@ object ReceiptGenerator {
         // Header
         commands.add(PrintCommand.Header(config.storeName))
         config.address?.let { commands.add(PrintCommand.Text(it, Alignment.CENTER)) }
-        config.phone?.let { commands.add(PrintCommand.Text("Tel: $it", Alignment.CENTER)) }
+        config.phone?.let { commands.add(PrintCommand.Text(context.getString(R.string.receipt_tel, it), Alignment.CENTER)) }
         
-        val brnLine = config.brn?.let { "BRN: $it" } ?: ""
-        val sstLine = config.sstId?.let { "Tax ID: $it" } ?: ""
+        val brnLine = config.brn?.let { context.getString(R.string.receipt_brn, it) } ?: ""
+        val sstLine = config.sstId?.let { context.getString(R.string.receipt_tax_id, it) } ?: ""
         
         if (brnLine.isNotEmpty() || sstLine.isNotEmpty()) {
-            val combined = listOfNotNull(config.brn?.let { "BRN: $it" }, config.sstId?.let { "Tax ID: $it" })
+            val combined = listOfNotNull(config.brn?.let { context.getString(R.string.receipt_brn, it) }, config.sstId?.let { context.getString(R.string.receipt_tax_id, it) })
                 .joinToString(" | ")
             commands.add(PrintCommand.Text(combined, Alignment.CENTER))
         }
@@ -42,8 +46,8 @@ object ReceiptGenerator {
         commands.add(PrintCommand.Divider)
 
         // Sale Info
-        commands.add(PrintCommand.Text("Receipt ID: ${sale.id.takeLast(8)}"))
-        commands.add(PrintCommand.Text("Date: ${sdf.format(Date(sale.timestamp))}"))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_id, sale.id.takeLast(8))))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_date, sdf.format(Date(sale.timestamp)))))
         commands.add(PrintCommand.Divider)
 
         val charWidth = config.paperWidth.charWidth
@@ -71,7 +75,7 @@ object ReceiptGenerator {
             }
 
             if (item.discountAmount > java.math.BigDecimal.ZERO) {
-                val discLine = "  - Discount:"
+                val discLine = "  - " + context.getString(R.string.receipt_discount)
                 val discValue = "-${CurrencyUtils.format(item.discountAmount)}"
                 val discSpaces = charWidth - discLine.length - discValue.length
                 val formattedDisc = if (discSpaces > 0) discLine + " ".repeat(discSpaces) + discValue else "$discLine $discValue"
@@ -89,54 +93,54 @@ object ReceiptGenerator {
         }
 
         val subtotal = sale.subtotal
-        formatTotalLine("Subtotal:", subtotal)
+        formatTotalLine(context.getString(R.string.receipt_subtotal), subtotal)
 
         if (sale.discountAmount > java.math.BigDecimal.ZERO) {
-            val label = sale.discountLabel?.let { "Discount ($it):" } ?: "Discount:"
+            val label = sale.discountLabel?.let { context.getString(R.string.receipt_discount_label, it) } ?: context.getString(R.string.receipt_discount)
             formatTotalLine(label, sale.discountAmount, isNegative = true)
         }
 
         if (sale.serviceChargeAmount > java.math.BigDecimal.ZERO) {
-            val scLabel = "Service Charge (${taxConfig.serviceChargeRate}%):"
+            val scLabel = context.getString(R.string.receipt_service_charge, taxConfig.serviceChargeRate.toString())
             formatTotalLine(scLabel, sale.serviceChargeAmount)
         }
 
         if (sale.taxAmount > java.math.BigDecimal.ZERO) {
-            val taxLabel = "${taxConfig.taxName} (${taxConfig.defaultTaxRate}%):"
+            val taxLabel = context.getString(R.string.receipt_tax_label, taxConfig.taxName, taxConfig.defaultTaxRate.toString())
             formatTotalLine(taxLabel, sale.taxAmount)
         }
         
         val rounding = sale.roundingAdjustment
         if (config.showRounding && rounding != java.math.BigDecimal.ZERO) {
-            formatTotalLine("Rounding:", rounding)
+            formatTotalLine(context.getString(R.string.receipt_rounding), rounding)
         }
 
         commands.add(PrintCommand.Divider)
-        formatTotalLine("TOTAL:", sale.totalAmount, isBold = true)
+        formatTotalLine(context.getString(R.string.receipt_total), sale.totalAmount, isBold = true)
         
         commands.add(PrintCommand.Divider)
-        commands.add(PrintCommand.Text("Payment Method: ${sale.paymentMethod}", Alignment.CENTER))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_payment_method, sale.paymentMethod), Alignment.CENTER))
         config.footerMessage?.let { commands.add(PrintCommand.Text(it, Alignment.CENTER)) }
         
         // LHDN e-Invoice QR Code
         if (config.showLhdnQr && lhdnSubmission?.uuid != null) {
             commands.add(PrintCommand.Feed(1))
-            commands.add(PrintCommand.Text("LHDN E-INVOICE VERIFICATION", Alignment.CENTER, isBold = true))
+            commands.add(PrintCommand.Text(context.getString(R.string.receipt_lhdn_verification), Alignment.CENTER, isBold = true))
             
-            val baseUrl = if (isSandbox) "https://preprod.myinvois.hasil.gov.my" else "https://myinvois.hasil.gov.my"
+            val baseUrl = AppConfig.URLs.getLhdnViewerUrl(isSandbox)
             val lhdnUrl = "$baseUrl/viewer/uuid/${lhdnSubmission.uuid}"
 
             commands.add(PrintCommand.QRCode(lhdnUrl))
-            commands.add(PrintCommand.Text("UUID: ${lhdnSubmission.uuid.take(8)}...", Alignment.CENTER))
+            commands.add(PrintCommand.Text(context.getString(R.string.receipt_uuid, lhdnSubmission.uuid.take(8)), Alignment.CENTER))
             
             lhdnSubmission.digitalSignature?.let { signature ->
-                commands.add(PrintCommand.Text("LHDN DIGITAL SIGNATURE", Alignment.CENTER, isBold = true))
+                commands.add(PrintCommand.Text(context.getString(R.string.receipt_lhdn_signature), Alignment.CENTER, isBold = true))
                 commands.add(PrintCommand.Text(signature.take(32), Alignment.CENTER))
                 commands.add(PrintCommand.Text(signature.drop(32).take(32), Alignment.CENTER))
             }
         } else if (config.showLhdnQr) {
             commands.add(PrintCommand.Feed(1))
-            commands.add(PrintCommand.QRCode("https://extropos.com/verify/${sale.id}"))
+            commands.add(PrintCommand.QRCode("${AppConfig.URLs.VERIFY_SALE_BASE}${sale.id}"))
         }
         
         commands.add(PrintCommand.Feed(3))
@@ -146,6 +150,7 @@ object ReceiptGenerator {
     }
 
     fun generateZReport(
+        context: Context,
         shift: Shift,
         config: ReceiptConfig = ReceiptConfig()
     ): List<PrintCommand> {
@@ -159,46 +164,46 @@ object ReceiptGenerator {
             commands.add(PrintCommand.Text(line, isBold = isBold))
         }
 
-        commands.add(PrintCommand.Header("Z-REPORT (SHIFT CLOSE)"))
+        commands.add(PrintCommand.Header(context.getString(R.string.receipt_z_report)))
         commands.add(PrintCommand.Text(config.storeName, Alignment.CENTER))
         commands.add(PrintCommand.Divider)
 
-        commands.add(PrintCommand.Text("Staff: ${shift.staffName}"))
-        commands.add(PrintCommand.Text("Terminal: ${shift.terminalId}"))
-        commands.add(PrintCommand.Text("Opened: ${sdf.format(Date(shift.startTime))}"))
-        shift.endTime?.let { commands.add(PrintCommand.Text("Closed: ${sdf.format(Date(it))}")) }
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_staff, shift.staffName)))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_terminal, shift.terminalId)))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_opened, sdf.format(Date(shift.startTime)))))
+        shift.endTime?.let { commands.add(PrintCommand.Text(context.getString(R.string.receipt_closed, sdf.format(Date(it))))) }
         commands.add(PrintCommand.Divider)
 
-        commands.add(PrintCommand.Text("FINANCIAL SUMMARY", isBold = true))
-        formatLine("Gross Sales:", CurrencyUtils.format(shift.totalCashSales.add(shift.totalOtherSales)))
-        formatLine("Tax Collected:", CurrencyUtils.format(shift.totalTax))
-        formatLine("Rounding:", CurrencyUtils.format(shift.totalRounding))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_financial_summary), isBold = true))
+        formatLine(context.getString(R.string.receipt_gross_sales), CurrencyUtils.format(shift.totalCashSales.add(shift.totalOtherSales)))
+        formatLine(context.getString(R.string.receipt_tax_collected), CurrencyUtils.format(shift.totalTax))
+        formatLine(context.getString(R.string.receipt_rounding), CurrencyUtils.format(shift.totalRounding))
         
         val netTotal = shift.totalCashSales.add(shift.totalOtherSales).add(shift.totalTax).add(shift.totalRounding)
-        formatLine("TOTAL REVENUE:", CurrencyUtils.format(netTotal), isBold = true)
+        formatLine(context.getString(R.string.receipt_total_revenue), CurrencyUtils.format(netTotal), isBold = true)
         
         commands.add(PrintCommand.Divider)
-        commands.add(PrintCommand.Text("CASH RECONCILIATION", isBold = true))
-        formatLine("Starting Float:", CurrencyUtils.format(shift.startFloat))
-        formatLine("Cash Sales:", CurrencyUtils.format(shift.totalCashSales))
-        formatLine("Cash In:", CurrencyUtils.format(shift.cashIn))
-        formatLine("Cash Out:", "-${CurrencyUtils.format(shift.cashOut)}")
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_cash_recon), isBold = true))
+        formatLine(context.getString(R.string.receipt_start_float), CurrencyUtils.format(shift.startFloat))
+        formatLine(context.getString(R.string.receipt_cash_sales), CurrencyUtils.format(shift.totalCashSales))
+        formatLine(context.getString(R.string.receipt_cash_in), CurrencyUtils.format(shift.cashIn))
+        formatLine(context.getString(R.string.receipt_cash_out), "-${CurrencyUtils.format(shift.cashOut)}")
         
         commands.add(PrintCommand.Divider)
         
         val expected = shift.endExpectedCash ?: java.math.BigDecimal.ZERO
-        formatLine("Expected Cash:", CurrencyUtils.format(expected))
+        formatLine(context.getString(R.string.receipt_expected_cash), CurrencyUtils.format(expected))
         
         val actual = shift.endActualCash ?: java.math.BigDecimal.ZERO
-        formatLine("Actual Cash:", CurrencyUtils.format(actual))
+        formatLine(context.getString(R.string.receipt_actual_cash), CurrencyUtils.format(actual))
         
         val discrepancy = actual.subtract(expected)
-        val discrepancyLabel = if (discrepancy < java.math.BigDecimal.ZERO) "SHORTAGE" else "OVERAGE"
+        val discrepancyLabel = if (discrepancy < java.math.BigDecimal.ZERO) context.getString(R.string.receipt_shortage) else context.getString(R.string.receipt_overage)
         formatLine(discrepancyLabel + ":", CurrencyUtils.format(discrepancy.abs()), isBold = true)
 
         commands.add(PrintCommand.Divider)
         commands.add(PrintCommand.Feed(1))
-        commands.add(PrintCommand.Text("SIGNATURE", Alignment.CENTER))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_signature), Alignment.CENTER))
         commands.add(PrintCommand.Feed(2))
         commands.add(PrintCommand.Text("____________________", Alignment.CENTER))
         commands.add(PrintCommand.Text(shift.staffName, Alignment.CENTER))
@@ -210,6 +215,7 @@ object ReceiptGenerator {
     }
 
     fun generateEodReport(
+        context: Context,
         eod: EndOfDay,
         config: ReceiptConfig = ReceiptConfig()
     ): List<PrintCommand> {
@@ -223,29 +229,29 @@ object ReceiptGenerator {
             commands.add(PrintCommand.Text(line, isBold = isBold))
         }
 
-        commands.add(PrintCommand.Header("END OF DAY SUMMARY"))
+        commands.add(PrintCommand.Header(context.getString(R.string.receipt_eod_summary)))
         commands.add(PrintCommand.Text(config.storeName, Alignment.CENTER))
         commands.add(PrintCommand.Divider)
 
-        commands.add(PrintCommand.Text("Business Date: ${sdf.format(Date(eod.businessDate))}"))
-        commands.add(PrintCommand.Text("Generated By: ${eod.staffName}"))
-        commands.add(PrintCommand.Text("Shifts Closed: ${eod.shiftCount}"))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_business_date, sdf.format(Date(eod.businessDate)))))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_generated_by, eod.staffName)))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_shifts_closed, eod.shiftCount.toString())))
         commands.add(PrintCommand.Divider)
 
-        commands.add(PrintCommand.Text("SALES SUMMARY", isBold = true))
-        formatLine("Gross Sales:", CurrencyUtils.format(eod.grossSales))
-        formatLine("Total Discount:", "-${CurrencyUtils.format(eod.totalDiscount)}")
-        formatLine("Total Service Charge:", CurrencyUtils.format(eod.totalServiceCharge))
-        formatLine("Total Tax:", CurrencyUtils.format(eod.totalTax))
-        formatLine("Rounding:", CurrencyUtils.format(eod.totalRounding))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_sales_summary), isBold = true))
+        formatLine(context.getString(R.string.receipt_gross_sales), CurrencyUtils.format(eod.grossSales))
+        formatLine(context.getString(R.string.receipt_total_discount), "-${CurrencyUtils.format(eod.totalDiscount)}")
+        formatLine(context.getString(R.string.receipt_total_service_charge), CurrencyUtils.format(eod.totalServiceCharge))
+        formatLine(context.getString(R.string.receipt_total_tax), CurrencyUtils.format(eod.totalTax))
+        formatLine(context.getString(R.string.receipt_rounding), CurrencyUtils.format(eod.totalRounding))
         
         commands.add(PrintCommand.Divider)
-        formatLine("NET SALES:", CurrencyUtils.format(eod.netSales), isBold = true)
+        formatLine(context.getString(R.string.receipt_net_sales), CurrencyUtils.format(eod.netSales), isBold = true)
         
         commands.add(PrintCommand.Divider)
-        commands.add(PrintCommand.Text("PAYMENT BREAKDOWN", isBold = true))
-        formatLine("Cash:", CurrencyUtils.format(eod.totalCashSales))
-        formatLine("Other (Card/QR):", CurrencyUtils.format(eod.totalOtherSales))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_payment_breakdown), isBold = true))
+        formatLine(context.getString(R.string.receipt_cash), CurrencyUtils.format(eod.totalCashSales))
+        formatLine(context.getString(R.string.receipt_other_payment), CurrencyUtils.format(eod.totalOtherSales))
 
         commands.add(PrintCommand.Divider)
         commands.add(PrintCommand.Feed(3))
@@ -255,6 +261,7 @@ object ReceiptGenerator {
     }
 
     fun generateOrderSlip(
+        context: Context,
         saleId: String,
         tableName: String?,
         items: List<SaleItem>,
@@ -263,12 +270,12 @@ object ReceiptGenerator {
         val commands = mutableListOf<PrintCommand>()
         val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         
-        commands.add(PrintCommand.Header("${tag} ORDER"))
+        commands.add(PrintCommand.Header(context.getString(R.string.receipt_order_tag, tag)))
         tableName?.let { 
-            commands.add(PrintCommand.BigText("TABLE: $it", Alignment.CENTER)) 
+            commands.add(PrintCommand.BigText(context.getString(R.string.receipt_table_name, it), Alignment.CENTER)) 
         }
-        commands.add(PrintCommand.BigText("Order: ${saleId.takeLast(6)}", Alignment.CENTER))
-        commands.add(PrintCommand.Text("Time: ${sdf.format(Date())}", Alignment.CENTER))
+        commands.add(PrintCommand.BigText(context.getString(R.string.receipt_order_id, saleId.takeLast(6)), Alignment.CENTER))
+        commands.add(PrintCommand.Text(context.getString(R.string.receipt_time, sdf.format(Date())), Alignment.CENTER))
         commands.add(PrintCommand.Divider)
         
         items.forEach { item ->
@@ -294,16 +301,16 @@ object ReceiptGenerator {
         return commands
     }
 
-    fun generateTableQrSticker(tableName: String, qrContent: String): List<PrintCommand> {
+    fun generateTableQrSticker(context: Context, tableName: String, qrContent: String): List<PrintCommand> {
         return listOf(
-            PrintCommand.Header("SCAN TO ORDER"),
+            PrintCommand.Header(context.getString(R.string.receipt_scan_to_order)),
             PrintCommand.BigText(tableName, Alignment.CENTER),
             PrintCommand.Divider,
             PrintCommand.Feed(1),
             PrintCommand.QRCode(qrContent),
             PrintCommand.Feed(1),
-            PrintCommand.Text("Branch: MAIN", Alignment.CENTER),
-            PrintCommand.Text("Powered by ExtroPOS", Alignment.CENTER),
+            PrintCommand.Text(context.getString(R.string.receipt_branch_main), Alignment.CENTER),
+            PrintCommand.Text(context.getString(R.string.receipt_powered_by), Alignment.CENTER),
             PrintCommand.Feed(3),
             PrintCommand.Cut
         )

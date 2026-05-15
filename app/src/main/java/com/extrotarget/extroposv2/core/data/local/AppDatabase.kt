@@ -3,6 +3,7 @@ package com.extrotarget.extroposv2.core.data.local
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.local.converter.Converters
 import com.extrotarget.extroposv2.core.data.local.dao.EndOfDayDao
 import com.extrotarget.extroposv2.core.data.model.EndOfDay
@@ -58,6 +59,13 @@ import com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig
 import com.extrotarget.extroposv2.core.data.model.Modifier
 import com.extrotarget.extroposv2.core.data.model.ModifierLink
 import com.extrotarget.extroposv2.core.data.local.dao.ModifierDao
+import com.extrotarget.extroposv2.core.data.local.dao.reporting.ReportingDao
+import com.extrotarget.extroposv2.core.data.local.dao.hotel.HotelDao
+import com.extrotarget.extroposv2.core.data.model.hotel.Room
+import com.extrotarget.extroposv2.core.data.model.hotel.Booking
+import com.extrotarget.extroposv2.core.data.model.hotel.Guest
+import com.extrotarget.extroposv2.core.data.model.hotel.HotelAddon
+
 
 @Database(
     entities = [
@@ -91,9 +99,13 @@ import com.extrotarget.extroposv2.core.data.local.dao.ModifierDao
         ShiftAdjustment::class,
         EndOfDay::class,
         Branch::class,
-        StockTransfer::class
+        StockTransfer::class,
+        Room::class,
+        Booking::class,
+        Guest::class,
+        HotelAddon::class,
     ],
-    version = 25,
+    version = 26,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -121,9 +133,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun branchDao(): BranchDao
     abstract fun stockTransferDao(): StockTransferDao
     abstract fun modifierDao(): ModifierDao
+    abstract fun reportingDao(): ReportingDao
+    abstract fun hotelDao(): HotelDao
+
 
 
     companion object {
-        const val DATABASE_NAME = "extro_pos_db"
+        const val DATABASE_NAME = AppConfig.Database.NAME
     }
 }

@@ -13,6 +13,15 @@ class PrinterFactory @Inject constructor(
 ) {
     fun create(config: PrinterConfig): PrinterInterface? {
         return when (config.connectionType) {
+            "INTERNAL" -> {
+                try {
+                    val clazz = Class.forName("com.extrotarget.extroposv2.core.hardware.printer.IminPrinter")
+                    val constructor = clazz.getConstructor(Context::class.java)
+                    constructor.newInstance(context) as PrinterInterface
+                } catch (e: Exception) {
+                    null
+                }
+            }
             "BLUETOOTH" -> BluetoothPrinter(config.address)
             "NETWORK" -> NetworkPrinter(config.address, config.port)
             "USB" -> {

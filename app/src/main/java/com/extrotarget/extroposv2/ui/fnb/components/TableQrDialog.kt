@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.model.fnb.Table
 import com.extrotarget.extroposv2.ui.components.qr.QrCodeView
 
@@ -28,9 +29,8 @@ fun TableQrDialog(
     onDismiss: () -> Unit,
     onPrint: (String) -> Unit
 ) {
-    // In a real production environment, this URL would point to your ordering portal
-    // with the branch ID and table ID as parameters.
-    val orderUrl = "https://order.extropos.com/order?branch=MAIN&table=${table.id}"
+    // In a real production environment, this URL points to the ordering portal
+    val orderUrl = "${AppConfig.URLs.ORDER_WEB_BASE}?branch=MAIN&table=${table.id}"
 
     Dialog(
         onDismissRequest = onDismiss,

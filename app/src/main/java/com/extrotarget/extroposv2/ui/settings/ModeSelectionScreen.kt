@@ -71,7 +71,7 @@ fun ModeSelectionScreen(
                 columns = GridCells.Fixed(2),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.height(340.dp) // Fixed height to work inside scroll
+                modifier = Modifier.height(520.dp) // Height for 3 rows
             ) {
                 items(BusinessMode.values()) { mode ->
                     ModeCard(

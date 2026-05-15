@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.extrotarget.extroposv2.core.config.AppConfig
 import java.math.BigDecimal
 
 @Entity(
@@ -42,5 +43,5 @@ data class SaleItem(
     val assignedStaffId: String? = null,
     val assignedStaffName: String? = null,
     val printerTag: String = "KITCHEN", // Default to KITCHEN for F&B
-    val status: String = "PENDING" // e.g., PENDING, PREPARING, READY, SERVED
+    val status: String = AppConfig.SaleStatus.PENDING // e.g., PENDING, PREPARING, READY, SERVED
 )

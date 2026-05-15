@@ -1,12 +1,13 @@
 package com.extrotarget.extroposv2.core.util
 
+import com.extrotarget.extroposv2.core.config.AppConfig
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Locale
 
 object CurrencyUtils {
-    private var currencyLocale = Locale("en", "MY")
+    private var currencyLocale = AppConfig.Locales.DEFAULT_CURRENCY
     private var currencyFormat = NumberFormat.getCurrencyInstance(currencyLocale)
 
     fun updateLocale(locale: Locale) {

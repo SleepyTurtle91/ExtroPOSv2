@@ -35,6 +35,7 @@ class PrintReceiptUseCase @Inject constructor(
         defaultPrinter?.let { config ->
             printToPrinter(config, receiptConfig.paperWidth.charWidth) {
                 ReceiptGenerator.generateSaleReceipt(
+                    context = context,
                     sale = sale,
                     items = items,
                     config = receiptConfig,
@@ -52,6 +53,7 @@ class PrintReceiptUseCase @Inject constructor(
             if (itemsForThisPrinter.isNotEmpty()) {
                 printToPrinter(printerConfig, receiptConfig.paperWidth.charWidth) {
                     ReceiptGenerator.generateOrderSlip(
+                        context = context,
                         saleId = sale.id,
                         tableName = tableName,
                         items = itemsForThisPrinter,
@@ -72,6 +74,7 @@ class PrintReceiptUseCase @Inject constructor(
             if (itemsForThisPrinter.isNotEmpty()) {
                 printToPrinter(printerConfig, receiptConfig.paperWidth.charWidth) {
                     ReceiptGenerator.generateOrderSlip(
+                        context = context,
                         saleId = saleId,
                         tableName = tableName,
                         items = itemsForThisPrinter,
@@ -89,7 +92,7 @@ class PrintReceiptUseCase @Inject constructor(
 
         defaultPrinter?.let { config ->
             printToPrinter(config, receiptConfig.paperWidth.charWidth) {
-                ReceiptGenerator.generateZReport(shift, receiptConfig)
+                ReceiptGenerator.generateZReport(context, shift, receiptConfig)
             }
         }
     }
@@ -101,7 +104,7 @@ class PrintReceiptUseCase @Inject constructor(
 
         defaultPrinter?.let { config ->
             printToPrinter(config, receiptConfig.paperWidth.charWidth) {
-                ReceiptGenerator.generateEodReport(eod, receiptConfig)
+                ReceiptGenerator.generateEodReport(context, eod, receiptConfig)
             }
         }
     }
@@ -126,7 +129,7 @@ class PrintReceiptUseCase @Inject constructor(
 
         defaultPrinter?.let { config ->
             printToPrinter(config, receiptConfig.paperWidth.charWidth) {
-                ReceiptGenerator.generateTableQrSticker(tableName, qrContent)
+                ReceiptGenerator.generateTableQrSticker(context, tableName, qrContent)
             }
         }
     }

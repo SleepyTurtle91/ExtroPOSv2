@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.extrotarget.extroposv2.core.config.AppConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -99,7 +100,7 @@ class LicenseManager @Inject constructor(
     }
 
     private fun generateKeyForDevice(id: String): String {
-        val salt = "EXTRO_SALT_2024"
+        val salt = AppConfig.Security.CRYPTO_SALT
         val bytes = (id + salt).toByteArray()
         val md = MessageDigest.getInstance("SHA-256")
         val digest = md.digest(bytes)

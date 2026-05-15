@@ -5,6 +5,7 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import androidx.core.content.ContextCompat
+import com.extrotarget.extroposv2.R
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,8 +23,8 @@ class BiometricHelper @Inject constructor(
 
     fun showBiometricPrompt(
         activity: FragmentActivity,
-        title: String = "Biometric Login",
-        subtitle: String = "Log in using your biometric credential",
+        title: String = context.getString(R.string.biometric_title),
+        subtitle: String = context.getString(R.string.biometric_subtitle),
         onSuccess: (BiometricPrompt.AuthenticationResult) -> Unit,
         onError: (Int, CharSequence) -> Unit,
         onFailed: () -> Unit

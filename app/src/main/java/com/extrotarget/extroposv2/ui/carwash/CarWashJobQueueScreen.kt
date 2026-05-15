@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.res.stringResource
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashJob
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashStatus
 import com.extrotarget.extroposv2.ui.carwash.viewmodel.CarWashViewModel
@@ -34,7 +36,7 @@ fun CarWashJobQueueScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Car Wash Job Queue") })
+            TopAppBar(title = { Text(stringResource(R.string.carwash_queue_title)) })
         }
     ) { padding ->
         Column(
@@ -51,36 +53,36 @@ fun CarWashJobQueueScreen(
             ) {
                 // Column 1: QUEUED
                 QueueColumn(
-                    title = "QUEUED",
+                    title = stringResource(R.string.carwash_status_queued),
                     jobs = uiState.queuedJobs,
                     modifier = Modifier.weight(1f),
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
                 ) { job ->
                     JobCard(job, onAction = { 
                         selectedJobForStaff = job
-                    }, actionLabel = "START WASH")
+                    }, actionLabel = stringResource(R.string.carwash_action_start))
                 }
 
                 // Column 2: IN PROGRESS
                 QueueColumn(
-                    title = "IN PROGRESS",
+                    title = stringResource(R.string.carwash_status_in_progress),
                     jobs = uiState.inProgressJobs,
                     modifier = Modifier.weight(1f),
                     containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
                 ) { job ->
                     JobCard(job, onAction = { 
                         viewModel.updateJobStatus(job.id, CarWashStatus.COMPLETED) 
-                    }, actionLabel = "COMPLETE", isProcessing = true)
+                    }, actionLabel = stringResource(R.string.carwash_action_complete), isProcessing = true)
                 }
 
                 // Column 3: READY / COMPLETED
                 QueueColumn(
-                    title = "READY FOR PICKUP",
+                    title = stringResource(R.string.carwash_status_ready),
                     jobs = uiState.completedJobs,
                     modifier = Modifier.weight(1f),
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
                 ) { job ->
-                    JobCard(job, onAction = { /* Archive or deliver */ }, actionLabel = "DELIVERED", isDone = true)
+                    JobCard(job, onAction = { /* Archive or deliver */ }, actionLabel = stringResource(R.string.carwash_action_delivered), isDone = true)
                 }
             }
         }
@@ -89,11 +91,11 @@ fun CarWashJobQueueScreen(
     if (selectedJobForStaff != null) {
         AlertDialog(
             onDismissRequest = { selectedJobForStaff = null },
-            title = { Text("Assign Staff for ${selectedJobForStaff!!.plateNumber}") },
+            title = { Text(stringResource(R.string.carwash_assign_staff_title, selectedJobForStaff!!.plateNumber)) },
             text = {
                 Column {
                     if (uiState.staffList.isEmpty()) {
-                        Text("No active staff available. Please add staff in settings.")
+                        Text(stringResource(R.string.carwash_no_staff_available))
                     } else {
                         uiState.staffList.forEach { staff ->
                             ListItem(
@@ -110,7 +112,7 @@ fun CarWashJobQueueScreen(
             },
             confirmButton = {
                 TextButton(onClick = { selectedJobForStaff = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.btn_cancel))
                 }
             }
         )
@@ -159,7 +161,8 @@ fun JobCard(
     isProcessing: Boolean = false,
     isDone: Boolean = false
 ) {
-    val timeFormat = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
+    val timeFormatString = stringResource(R.string.carwash_time_format)
+    val timeFormat = remember(timeFormatString) { SimpleDateFormat(timeFormatString, Locale.getDefault()) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -217,7 +220,7 @@ fun JobCard(
                 }
             } else {
                 Text(
-                    "COMPLETED AT ${job.completionTime?.let { timeFormat.format(Date(it)) }}",
+                    stringResource(R.string.carwash_completed_at, job.completionTime?.let { timeFormat.format(Date(it)) } ?: ""),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onTertiaryContainer,
                     modifier = Modifier.align(Alignment.CenterHorizontally)

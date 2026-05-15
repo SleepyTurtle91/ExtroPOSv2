@@ -64,44 +64,57 @@ fun SalesScreen(
         return
     }
 
+    val isMobile = com.extrotarget.extroposv2.BuildConfig.FLAVOR == "mobile"
     val activeMode = uiState.activeMode
 
-    Row(modifier = modifier.fillMaxSize().background(Color(0xFFF1F5F9))) {
-        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-            // 1. Top Header
-            SaleHeader(
-                activeMode = activeMode,
-                uiState = uiState,
-                currentTime = currentTime,
-                syncStatus = uiState.syncStatus,
-                sessionManager = sessionManager,
-                onOpenShift = { onNavigateToShift() },
-                onOpenDrawer = { viewModel.openDrawer() },
-                onSearchQueryChange = { viewModel.updateSearchQuery(it) }
-            )
-
-            // 2. Main Content Area (Product Grid / Tables / etc.)
-            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                PosContentGrid(
-                    uiState = uiState,
-                    onProductClick = { viewModel.addToCart(it) },
-                    onSelectCategory = { viewModel.selectCategory(it) }
-                )
-            }
-        }
-
-        // 3. Right Cart Sidebar (Permanent)
-        CartSidebar(
+    if (isMobile) {
+        MobileSalesLayout(
+            modifier = modifier,
             uiState = uiState,
-            onUpdateQuantity = { item, qty -> viewModel.updateQuantity(item, qty) },
-            onShowModifiers = { viewModel.showModifierSelection(it) },
-            onRemoveFromCart = { viewModel.removeFromCart(it) },
-            onClearCart = { viewModel.clearCartWithConfirm() },
-            onSendToKitchen = { viewModel.sendToKitchen() },
-            onCompleteSale = { viewModel.completeSale(it) },
-            onAddCustomer = { viewModel.setShowMemberSelection(true) },
-            onRedeemPoints = { viewModel.setRedeemedPoints(it) }
+            currentTime = currentTime,
+            activeMode = activeMode,
+            sessionManager = sessionManager,
+            viewModel = viewModel,
+            onNavigateToShift = onNavigateToShift
         )
+    } else {
+        Row(modifier = modifier.fillMaxSize().background(Color(0xFFF1F5F9))) {
+            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                // 1. Top Header
+                SaleHeader(
+                    activeMode = activeMode,
+                    uiState = uiState,
+                    currentTime = currentTime,
+                    syncStatus = uiState.syncStatus,
+                    sessionManager = sessionManager,
+                    onOpenShift = { onNavigateToShift() },
+                    onOpenDrawer = { viewModel.openDrawer() },
+                    onSearchQueryChange = { viewModel.updateSearchQuery(it) }
+                )
+
+                // 2. Main Content Area (Product Grid / Tables / etc.)
+                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                    PosContentGrid(
+                        uiState = uiState,
+                        onProductClick = { viewModel.addToCart(it) },
+                        onSelectCategory = { viewModel.selectCategory(it) }
+                    )
+                }
+            }
+
+            // 3. Right Cart Sidebar (Permanent)
+            CartSidebar(
+                uiState = uiState,
+                onUpdateQuantity = { item, qty -> viewModel.updateQuantity(item, qty) },
+                onShowModifiers = { viewModel.showModifierSelection(it) },
+                onRemoveFromCart = { viewModel.removeFromCart(it) },
+                onClearCart = { viewModel.clearCartWithConfirm() },
+                onSendToKitchen = { viewModel.sendToKitchen() },
+                onCompleteSale = { viewModel.completeSale(it) },
+                onAddCustomer = { viewModel.setShowMemberSelection(true) },
+                onRedeemPoints = { viewModel.setRedeemedPoints(it) }
+            )
+        }
     }
 
     if (uiState.showPaymentMethodDialog) {

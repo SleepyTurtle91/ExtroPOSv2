@@ -38,7 +38,8 @@ fun SaleHeader(
     sessionManager: SessionManager,
     onOpenShift: () -> Unit = {},
     onOpenDrawer: () -> Unit = {},
-    onSearchQueryChange: (String) -> Unit = {}
+    onSearchQueryChange: (String) -> Unit = {},
+    onScanBarcode: () -> Unit = {}
 ) {
     val currentUser by sessionManager.currentUser.collectAsState()
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -141,6 +142,11 @@ fun SaleHeader(
                     focusedContainerColor = Color(0xFFF8FAFC),
                     unfocusedContainerColor = Color(0xFFF8FAFC)
                 ),
+                trailingIcon = {
+                    IconButton(onClick = onScanBarcode) {
+                        Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan Barcode", modifier = Modifier.size(20.dp), tint = Color(0xFF3B82F6))
+                    }
+                },
                 singleLine = true
             )
         }

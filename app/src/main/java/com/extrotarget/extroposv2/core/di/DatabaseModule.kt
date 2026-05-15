@@ -22,6 +22,8 @@ import com.extrotarget.extroposv2.core.data.local.dao.AutoCountDao
 import com.extrotarget.extroposv2.core.data.local.dao.ShiftDao
 import com.extrotarget.extroposv2.core.data.local.dao.BranchDao
 import com.extrotarget.extroposv2.core.data.local.dao.StockTransferDao
+import com.extrotarget.extroposv2.core.data.local.dao.reporting.ReportingDao
+import com.extrotarget.extroposv2.core.data.local.dao.hotel.HotelDao
 import com.extrotarget.extroposv2.core.data.local.training.TrainingDbManager
 import dagger.Module
 import dagger.Provides
@@ -150,4 +152,10 @@ object DatabaseModule {
 
     @Provides
     fun provideEndOfDayDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): com.extrotarget.extroposv2.core.data.local.dao.EndOfDayDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().endOfDayDao() else mainDb.endOfDayDao()
+
+    @Provides
+    fun provideReportingDao(mainDb: AppDatabase): ReportingDao = mainDb.reportingDao()
+
+    @Provides
+    fun provideHotelDao(mainDb: AppDatabase): HotelDao = mainDb.hotelDao()
 }

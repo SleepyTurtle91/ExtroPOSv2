@@ -65,7 +65,7 @@ fun CartSidebar(
                         color = Color(0xFF0F172A)
                     )
                     Text(
-                        "TICKET #00${System.currentTimeMillis() / 1000000}",
+                        stringResource(R.string.sales_ticket_label, (System.currentTimeMillis() / 1000000).toString().takeLast(6)),
                         color = Color(0xFF64748B),
                         fontWeight = FontWeight.Bold,
                         fontSize = 11.sp
@@ -122,7 +122,7 @@ fun CartSidebar(
                         ) {
                             Icon(Icons.Default.ShoppingBag, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFE2E8F0))
                             Spacer(Modifier.height(16.dp))
-                            Text("NO ITEMS ADDED", color = Color(0xFF94A3B8), fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
+                            Text(stringResource(R.string.sales_no_items), color = Color(0xFF94A3B8), fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
                         }
                     }
                 } else {
@@ -162,7 +162,7 @@ fun CartSidebar(
                                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(16.dp))
                                     Column {
                                         Text(uiState.selectedMember.name.uppercase(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
-                                        Text("${uiState.selectedMember.totalPoints.toInt()} pts", style = MaterialTheme.typography.labelSmall)
+                                        Text(stringResource(R.string.sales_pts_label, uiState.selectedMember.totalPoints.toInt()), style = MaterialTheme.typography.labelSmall)
                                     }
                                 }
                                 IconButton(onClick = { onAddCustomer() }, modifier = Modifier.size(24.dp)) {
@@ -179,7 +179,7 @@ fun CartSidebar(
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
-                                        if (uiState.redeemedPoints > BigDecimal.ZERO) "REDEEMED RM${uiState.redeemedAmount}" else "REDEEM POINTS",
+                                        if (uiState.redeemedPoints > BigDecimal.ZERO) stringResource(R.string.sales_redeemed_label, uiState.redeemedAmount) else stringResource(R.string.sales_redeem_points),
                                         fontWeight = FontWeight.Black,
                                         fontSize = 12.sp
                                     )
@@ -202,7 +202,7 @@ fun CartSidebar(
                             SummaryRow(scLabel, CurrencyUtils.format(uiState.totalServiceCharge))
                         }
                         if (uiState.roundingAdjustment != BigDecimal.ZERO) {
-                            SummaryRow("ROUNDING (BNM)", CurrencyUtils.format(uiState.roundingAdjustment), valueColor = Color(0xFFF59E0B))
+                            SummaryRow(stringResource(R.string.sales_rounding_bnm), CurrencyUtils.format(uiState.roundingAdjustment), valueColor = Color(0xFFF59E0B))
                         }
                     }
                     
@@ -224,7 +224,7 @@ fun CartSidebar(
                             )
                             if (uiState.roundingAdjustment != BigDecimal.ZERO) {
                                 Text(
-                                    "Excl. Rounding: ${CurrencyUtils.format(uiState.totalAmount)}",
+                                    stringResource(R.string.sales_excl_rounding, CurrencyUtils.format(uiState.totalAmount)),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color.Gray
                                 )
@@ -253,7 +253,7 @@ fun CartSidebar(
                                         modifier = Modifier.size(20.dp)
                                     )
                                     Text(
-                                        if (allSaved) "SENT" else "SEND",
+                                        if (allSaved) stringResource(R.string.sales_sent) else stringResource(R.string.sales_send),
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Black
                                     )

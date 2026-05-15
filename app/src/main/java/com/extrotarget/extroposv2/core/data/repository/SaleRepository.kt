@@ -49,6 +49,8 @@ class SaleRepository @Inject constructor(
 
     suspend fun updateSale(sale: Sale) = saleDao.updateSale(sale)
 
+    suspend fun markSaleAsSynced(saleId: String) = saleDao.markSaleAsSynced(saleId)
+
     suspend fun voidSale(saleId: String) {
         val sale = saleDao.getSaleById(saleId) ?: return
         if (sale.status == "VOIDED") return

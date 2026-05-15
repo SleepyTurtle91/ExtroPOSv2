@@ -81,6 +81,8 @@ class DataSeeder @Inject constructor(
             BusinessMode.FNB -> listOf("Main Dishes", "Drinks", "Desserts")
             BusinessMode.CARWASH -> listOf("Wash Services", "Add-ons", "Premium Detail")
             BusinessMode.LAUNDRY -> listOf("Weight Based", "Dry Clean")
+            BusinessMode.HOTEL, BusinessMode.HOMESTAY -> listOf("Room Addons", "Transport", "Meal Vouchers")
+            else -> emptyList()
         }
 
         val catMap = mutableMapOf<String, Category>()
@@ -110,6 +112,12 @@ class DataSeeder @Inject constructor(
                 createSeedProduct("Wash & Fold", "4.50", catMap["Weight Based"], BusinessMode.LAUNDRY, isWeight = true),
                 createSeedProduct("Suit Dry Clean", "25.00", catMap["Dry Clean"], BusinessMode.LAUNDRY)
             )
+            BusinessMode.HOTEL, BusinessMode.HOMESTAY -> listOf(
+                createSeedProduct("Extra Bed", "50.00", catMap["Room Addons"], mode),
+                createSeedProduct("Airport Transfer", "80.00", catMap["Transport"], mode),
+                createSeedProduct("Breakfast Voucher", "25.00", catMap["Meal Vouchers"], mode)
+            )
+            else -> emptyList()
         }
 
         products.forEach { product ->

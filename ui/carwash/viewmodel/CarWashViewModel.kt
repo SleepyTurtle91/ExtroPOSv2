@@ -1,7 +1,9 @@
 package com.extrotarget.extroposv2.ui.carwash.viewmodel
 
+import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashJob
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashStatus
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
@@ -19,6 +21,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class CarWashViewModel @Inject constructor(
+    private val application: Application,
     private val repository: CarWashRepository,
     private val staffRepository: StaffRepository
 ) : ViewModel() {
@@ -57,7 +60,7 @@ class CarWashViewModel @Inject constructor(
                     saleId = job.id,
                     amount = commissionAmount,
                     timestamp = System.currentTimeMillis(),
-                    description = "Wash commission for ${job.plateNumber}"
+                    description = application.getString(R.string.carwash_commission_desc, job.plateNumber)
                 )
                 staffRepository.addCommissionRecords(listOf(record))
             }

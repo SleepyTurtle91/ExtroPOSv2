@@ -234,10 +234,10 @@ fun OnboardingWizardScreen(
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0EA5E9)),
                             enabled = when (uiState.currentStep) {
-                                0 -> uiState.isStep1Valid
-                                1 -> uiState.isStep2Valid
-                                else -> true
-                            }
+                        0 -> uiState.isStep1Valid
+                        1 -> uiState.isStep2Valid
+                        else -> true
+                    }
                         ) {
                             Text(stringResource(R.string.btn_next), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.width(8.dp))
@@ -381,6 +381,8 @@ fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel)
                                 BusinessMode.FNB -> "F&B"
                                 BusinessMode.CARWASH -> "CARWASH"
                                 BusinessMode.LAUNDRY -> "LAUNDRY"
+                                BusinessMode.HOTEL -> "HOTEL"
+                                BusinessMode.HOMESTAY -> "HOMESTAY"
                             },
                             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
                             style = MaterialTheme.typography.labelMedium,

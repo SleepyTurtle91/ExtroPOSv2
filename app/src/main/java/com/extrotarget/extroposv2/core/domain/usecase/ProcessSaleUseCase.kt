@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
@@ -19,6 +20,7 @@ import com.extrotarget.extroposv2.core.data.repository.settings.AutoCountReposit
 import com.extrotarget.extroposv2.core.data.repository.loyalty.LoyaltyRepository
 import com.extrotarget.extroposv2.core.data.model.lhdn.BuyerInfo
 import com.extrotarget.extroposv2.core.work.AutoCountSyncWorker
+import com.extrotarget.extroposv2.core.work.BranchSyncWorker
 import com.extrotarget.extroposv2.core.work.EInvoiceSubmissionWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.firstOrNull
@@ -90,6 +92,9 @@ class ProcessSaleUseCase @Inject constructor(
             enqueueAutoCountSync(sale.id, autoCountConfig.syncToken)
         }
 
+        // 6.5 Branch Sync: Reliably push sale to HQ
+        enqueueBranchSync(sale.id)
+
         // 7. Loyalty Points: If a member is associated and loyalty is enabled
         sale.memberId?.let { memberId ->
             val loyaltyConfig = loyaltyRepository.getConfig().firstOrNull()
@@ -108,10 +113,10 @@ class ProcessSaleUseCase @Inject constructor(
         }
 
         // 8. Update Shift Totals
-        if (sale.status == "COMPLETED") {
+        if (sale.status == AppConfig.SaleStatus.COMPLETED) {
             shiftRepository.getActiveShiftNow()?.let { activeShift ->
-                val cashAmount = if (sale.paymentMethod == "CASH") sale.totalAmount else BigDecimal.ZERO
-                val otherAmount = if (sale.paymentMethod != "CASH") sale.totalAmount else BigDecimal.ZERO
+                val cashAmount = if (sale.paymentMethod == AppConfig.PaymentMethod.CASH) sale.totalAmount else BigDecimal.ZERO
+                val otherAmount = if (sale.paymentMethod != AppConfig.PaymentMethod.CASH) sale.totalAmount else BigDecimal.ZERO
                 
                 shiftRepository.recordSale(
                     shiftId = activeShift.id,
@@ -122,6 +127,15 @@ class ProcessSaleUseCase @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun enqueueBranchSync(saleId: String) {
+        val workRequest = OneTimeWorkRequestBuilder<BranchSyncWorker>()
+            .setInputData(workDataOf(
+                BranchSyncWorker.KEY_SALE_ID to saleId
+            ))
+            .build()
+        WorkManager.getInstance(context).enqueue(workRequest)
     }
 
     private fun enqueueAutoCountSync(saleId: String, token: String) {

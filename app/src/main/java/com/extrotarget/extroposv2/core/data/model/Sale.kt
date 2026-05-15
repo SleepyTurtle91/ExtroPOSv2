@@ -2,6 +2,7 @@ package com.extrotarget.extroposv2.core.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.extrotarget.extroposv2.core.config.AppConfig
 import java.math.BigDecimal
 import java.util.Date
 
@@ -17,7 +18,7 @@ data class Sale(
     val discountLabel: String? = null,
     val roundingAdjustment: BigDecimal = BigDecimal.ZERO,
     val paymentMethod: String, // e.g., CASH, CARD
-    val status: String = "COMPLETED", // e.g., COMPLETED, VOIDED, REFUNDED, PENDING
+    val status: String = AppConfig.SaleStatus.COMPLETED, // e.g., COMPLETED, VOIDED, REFUNDED, PENDING
     val memberId: String? = null,
     val staffId: String? = null,
     val tableId: String? = null,

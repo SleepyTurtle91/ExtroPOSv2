@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.ui.analytics.components.SimpleBarChart
 import com.extrotarget.extroposv2.ui.analytics.viewmodel.AnalyticsViewModel
@@ -31,7 +33,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun AnalyticsScreen(
     viewModel: AnalyticsViewModel = hiltViewModel(),
     onNavigateToLowStock: () -> Unit,
-    onNavigateToStaffEarnings: () -> Unit
+    onNavigateToStaffEarnings: () -> Unit,
+    onNavigateToReporting: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
@@ -46,9 +49,9 @@ fun AnalyticsScreen(
                     context.contentResolver.openOutputStream(it)?.use { outputStream ->
                         val result = viewModel.exportSstReport(outputStream)
                         if (result.isSuccess) {
-                            android.widget.Toast.makeText(context, "SST Report exported", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(context, context.getString(R.string.analytics_export_success), android.widget.Toast.LENGTH_SHORT).show()
                         } else {
-                            android.widget.Toast.makeText(context, "Export failed: ${result.exceptionOrNull()?.message}", android.widget.Toast.LENGTH_LONG).show()
+                            android.widget.Toast.makeText(context, context.getString(R.string.analytics_export_failed, result.exceptionOrNull()?.message ?: "Unknown"), android.widget.Toast.LENGTH_LONG).show()
                         }
                     }
                 }
@@ -59,13 +62,13 @@ fun AnalyticsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Business Analytics & Tax") },
+                title = { Text(stringResource(R.string.analytics_title)) },
                 actions = {
                     IconButton(onClick = {
                         val fileName = "Tax_Report_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.startDate))}_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.endDate))}.csv"
                         exportLauncher.launch(fileName)
                     }) {
-                        Icon(Icons.Default.Download, contentDescription = "Export Tax CSV")
+                        Icon(Icons.Default.Download, contentDescription = stringResource(R.string.analytics_export_tax))
                     }
                 }
             )
@@ -87,7 +90,7 @@ fun AnalyticsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Reporting Period", style = MaterialTheme.typography.labelMedium)
+                            Text(stringResource(R.string.analytics_report_period), style = MaterialTheme.typography.labelMedium)
                             Text(
                                 "${dateFormat.format(Date(uiState.startDate))} - ${dateFormat.format(Date(uiState.endDate))}",
                                 style = MaterialTheme.typography.titleMedium,
@@ -95,7 +98,7 @@ fun AnalyticsScreen(
                             )
                         }
                         IconButton(onClick = { /* Date Picker Logic */ }) {
-                            Icon(Icons.Default.DateRange, contentDescription = "Select Date")
+                            Icon(Icons.Default.DateRange, contentDescription = stringResource(R.string.analytics_select_date))
                         }
                     }
                 }
@@ -108,13 +111,13 @@ fun AnalyticsScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     SummaryCard(
-                        title = "Gross Sales",
+                        title = stringResource(R.string.analytics_gross_sales),
                         value = CurrencyUtils.format(uiState.totalSales),
                         modifier = Modifier.weight(1f),
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                     SummaryCard(
-                        title = "Tax Collected",
+                        title = stringResource(R.string.analytics_tax_collected),
                         value = CurrencyUtils.format(uiState.totalTax),
                         modifier = Modifier.weight(1f),
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -126,7 +129,7 @@ fun AnalyticsScreen(
             if (uiState.taxReports.isNotEmpty()) {
                 item {
                     Text(
-                        "Tax Breakdown by Rate",
+                        stringResource(R.string.analytics_tax_breakdown),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(top = 8.dp)
@@ -145,13 +148,13 @@ fun AnalyticsScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     SummaryCard(
-                        title = "Discounts",
+                        title = stringResource(R.string.analytics_discounts),
                         value = "-${CurrencyUtils.format(uiState.totalDiscount)}",
                         modifier = Modifier.weight(1f),
                         containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                     SummaryCard(
-                        title = "Rounding",
+                        title = stringResource(R.string.analytics_rounding),
                         value = (if (uiState.totalRounding >= java.math.BigDecimal.ZERO) "+" else "") + CurrencyUtils.format(uiState.totalRounding),
                         modifier = Modifier.weight(1f),
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -161,7 +164,7 @@ fun AnalyticsScreen(
 
             item {
                 SummaryCard(
-                    title = "Transaction Count",
+                    title = stringResource(R.string.analytics_transaction_count),
                     value = uiState.salesCount.toString(),
                     modifier = Modifier.fillMaxWidth(),
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer
@@ -171,7 +174,7 @@ fun AnalyticsScreen(
             // Sales Trend Chart
             item {
                 Text(
-                    "Sales Trend (Today)",
+                    stringResource(R.string.analytics_sales_trend_today),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -193,7 +196,7 @@ fun AnalyticsScreen(
             // Top Products / Categories
             item {
                 Text(
-                    "Top 5 Products by Sales",
+                    stringResource(R.string.analytics_top_products),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -229,7 +232,7 @@ fun AnalyticsScreen(
             // Industry Specific Reports
             item {
                 Text(
-                    "Industry Specific Reports",
+                    stringResource(R.string.analytics_industry_reports),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -247,8 +250,8 @@ fun AnalyticsScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                            Text("Inventory Alerts", fontWeight = FontWeight.Bold)
-                            Text("Low stock items", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.analytics_inv_alerts), fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.analytics_low_stock_desc), style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     ElevatedCard(
@@ -257,17 +260,28 @@ fun AnalyticsScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Text("Staff Earnings", fontWeight = FontWeight.Bold)
-                            Text("Commission report", style = MaterialTheme.typography.bodySmall)
+                            Text(stringResource(R.string.analytics_staff_earnings), fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.analytics_commission_report), style = MaterialTheme.typography.bodySmall)
                         }
                     }
+                }
+            }
+
+            item {
+                Button(
+                    onClick = onNavigateToReporting,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.Summarize, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.analytics_view_detailed))
                 }
             }
 
             // Tax Compliance Section
             item {
                 Text(
-                    "Tax Compliance",
+                    stringResource(R.string.analytics_tax_compliance),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(top = 8.dp)
@@ -281,18 +295,18 @@ fun AnalyticsScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            "Ready for Tax Filing",
+                            stringResource(R.string.analytics_ready_filing),
                             style = MaterialTheme.typography.titleMedium,
                             color = Color(0xFF2E7D32)
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "Total Tax Collected: ${CurrencyUtils.format(uiState.totalTax)}",
+                            stringResource(R.string.analytics_total_tax_collected, CurrencyUtils.format(uiState.totalTax)),
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold
                         )
                         Text(
-                            "Net Sales (Excl. Tax): ${CurrencyUtils.format(uiState.totalSales.subtract(uiState.totalTax))}",
+                            stringResource(R.string.analytics_net_sales_excl_tax, CurrencyUtils.format(uiState.totalSales.subtract(uiState.totalTax))),
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }

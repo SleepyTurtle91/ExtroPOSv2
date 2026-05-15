@@ -18,7 +18,7 @@ object RoundingUtils {
         // Get the last digit (cents)
         val cents = total.multiply(BigDecimal("100"))
             .remainder(BigDecimal("10"))
-            .setScale(0, RoundingMode.HALF_UP)
+            .setScale(0, RoundingMode.HALF_EVEN)
             .toInt()
 
         val adjustment = when (cents) {
@@ -35,7 +35,7 @@ object RoundingUtils {
 
         return RoundingResult(
             adjustment = adjustment,
-            finalTotal = total.add(adjustment).setScale(2, RoundingMode.HALF_UP)
+            finalTotal = total.add(adjustment).setScale(2, RoundingMode.HALF_EVEN)
         )
     }
 

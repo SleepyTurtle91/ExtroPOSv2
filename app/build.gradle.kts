@@ -57,6 +57,26 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
     }
+
+    flavorDimensions += "formFactor"
+    productFlavors {
+        create("tablet") {
+            dimension = "formFactor"
+            manifestPlaceholders["screenOrientation"] = "userLandscape"
+        }
+        create("mobile") {
+            dimension = "formFactor"
+            applicationIdSuffix = ".mobile"
+            manifestPlaceholders["screenOrientation"] = "portrait"
+        }
+        create("keygen") {
+            dimension = "formFactor"
+            applicationIdSuffix = ".keygen"
+            versionNameSuffix = "-KEYGEN"
+            manifestPlaceholders["screenOrientation"] = "portrait"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -128,6 +148,11 @@ dependencies {
     implementation(libs.okhttp.logging)
     implementation(libs.gson)
     implementation(libs.timber)
+    implementation(libs.kotlinCsv)
+    implementation(libs.vico.compose)
+    implementation(libs.vico.compose.m3)
+    implementation(libs.vico.core)
+    implementation(libs.kotlinx.datetime)
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
@@ -151,6 +176,9 @@ dependencies {
     implementation(libs.androidx.work.runtime)
     implementation(libs.hilt.work)
     ksp(libs.hilt.compiler) // Already added but hilt-work needs ksp
+
+    // iMin SDK for mobile flavor
+    "mobileImplementation"(libs.imin.printer)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

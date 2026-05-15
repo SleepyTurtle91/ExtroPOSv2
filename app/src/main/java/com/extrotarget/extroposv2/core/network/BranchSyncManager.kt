@@ -1,5 +1,6 @@
 package com.extrotarget.extroposv2.core.network
 
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.core.data.model.inventory.Branch
@@ -43,8 +44,8 @@ class BranchSyncManager @Inject constructor(
         val hq = getHQConfig() ?: return@withContext Result.failure(Exception("HQ Branch not configured"))
         
         try {
-            val response: HttpResponse = client.get("http://${hq.ipAddress}/sync/branch/member/$memberId") {
-                header("X-Sync-Token", hq.syncToken)
+            val response: HttpResponse = client.get("http://${hq.ipAddress}${AppConfig.Network.ENDPOINT_SYNC_MEMBER}$memberId") {
+                header(AppConfig.Network.HEADER_SYNC_TOKEN, hq.syncToken)
             }
             
             if (response.status == HttpStatusCode.OK) {
@@ -67,8 +68,8 @@ class BranchSyncManager @Inject constructor(
         val hq = getHQConfig() ?: return@withContext Result.failure(Exception("HQ Branch not configured"))
 
         try {
-            val response: HttpResponse = client.post("http://${hq.ipAddress}/sync/branch/sale") {
-                header("X-Sync-Token", hq.syncToken)
+            val response: HttpResponse = client.post("http://${hq.ipAddress}${AppConfig.Network.ENDPOINT_SYNC_SALE}") {
+                header(AppConfig.Network.HEADER_SYNC_TOKEN, hq.syncToken)
                 contentType(ContentType.Application.Json)
                 setBody(saleWithItems)
             }
@@ -91,8 +92,8 @@ class BranchSyncManager @Inject constructor(
         val hq = getHQConfig() ?: return@withContext Result.failure(Exception("HQ Branch not configured"))
 
         try {
-            val response: HttpResponse = client.get("http://${hq.ipAddress}/sync/branch/stock") {
-                header("X-Sync-Token", hq.syncToken)
+            val response: HttpResponse = client.get("http://${hq.ipAddress}${AppConfig.Network.ENDPOINT_SYNC_STOCK}") {
+                header(AppConfig.Network.HEADER_SYNC_TOKEN, hq.syncToken)
             }
 
             if (response.status == HttpStatusCode.OK) {
@@ -125,8 +126,8 @@ class BranchSyncManager @Inject constructor(
         val hq = getHQConfig() ?: return@withContext Result.failure(Exception("HQ Branch not configured"))
 
         try {
-            val response: HttpResponse = client.post("http://${hq.ipAddress}/sync/branch/transfer") {
-                header("X-Sync-Token", hq.syncToken)
+            val response: HttpResponse = client.post("http://${hq.ipAddress}${AppConfig.Network.ENDPOINT_SYNC_TRANSFER}") {
+                header(AppConfig.Network.HEADER_SYNC_TOKEN, hq.syncToken)
                 contentType(ContentType.Application.Json)
                 setBody(transfer)
             }

@@ -1,6 +1,7 @@
 package com.extrotarget.extroposv2.core.data.local.dao
 
 import androidx.room.*
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
@@ -32,7 +33,7 @@ interface SaleDao {
         // Update stock for each item and record movement
         items.forEach { item ->
             // Only decrease stock for completed sales
-            if (sale.status == "COMPLETED") {
+            if (sale.status == AppConfig.SaleStatus.COMPLETED) {
                 decreaseStock(item.productId, item.quantity)
                 insertStockMovement(
                     com.extrotarget.extroposv2.core.data.model.inventory.StockMovement(
@@ -65,14 +66,14 @@ interface SaleDao {
     suspend fun updateSale(sale: Sale)
 
     @Transaction
-    @Query("SELECT * FROM sales WHERE tableId = :tableId AND status = 'PENDING'")
-    fun getPendingSaleWithItemsForTable(tableId: String): Flow<SaleWithItems?>
+    @Query("SELECT * FROM sales WHERE tableId = :tableId AND status = :pendingStatus")
+    fun getPendingSaleWithItemsForTable(tableId: String, pendingStatus: String = AppConfig.SaleStatus.PENDING): Flow<SaleWithItems?>
 
     @Query("SELECT * FROM sales WHERE id = :saleId")
     suspend fun getSaleById(saleId: String): Sale?
 
-    @Query("SELECT * FROM sales WHERE tableId = :tableId AND status = 'PENDING'")
-    suspend fun getPendingSaleForTable(tableId: String): Sale?
+    @Query("SELECT * FROM sales WHERE tableId = :tableId AND status = :pendingStatus")
+    suspend fun getPendingSaleForTable(tableId: String, pendingStatus: String = AppConfig.SaleStatus.PENDING): Sale?
 
     @Query("SELECT * FROM sale_items WHERE saleId = :saleId")
     suspend fun getItemsBySaleId(saleId: String): List<SaleItem>
@@ -93,10 +94,10 @@ interface SaleDao {
     @Query("SELECT * FROM sales WHERE timestamp >= :start AND timestamp <= :end ORDER BY timestamp DESC")
     suspend fun getSalesInRangeNow(start: Long, end: Long): List<Sale>
 
-    @Query("SELECT * FROM sales WHERE id NOT IN (SELECT saleId FROM sale_einvoice_submission) AND timestamp >= :start AND timestamp <= :end AND status = 'COMPLETED'")
-    suspend fun getSalesWithoutLhdnSubmission(start: Long, end: Long): List<Sale>
+    @Query("SELECT * FROM sales WHERE id NOT IN (SELECT saleId FROM sale_einvoice_submission) AND timestamp >= :start AND timestamp <= :end AND status = :completedStatus")
+    suspend fun getSalesWithoutLhdnSubmission(start: Long, end: Long, completedStatus: String = AppConfig.SaleStatus.COMPLETED): List<Sale>
 
     @Transaction
-    @Query("SELECT * FROM sales WHERE id NOT IN (SELECT saleId FROM sale_einvoice_submission) AND timestamp >= :start AND timestamp <= :end AND status = 'COMPLETED'")
-    suspend fun getSalesWithItemsWithoutLhdnSubmission(start: Long, end: Long): List<SaleWithItems>
+    @Query("SELECT * FROM sales WHERE id NOT IN (SELECT saleId FROM sale_einvoice_submission) AND timestamp >= :start AND timestamp <= :end AND status = :completedStatus")
+    suspend fun getSalesWithItemsWithoutLhdnSubmission(start: Long, end: Long, completedStatus: String = AppConfig.SaleStatus.COMPLETED): List<SaleWithItems>
 }

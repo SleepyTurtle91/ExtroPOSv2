@@ -1,5 +1,6 @@
 package com.extrotarget.extroposv2.core.data.repository
 
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.local.dao.EndOfDayDao
 import com.extrotarget.extroposv2.core.data.local.dao.ShiftDao
 import com.extrotarget.extroposv2.core.data.local.dao.SaleDao
@@ -68,7 +69,7 @@ class EndOfDayRepository @Inject constructor(
         var netSales = BigDecimal.ZERO
 
         totalSalesInRange.forEach { sale ->
-            if (sale.status == "COMPLETED") {
+            if (sale.status == AppConfig.SaleStatus.COMPLETED) {
                 totalSC += sale.serviceChargeAmount
                 totalDisc += sale.discountAmount
                 grossSales += sale.totalAmount

@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.res.stringResource
 import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.ui.sales.CartItem
 import com.extrotarget.extroposv2.ui.sales.SalesUiState
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
@@ -97,7 +98,7 @@ fun ModifierDialog(
                                         )
                                         if (modifier.priceAdjustment > BigDecimal.ZERO) {
                                             Text(
-                                                "+RM ${modifier.priceAdjustment}",
+                                                stringResource(R.string.sales_modifier_price, modifier.priceAdjustment.toString()),
                                                 fontSize = 10.sp,
                                                 fontWeight = FontWeight.Bold,
                                                 color = if (isSelected) Color.White else if (isAvailable) Color(0xFFF59E0B) else Color(0xFFCBD5E1)
@@ -344,7 +345,7 @@ fun OrderSuccessDialog(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                             Column {
                                 Text(stringResource(R.string.sales_ticket_summary).uppercase(), fontWeight = FontWeight.Black, fontSize = 12.sp, color = Color(0xFF64748B))
-                                Text("#${uiState.lastSaleId?.takeLast(8)?.uppercase() ?: "PENDING"}", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color(0xFF0F172A))
+                                Text("#${uiState.lastSaleId?.takeLast(8)?.uppercase() ?: AppConfig.SaleStatus.PENDING}", fontWeight = FontWeight.Black, fontSize = 20.sp, color = Color(0xFF0F172A))
                             }
                             IconButton(onClick = onDismiss) {
                                 Icon(Icons.Default.Close, contentDescription = null, tint = Color(0xFF94A3B8))
@@ -373,7 +374,7 @@ fun OrderSuccessDialog(
                             }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFF1F5F9))
                         
-                        if (uiState.lastPaymentMethod == "CASH" && uiState.cashReceived > BigDecimal.ZERO) {
+                        if (uiState.lastPaymentMethod == AppConfig.PaymentMethod.CASH && uiState.cashReceived > BigDecimal.ZERO) {
                             SummaryDetailRow(stringResource(R.string.sales_cash_received).uppercase(), CurrencyUtils.format(uiState.cashReceived))
                             SummaryDetailRow(stringResource(R.string.sales_change).uppercase(), CurrencyUtils.format(uiState.changeAmount), valueColor = Color(0xFF166534))
                             Spacer(Modifier.height(8.dp))
@@ -468,14 +469,14 @@ fun PaymentMethodDialog(
                             icon = Icons.Default.Payments,
                             color = Color(0xFF10B981),
                             modifier = Modifier.weight(1f),
-                            onClick = { onSelectMethod("CASH") }
+                            onClick = { onSelectMethod(AppConfig.PaymentMethod.CASH) }
                         )
                         PaymentMethodCard(
                             name = stringResource(R.string.sales_card).uppercase(),
                             icon = Icons.Default.CreditCard,
                             color = Color(0xFF3B82F6),
                             modifier = Modifier.weight(1f),
-                            onClick = { onSelectMethod("CARD") }
+                            onClick = { onSelectMethod(AppConfig.PaymentMethod.CARD) }
                         )
                     }
 
@@ -490,14 +491,14 @@ fun PaymentMethodDialog(
                             icon = Icons.Default.QrCodeScanner,
                             color = Color(0xFFEC4899),
                             modifier = Modifier.weight(1f),
-                            onClick = { onSelectMethod("DUITNOW") }
+                            onClick = { onSelectMethod(AppConfig.PaymentMethod.DUITNOW) }
                         )
                         PaymentMethodCard(
                             name = stringResource(R.string.sales_e_wallet).uppercase(),
                             icon = Icons.Default.AccountBalanceWallet,
                             color = Color(0xFFF59E0B),
                             modifier = Modifier.weight(1f),
-                            onClick = { onSelectMethod("QR") }
+                            onClick = { onSelectMethod(AppConfig.PaymentMethod.QR) }
                         )
                     }
                     

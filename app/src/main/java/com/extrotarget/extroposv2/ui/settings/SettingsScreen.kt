@@ -183,6 +183,14 @@ fun SettingsScreen(
                         onClick = { /* onNavigateTo("carwash_settings") */ }
                     )
                 }
+                if (activeMode.hasBookings) {
+                    SettingsItem(
+                        title = "Hospitality Management",
+                        subtitle = if (activeMode.hasRoomManagement) "Manage rooms, bookings, and guests" else "Manage homestay bookings and guests",
+                        icon = activeMode.icon,
+                        onClick = { onNavigateTo(Screen.HotelDashboard.route) }
+                    )
+                }
             }
 
             item {

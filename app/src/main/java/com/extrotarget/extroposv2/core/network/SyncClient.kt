@@ -2,6 +2,7 @@ package com.extrotarget.extroposv2.core.network
 
 import android.content.Context
 import android.content.Intent
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.core.util.audit.AuditManager
@@ -63,7 +64,7 @@ class SyncClient @Inject constructor(
         }
     }
 
-    suspend fun connectToRealtime(masterIp: String, port: Int = SyncConfig.DEFAULT_PORT, syncToken: String? = null) {
+    suspend fun connectToRealtime(masterIp: String, port: Int = AppConfig.Network.SYNC_PORT, syncToken: String? = null) {
         var delayMs = 1000L
         while (true) {
             _syncStatus.value = SyncStatus.CONNECTING
@@ -72,9 +73,9 @@ class SyncClient @Inject constructor(
                     method = HttpMethod.Get,
                     host = masterIp,
                     port = port,
-                    path = "/sync/realtime",
+                    path = AppConfig.Network.ENDPOINT_SYNC_REALTIME,
                     request = {
-                        syncToken?.let { header(SyncConfig.HEADER_SYNC_TOKEN, it) }
+                        syncToken?.let { header(AppConfig.Network.HEADER_SYNC_TOKEN, it) }
                     }
                 ) {
                     session = this
@@ -114,7 +115,7 @@ class SyncClient @Inject constructor(
         }
     }
 
-    suspend fun syncFromMaster(masterIp: String, port: Int = SyncConfig.DEFAULT_PORT, force: Boolean = false, syncToken: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun syncFromMaster(masterIp: String, port: Int = AppConfig.Network.SYNC_PORT, force: Boolean = false, syncToken: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             // Dirty Check
             val unsyncedCount = database.saleDao().getUnsyncedCount()
@@ -122,8 +123,8 @@ class SyncClient @Inject constructor(
                 return@withContext Result.failure(Exception("DIRTY_DATA: $unsyncedCount unsynced sales found."))
             }
 
-            val response: HttpResponse = client.get("http://$masterIp:$port/sync/database") {
-                syncToken?.let { header(SyncConfig.HEADER_SYNC_TOKEN, it) }
+            val response: HttpResponse = client.get("http://$masterIp:$port${AppConfig.Network.ENDPOINT_SYNC_DATABASE}") {
+                syncToken?.let { header(AppConfig.Network.HEADER_SYNC_TOKEN, it) }
             }
             
             if (response.status.value == 200) {

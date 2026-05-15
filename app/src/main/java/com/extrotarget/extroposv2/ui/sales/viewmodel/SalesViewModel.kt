@@ -3,6 +3,7 @@ package com.extrotarget.extroposv2.ui.sales.viewmodel
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
@@ -52,7 +53,6 @@ class SalesViewModel @Inject constructor(
     private val duitNowRepository: DuitNowRepository,
     private val securityManager: com.extrotarget.extroposv2.core.util.security.SecurityManager,
     private val syncClient: SyncClient,
-    private val branchSyncManager: com.extrotarget.extroposv2.core.network.BranchSyncManager,
     private val processSaleUseCase: ProcessSaleUseCase,
     private val printReceiptUseCase: PrintReceiptUseCase,
     private val cartUseCase: CartUseCase,
@@ -239,6 +239,20 @@ class SalesViewModel @Inject constructor(
         _uiState.update { it.copy(showSettingsModal = show) }
     }
 
+    fun toggleCameraScanner(show: Boolean) {
+        _uiState.update { it.copy(showCameraScanner = show) }
+    }
+
+    fun onBarcodeScanned(barcode: String) {
+        viewModelScope.launch {
+            val product = productRepository.getProductByBarcode(barcode)
+            if (product != null) {
+                addToCart(product)
+                toggleCameraScanner(false)
+            }
+        }
+    }
+
     fun selectTable(table: com.extrotarget.extroposv2.core.data.model.fnb.Table) {
         _uiState.update { it.copy(selectedTable = table) }
         if (table.status == com.extrotarget.extroposv2.core.data.model.fnb.TableStatus.OCCUPIED || 
@@ -310,8 +324,8 @@ class SalesViewModel @Inject constructor(
                     serviceChargeAmount = currentState.totalServiceCharge,
                     discountAmount = currentState.totalDiscount,
                     roundingAdjustment = currentState.roundingAdjustment,
-                    paymentMethod = "PENDING",
-                    status = "PENDING",
+                    paymentMethod = AppConfig.PaymentMethod.PENDING,
+                    status = AppConfig.SaleStatus.PENDING,
                     tableId = table.id,
                     timestamp = System.currentTimeMillis()
                 )
@@ -334,7 +348,7 @@ class SalesViewModel @Inject constructor(
                         totalAmount = cartItem.totalPrice.add(cartItem.taxAmount).add(scAmount),
                         modifiers = cartItem.selectedModifiers.joinToString(", ") { "${it.name}${if (it.priceAdjustment > BigDecimal.ZERO) " (+RM${it.priceAdjustment})" else ""}" }.takeIf { it.isNotEmpty() },
                         printerTag = cartItem.product.printerTag ?: "KITCHEN",
-                        status = "SENT"
+                        status = AppConfig.SaleStatus.SENT
                     )
                 }
 
@@ -578,10 +592,10 @@ class SalesViewModel @Inject constructor(
             val saleId = UUID.randomUUID().toString()
 
             when (paymentMethod) {
-                "CASH" -> {
+                AppConfig.PaymentMethod.CASH -> {
                     _uiState.update { it.copy(showCashReceivedDialog = true) }
                 }
-                "CARD" -> {
+                AppConfig.PaymentMethod.CARD -> {
                     _uiState.update { it.copy(showTerminalProgress = true, terminalStatus = "Awaiting Terminal Response...") }
                     val response = terminalRepository.processPayment(currentState.totalAmount, saleId)
                     _uiState.update { it.copy(showTerminalProgress = false) }
@@ -609,7 +623,7 @@ class SalesViewModel @Inject constructor(
         val saleId = UUID.randomUUID().toString()
         _uiState.update { it.copy(showCashReceivedDialog = false, cashReceived = amount) }
         viewModelScope.launch {
-            finalizeSale("CASH", saleId)
+            finalizeSale(AppConfig.PaymentMethod.CASH, saleId)
         }
     }
 
@@ -625,8 +639,8 @@ class SalesViewModel @Inject constructor(
         val currentState = _uiState.value
         _uiState.update { it.copy(isCheckingOut = true) }
         
-        val finalTotal = if (paymentMethod == "CASH") currentState.totalAmountCash else currentState.totalAmount
-        val finalRounding = if (paymentMethod == "CASH") currentState.roundingAdjustment else BigDecimal.ZERO
+        val finalTotal = if (paymentMethod == AppConfig.PaymentMethod.CASH) currentState.totalAmountCash else currentState.totalAmount
+        val finalRounding = if (paymentMethod == AppConfig.PaymentMethod.CASH) currentState.roundingAdjustment else BigDecimal.ZERO
 
         val sale = Sale(
             id = saleId,
@@ -636,6 +650,7 @@ class SalesViewModel @Inject constructor(
             discountLabel = currentState.cartDiscount?.label,
             roundingAdjustment = finalRounding,
             paymentMethod = paymentMethod,
+            status = AppConfig.SaleStatus.COMPLETED,
             cardType = terminalResponse?.cardType,
             maskedPan = terminalResponse?.maskedPan,
             approvalCode = terminalResponse?.approvalCode
@@ -689,11 +704,6 @@ class SalesViewModel @Inject constructor(
             buyerInfo = currentState.selectedMember?.let { BuyerInfo(name = it.name, contact = it.phoneNumber) }
         )
 
-        // Branch Sync: Push sale to HQ asynchronously
-        viewModelScope.launch {
-            branchSyncManager.pushSaleToHQ(SaleWithItems(sale, saleItems))
-        }
-
         currentState.selectedMember?.let { member ->
             val loyaltyConfig = loyaltyRepository.getConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.loyalty.LoyaltyConfig()
             if (loyaltyConfig.isEnabled) {
@@ -708,7 +718,7 @@ class SalesViewModel @Inject constructor(
             }
         }
 
-        val qrContent = if (paymentMethod == "QR" || paymentMethod == "DUITNOW") {
+        val qrContent = if (paymentMethod == AppConfig.PaymentMethod.QR || paymentMethod == AppConfig.PaymentMethod.DUITNOW) {
             val duitNowConfig = duitNowRepository.getConfig().firstOrNull() ?: com.extrotarget.extroposv2.core.data.model.settings.DuitNowConfig()
             if (duitNowConfig.isEnabled) {
                 val merchantId = securityManager.getString(com.extrotarget.extroposv2.core.util.security.SecurityManager.KEY_DUITNOW_MERCHANT_ID) ?: duitNowConfig.merchantId

@@ -2,6 +2,7 @@ package com.extrotarget.extroposv2.core.data.repository.lhdn
 
 import android.util.Base64
 import com.extrotarget.extroposv2.BuildConfig
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.local.dao.lhdn.LhdnDao
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
@@ -37,8 +38,7 @@ class LhdnRepository @Inject constructor(
     private fun getApi(isSandbox: Boolean): MyInvoisApi {
         if (activeApi != null && isUsingSandbox == isSandbox) return activeApi!!
         
-        val baseUrl = if (isSandbox) "https://preprod-api.myinvois.hasil.gov.my/" 
-                     else "https://api.myinvois.hasil.gov.my/"
+        val baseUrl = AppConfig.Network.getLhdnBaseUrl(isSandbox)
         
         isUsingSandbox = isSandbox
         activeApi = retrofit2.Retrofit.Builder()

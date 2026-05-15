@@ -2,6 +2,8 @@ package com.extrotarget.extroposv2.ui.sales
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsCar
+import androidx.compose.material.icons.filled.Hotel
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -16,7 +18,9 @@ enum class BusinessMode(
     val color: Color,
     val hasTables: Boolean = false,
     val hasStaffAssignment: Boolean = false,
-    val hasWeightSupport: Boolean = false
+    val hasWeightSupport: Boolean = false,
+    val hasBookings: Boolean = false,
+    val hasRoomManagement: Boolean = false,
 ) {
     RETAIL(
         id = "retail",
@@ -48,5 +52,23 @@ enum class BusinessMode(
         icon = Icons.Default.LocalLaundryService,
         color = Color(0xFF6366F1), // Indigo 500
         hasWeightSupport = true
+    ),
+    HOTEL(
+        id = "hotel",
+        displayName = "Hotel & Resort",
+        description = "Room management, bookings, and check-in/out.",
+        icon = Icons.Default.Hotel,
+        color = Color(0xFF8B5CF6), // Violet 500
+        hasBookings = true,
+        hasRoomManagement = true
+    ),
+    HOMESTAY(
+        id = "homestay",
+        displayName = "Homestay",
+        description = "Simplified booking for single or multiple properties.",
+        icon = Icons.Default.Home,
+        color = Color(0xFFEC4899), // Pink 500
+        hasBookings = true,
+        hasRoomManagement = false
     )
 }

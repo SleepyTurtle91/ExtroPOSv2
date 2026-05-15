@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.repository.EndOfDayRepository
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.core.data.repository.SaleRepository
@@ -68,7 +69,7 @@ data class ZReportUiState(
     val terminalId: String = "TERM-01",
     val staffName: String = "Admin"
 ) {
-    val totalCashSales: BigDecimal = salesByPaymentMethod["Cash"] ?: BigDecimal.ZERO
+    val totalCashSales: BigDecimal = salesByPaymentMethod[AppConfig.PaymentMethod.CASH] ?: BigDecimal.ZERO
     
     val calculatedExpectedCash: BigDecimal
         get() = try {
@@ -206,8 +207,8 @@ class ZReportViewModel @Inject constructor(
 
             val tax = finalSales.sumOf { it.taxAmount }
             val rounding = finalSales.sumOf { it.roundingAdjustment }
-            val cashSales = finalSales.filter { it.paymentMethod == "CASH" }.sumOf { it.totalAmount.add(it.roundingAdjustment) }
-            val otherSales = finalSales.filter { it.paymentMethod != "CASH" }.sumOf { it.totalAmount }
+            val cashSales = finalSales.filter { it.paymentMethod == AppConfig.PaymentMethod.CASH }.sumOf { it.totalAmount.add(it.roundingAdjustment) }
+            val otherSales = finalSales.filter { it.paymentMethod != AppConfig.PaymentMethod.CASH }.sumOf { it.totalAmount }
 
             // 2. Persist the closed shift data
             activeShift?.let { shift ->
@@ -509,15 +510,15 @@ fun DailySummaryCard(uiState: ZReportUiState) {
 
             uiState.salesByPaymentMethod.forEach { (method, amount) ->
                 val localizedMethod = when (method.uppercase()) {
-                    "CASH" -> stringResource(R.string.sales_cash)
-                    "CARD" -> stringResource(R.string.sales_card)
-                    "DUITNOW" -> stringResource(R.string.sales_qr)
+                    AppConfig.PaymentMethod.CASH -> stringResource(R.string.sales_cash)
+                    AppConfig.PaymentMethod.CARD -> stringResource(R.string.sales_card)
+                    AppConfig.PaymentMethod.DUITNOW -> stringResource(R.string.sales_qr)
                     else -> method
                 }
                 val icon = when (method.uppercase()) {
-                    "CASH" -> Icons.Default.Payments
-                    "DUITNOW" -> Icons.Default.QrCodeScanner
-                    "CARD" -> Icons.Default.CreditCard
+                    AppConfig.PaymentMethod.CASH -> Icons.Default.Payments
+                    AppConfig.PaymentMethod.DUITNOW -> Icons.Default.QrCodeScanner
+                    AppConfig.PaymentMethod.CARD -> Icons.Default.CreditCard
                     else -> Icons.Default.Money
                 }
                 PaymentMethodRow(localizedMethod, CurrencyUtils.format(amount), icon)
