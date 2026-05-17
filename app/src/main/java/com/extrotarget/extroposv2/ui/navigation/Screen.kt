@@ -46,6 +46,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object About : Screen("about", "About ExtroPOS", Icons.Default.Info)
     object ReportingDashboard : Screen("reporting_dashboard", "Detailed Reporting", Icons.Default.Summarize)
     object HotelDashboard : Screen("hotel_dashboard", "Hotel Management", Icons.Default.Hotel)
+    object RoomManagement : Screen("room_management", "Room Configuration", Icons.Default.MeetingRoom)
     
     // Analytics Sub-screens
     object InventoryAnalytics : Screen("inventory_analytics", "Low Stock", Icons.Default.Inventory)

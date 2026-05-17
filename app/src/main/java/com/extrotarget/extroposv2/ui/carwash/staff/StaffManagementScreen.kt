@@ -16,6 +16,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.res.stringResource
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.data.model.carwash.Staff
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.ui.carwash.viewmodel.StaffViewModel
@@ -31,11 +33,11 @@ fun StaffManagementScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Staff Management & Earnings") })
+            TopAppBar(title = { Text(stringResource(R.string.staff_management_earnings_title)) })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Staff")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.staff_add))
             }
         }
     ) { padding ->
@@ -104,7 +106,7 @@ fun StaffItem(
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Total Earnings: ${CurrencyUtils.format(totalEarnings)}",
+                    text = stringResource(R.string.staff_total_earnings_label, CurrencyUtils.format(totalEarnings)),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
@@ -112,10 +114,10 @@ fun StaffItem(
             }
             Row {
                 IconButton(onClick = { onEdit(staff) }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit")
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.btn_edit))
                 }
                 IconButton(onClick = { onDelete(staff) }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = MaterialTheme.colorScheme.error)
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.btn_delete), tint = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -135,31 +137,31 @@ fun StaffDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (staff == null) "Add Staff" else "Edit Staff") },
+        title = { Text(if (staff == null) stringResource(R.string.staff_add) else stringResource(R.string.staff_edit)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.staff_name_label)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = role,
                     onValueChange = { role = it },
-                    label = { Text("Role (e.g. WASHER, SUPERVISOR, ADMIN, CASHIER)") },
+                    label = { Text(stringResource(R.string.staff_role_hint)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = phone,
                     onValueChange = { phone = it },
-                    label = { Text("Phone (Optional)") },
+                    label = { Text(stringResource(R.string.staff_phone_hint)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = pin,
                     onValueChange = { if (it.length <= 6) pin = it },
-                    label = { Text("PIN (4-6 digits)") },
+                    label = { Text(stringResource(R.string.staff_pin_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword)
                 )
@@ -170,12 +172,12 @@ fun StaffDialog(
                 onClick = { onConfirm(name, role, phone.ifBlank { null }, pin.ifBlank { null }) },
                 enabled = name.isNotBlank() && role.isNotBlank()
             ) {
-                Text("Confirm")
+                Text(stringResource(R.string.btn_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.btn_cancel))
             }
         }
     )

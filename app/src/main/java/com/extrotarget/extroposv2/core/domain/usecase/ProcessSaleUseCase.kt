@@ -37,9 +37,9 @@ class ProcessSaleUseCase @Inject constructor(
     private val autoCountRepository: AutoCountRepository,
     private val loyaltyRepository: LoyaltyRepository,
     private val shiftRepository: ShiftRepository,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context
 ) {
-    operator suspend fun invoke(
+    suspend operator fun invoke(
         sale: Sale,
         saleItems: List<SaleItem>,
         commissionRecords: List<CommissionRecord>,

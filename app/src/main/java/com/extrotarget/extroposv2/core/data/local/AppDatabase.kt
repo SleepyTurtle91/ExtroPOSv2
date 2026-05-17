@@ -106,7 +106,7 @@ import com.extrotarget.extroposv2.core.data.model.hotel.HotelAddon
         HotelAddon::class,
     ],
     version = 26,
-    exportSchema = false
+    exportSchema = false,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
