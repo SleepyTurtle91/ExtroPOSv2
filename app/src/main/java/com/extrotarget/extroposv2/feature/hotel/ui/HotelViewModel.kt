@@ -9,6 +9,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import java.util.*
 import javax.inject.Inject
 
@@ -39,6 +40,27 @@ class HotelViewModel @Inject constructor(
         _selectedDate.value = timestamp
     }
 
+    fun createBooking(roomId: String, guest: Guest, checkIn: Long, checkOut: Long, totalAmount: BigDecimal) {
+        viewModelScope.launch {
+            val booking = Booking(
+                id = UUID.randomUUID().toString(),
+                roomId = roomId,
+                guestId = guest.id,
+                checkInDate = checkIn,
+                checkOutDate = checkOut,
+                totalAmount = totalAmount,
+                status = BookingStatus.CONFIRMED
+            )
+            repository.createBooking(booking, guest)
+            
+            // Mark room as occupied
+            val currentRooms = repository.getAllRooms().first()
+            currentRooms.find { it.id == roomId }?.let { room ->
+                repository.addRoom(room.copy(status = RoomStatus.OCCUPIED))
+            }
+        }
+    }
+
     fun checkIn(booking: Booking) {
         viewModelScope.launch {
             repository.updateBookingStatus(booking, BookingStatus.CHECKED_IN)
@@ -48,6 +70,17 @@ class HotelViewModel @Inject constructor(
     fun checkOut(booking: Booking) {
         viewModelScope.launch {
             repository.updateBookingStatus(booking, BookingStatus.CHECKED_OUT)
+            // Also set room back to dirty
+            val currentRooms = repository.getAllRooms().first()
+            currentRooms.find { it.id == booking.roomId }?.let { room ->
+                repository.addRoom(room.copy(status = RoomStatus.DIRTY))
+            }
+        }
+    }
+
+    fun updateRoomStatus(room: Room, status: RoomStatus) {
+        viewModelScope.launch {
+            repository.addRoom(room.copy(status = status))
         }
     }
 

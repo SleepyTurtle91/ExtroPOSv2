@@ -4,11 +4,9 @@ import android.content.Context
 import android.content.Intent
 import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.local.AppDatabase
-import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.core.util.audit.AuditManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.*
-import io.ktor.client.call.*
 import io.ktor.client.engine.android.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.websocket.*
@@ -35,9 +33,9 @@ import javax.inject.Singleton
 
 @Singleton
 class SyncClient @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @param:ApplicationContext private val context: Context,
     private val database: AppDatabase,
-    private val auditManager: AuditManager
+    private val auditManager: AuditManager,
 ) {
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -76,7 +74,7 @@ class SyncClient @Inject constructor(
                     path = AppConfig.Network.ENDPOINT_SYNC_REALTIME,
                     request = {
                         syncToken?.let { header(AppConfig.Network.HEADER_SYNC_TOKEN, it) }
-                    }
+                    },
                 ) {
                     session = this
                     _syncStatus.value = SyncStatus.CONNECTED
@@ -119,7 +117,7 @@ class SyncClient @Inject constructor(
         try {
             // Dirty Check
             val unsyncedCount = database.saleDao().getUnsyncedCount()
-            if (unsyncedCount > 0 && !force) {
+            if ((unsyncedCount > 0) && !force) {
                 return@withContext Result.failure(Exception("DIRTY_DATA: $unsyncedCount unsynced sales found."))
             }
 

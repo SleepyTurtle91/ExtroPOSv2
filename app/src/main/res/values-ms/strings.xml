@@ -41,6 +41,7 @@
     <string name="staff_phone">No. Telefon</string>
     <string name="staff_add">Tambah Pekerja</string>
     <string name="staff_edit">Kemaskini Pekerja</string>
+    <string name="btn_edit">Kemaskini</string>
 
     <!-- Settings & Printer -->
     <string name="settings_printer">Tetapan Pencetak</string>
@@ -196,4 +197,12 @@
     <string name="general_assigned">Ditugaskan: %1$s</string>
     <string name="general_sale_label">Jualan #%1$s</string>
     <string name="general_shift_label">Syif #%1$s</string>
+
+    <!-- Staff Management Additions -->
+    <string name="staff_management_earnings_title">Pengurusan &amp; Pendapatan Kakitangan</string>
+    <string name="staff_total_earnings_label">Jumlah Pendapatan: %1$s</string>
+    <string name="staff_name_label">Nama</string>
+    <string name="staff_role_hint">Jawatan (cth. WASHER, SUPERVISOR, ADMIN, CASHIER)</string>
+    <string name="staff_phone_hint">No. Telefon (Pilihan)</string>
+    <string name="staff_pin_hint">PIN (4–6 digit)</string>
 </resources>

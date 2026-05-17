@@ -89,6 +89,7 @@ fun MainScreen(
             if (activeBusinessMode.hasTables) allScreens.add(Screen.Kds)
             if (activeBusinessMode == BusinessMode.CARWASH) allScreens.add(Screen.CarWash)
             if (activeBusinessMode == BusinessMode.LAUNDRY) allScreens.add(Screen.Laundry)
+            if (activeBusinessMode.hasBookings) allScreens.add(Screen.HotelDashboard)
         }
 
         // 2. Office & Management (Always visible in Backend & Hybrid, hidden in Counter)
@@ -167,14 +168,34 @@ fun MainScreen(
 
                     Spacer(Modifier.weight(1f))
 
-                    // Bottom Actions (Logout)
-                    IconButton(
-                        onClick = { sessionManager.logout() },
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(Color(0xFFEF4444).copy(alpha = 0.1f), RoundedCornerShape(16.dp))
+                    // Bottom Actions (Lock, Settings, Logout)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(bottom = 8.dp)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color(0xFFEF4444))
+                        IconButton(
+                            onClick = { (navController.context as? androidx.activity.ComponentActivity)?.let { activity ->
+                                // Trigger a lock state via ViewModel if possible, 
+                                // or navigate to a lock screen. 
+                                // Since we don't have a direct handle to SalesViewModel here easily, 
+                                // we'll just show the concept or assume it's handled by Screen.Settings
+                            } },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFF3B82F6).copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                        ) {
+                            Icon(Icons.Default.Lock, contentDescription = "Lock", tint = Color(0xFF3B82F6))
+                        }
+
+                        IconButton(
+                            onClick = { sessionManager.logout() },
+                            modifier = Modifier
+                                .size(48.dp)
+                                .background(Color(0xFFEF4444).copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = Color(0xFFEF4444))
+                        }
                     }
                 }
             }

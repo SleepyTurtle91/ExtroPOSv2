@@ -63,6 +63,7 @@
     <string name="staff_phone">Phone</string>
     <string name="staff_add">Add Staff</string>
     <string name="staff_edit">Edit Staff</string>
+    <string name="btn_edit">Edit</string>
 
     <!-- Settings & Printer -->
     <string name="settings_printer">Printer Settings</string>
@@ -344,4 +345,12 @@
 
     <string name="biometric_title">Biometric Login</string>
     <string name="biometric_subtitle">Log in using your biometric credential</string>
+
+    <!-- Staff Management Additions -->
+    <string name="staff_management_earnings_title">Staff Management &amp; Earnings</string>
+    <string name="staff_total_earnings_label">Total Earnings: %1$s</string>
+    <string name="staff_name_label">Name</string>
+    <string name="staff_role_hint">Role (e.g. WASHER, SUPERVISOR, ADMIN, CASHIER)</string>
+    <string name="staff_phone_hint">Phone (Optional)</string>
+    <string name="staff_pin_hint">PIN (4&#8211;6 digits)</string>
 </resources>
