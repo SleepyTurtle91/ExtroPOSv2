@@ -4,9 +4,6 @@ package com.extrotarget.extroposv2.ui.sales
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,7 +35,7 @@ fun SalesScreen(
     modifier: Modifier = Modifier,
     viewModel: SalesViewModel,
     sessionManager: SessionManager,
-    onNavigateToShift: () -> Unit = {}
+    onNavigateToShift: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var currentTime by remember { mutableStateOf(java.util.Date()) }
@@ -64,7 +61,7 @@ fun SalesScreen(
         return
     }
 
-    val isMobile = com.extrotarget.extroposv2.BuildConfig.FLAVOR == "mobile"
+    val isMobile = com.extrotarget.extroposv2.BuildConfig.FLAVOR.contains("mobile", ignoreCase = true)
     val activeMode = uiState.activeMode
 
     if (isMobile) {
@@ -97,7 +94,7 @@ fun SalesScreen(
                     PosContentGrid(
                         uiState = uiState,
                         onProductClick = { viewModel.addToCart(it) },
-                        onSelectCategory = { viewModel.selectCategory(it) }
+                        onSelectCategory = { viewModel.selectCategory(it) },
                     )
                 }
             }
@@ -111,7 +108,7 @@ fun SalesScreen(
                 onClearCart = { viewModel.clearCartWithConfirm() },
                 onSendToKitchen = { viewModel.sendToKitchen() },
                 onCompleteSale = { viewModel.completeSale(it) },
-                onAddCustomer = { viewModel.setShowMemberSelection(true) },
+                onAddCustomer = { viewModel.setShowMemberSelection(show = true) },
                 onRedeemPoints = { viewModel.setRedeemedPoints(it) }
             )
         }
@@ -121,7 +118,7 @@ fun SalesScreen(
         PaymentMethodDialog(
             totalAmount = uiState.totalAmount,
             onSelectMethod = { viewModel.completeSale(it) },
-            onDismiss = { viewModel.completeSale("CLOSE_DIALOG") }
+            onDismiss = { viewModel.completeSale("CLOSE_DIALOG") },
         )
     }
 
@@ -151,7 +148,7 @@ fun SalesScreen(
                     Text(stringResource(R.string.btn_cancel).uppercase(), fontWeight = FontWeight.Black, color = Color(0xFF64748B))
                 }
             },
-            shape = RoundedCornerShape(24.dp)
+            shape = RoundedCornerShape(24.dp),
         )
     }
 
@@ -189,7 +186,7 @@ fun SalesScreen(
         )
     }
 
-    if (uiState.showStaffSelection && uiState.itemAwaitingStaff != null) {
+    if (uiState.showStaffSelection && (uiState.itemAwaitingStaff != null)) {
         StaffSelectionDialog(
             staffList = uiState.staffList,
             onSelect = { viewModel.assignStaffToItem(it) },
@@ -197,7 +194,7 @@ fun SalesScreen(
         )
     }
 
-    if (uiState.showWeightInput && uiState.productAwaitingWeight != null) {
+    if (uiState.showWeightInput && (uiState.productAwaitingWeight != null)) {
         WeightInputDialog(
             product = uiState.productAwaitingWeight!!,
             onConfirm = { weight -> viewModel.addWeightBasedItem(weight) },
@@ -212,7 +209,7 @@ fun SalesScreen(
         )
     }
 
-    if (uiState.terminalStatus != null && !uiState.showTerminalProgress) {
+    if ((uiState.terminalStatus != null) && !uiState.showTerminalProgress) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissTerminalError() },
             title = { Text("Terminal Status") },
@@ -235,7 +232,7 @@ fun SalesScreen(
 
     if (uiState.showMemberSelection) {
         Dialog(
-            onDismissRequest = { viewModel.setShowMemberSelection(false) },
+            onDismissRequest = { viewModel.setShowMemberSelection(show = false) },
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             Surface(
@@ -249,7 +246,7 @@ fun SalesScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text("Select Member", style = MaterialTheme.typography.headlineMedium)
-                        IconButton(onClick = { viewModel.setShowMemberSelection(false) }) {
+                        IconButton(onClick = { viewModel.setShowMemberSelection(show = false) }) {
                             Icon(Icons.Default.Close, contentDescription = "Close")
                         }
                     }

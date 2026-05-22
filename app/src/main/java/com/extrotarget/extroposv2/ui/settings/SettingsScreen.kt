@@ -155,6 +155,15 @@ fun SettingsScreen(
                     icon = Icons.Default.Sync,
                     onClick = { onNavigateTo(Screen.BranchSettings.route) }
                 )
+
+                if (activeMode.hasRoomManagement || activeMode.hasBookings) {
+                    SettingsItem(
+                        title = "Room Configuration",
+                        subtitle = "Add, edit, or remove rooms and properties",
+                        icon = Icons.Default.MeetingRoom,
+                        onClick = { onNavigateTo(Screen.RoomManagement.route) }
+                    )
+                }
             }
 
             item {

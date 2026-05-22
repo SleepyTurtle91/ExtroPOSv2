@@ -45,6 +45,7 @@ import com.extrotarget.extroposv2.ui.report.viewmodel.SalesHistoryViewModel
 import com.extrotarget.extroposv2.ui.fnb.kds.KdsScreen
 import com.extrotarget.extroposv2.feature.reporting.ui.ReportingDashboard
 import com.extrotarget.extroposv2.feature.hotel.ui.HotelDashboard
+import com.extrotarget.extroposv2.feature.hotel.ui.RoomManagementScreen
 import com.extrotarget.extroposv2.ui.settings.ModeSelectionScreen
 
 import com.extrotarget.extroposv2.ui.inventory.transfer.StockTransferScreen
@@ -272,6 +273,12 @@ fun NavGraph(
 
         composable(Screen.HotelDashboard.route) {
             HotelDashboard(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.RoomManagement.route) {
+            RoomManagementScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

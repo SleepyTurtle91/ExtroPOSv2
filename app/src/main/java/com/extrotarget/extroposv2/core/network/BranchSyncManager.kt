@@ -23,7 +23,7 @@ import javax.inject.Singleton
 
 @Singleton
 class BranchSyncManager @Inject constructor(
-    private val database: AppDatabase
+    private val database: AppDatabase,
 ) {
     private val client = HttpClient(Android) {
         install(ContentNegotiation) {
@@ -74,7 +74,7 @@ class BranchSyncManager @Inject constructor(
                 setBody(saleWithItems)
             }
 
-            if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created) {
+            if ((response.status == HttpStatusCode.OK) || (response.status == HttpStatusCode.Created)) {
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("HQ Error: ${response.status}"))

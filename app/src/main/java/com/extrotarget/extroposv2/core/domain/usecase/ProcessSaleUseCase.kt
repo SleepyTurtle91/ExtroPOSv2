@@ -37,14 +37,14 @@ class ProcessSaleUseCase @Inject constructor(
     private val autoCountRepository: AutoCountRepository,
     private val loyaltyRepository: LoyaltyRepository,
     private val shiftRepository: ShiftRepository,
-    @ApplicationContext private val context: Context
+    @param:ApplicationContext private val context: Context,
 ) {
-    operator suspend fun invoke(
+    suspend operator fun invoke(
         sale: Sale,
         saleItems: List<SaleItem>,
         commissionRecords: List<CommissionRecord>,
         selectedTableId: String? = null,
-        buyerInfo: BuyerInfo? = null
+        buyerInfo: BuyerInfo? = null,
     ) {
         // 1. Save Sale and Items
         saleRepository.completeSale(sale, saleItems)
@@ -56,12 +56,12 @@ class ProcessSaleUseCase @Inject constructor(
 
         // 3. Trigger LHDN e-Invoice Submission if configured
         val lhdnConfig = lhdnRepository.getConfig().firstOrNull()
-        if (lhdnConfig != null && lhdnConfig.isEnabled) {
+        if ((lhdnConfig != null) && (lhdnConfig.isEnabled)) {
             // Determine if it should be consolidated or individual
             // Rule 1: If buyerInfo is provided and has a name/TIN other than default, it's individual
             // Rule 2: (Malaysian 2026 Mandate) If total amount >= threshold, it MUST be individual
             val isHighValue = sale.totalAmount >= lhdnConfig.einvoiceThresholdAmount
-            val isConsolidated = !isHighValue && (buyerInfo == null || (buyerInfo.tin == "EI00000000010" && buyerInfo.name == "General Public"))
+            val isConsolidated = !isHighValue && ((buyerInfo == null) || (buyerInfo.tin == "EI00000000010" && buyerInfo.name == "General Public"))
             
             enqueueEInvoiceSubmission(sale.id, isConsolidated)
         }
@@ -70,15 +70,17 @@ class ProcessSaleUseCase @Inject constructor(
         saleItems.filter { it.assignedStaffId != null }.forEach { item ->
             val plateNumber = item.modifiers?.split(", ")?.find { it.startsWith("Plate:") }?.removePrefix("Plate:") ?: "WALK-IN"
             
-            carWashRepository.createJob(CarWashJob(
-                id = UUID.randomUUID().toString(),
-                plateNumber = plateNumber,
-                serviceName = item.productName,
-                price = item.totalAmount,
-                assignedStaffId = item.assignedStaffId,
-                assignedStaffName = item.assignedStaffName,
-                status = CarWashStatus.QUEUED
-            ))
+            carWashRepository.createJob(
+                CarWashJob(
+                    id = UUID.randomUUID().toString(),
+                    plateNumber = plateNumber,
+                    serviceName = item.productName,
+                    price = item.totalAmount,
+                    assignedStaffId = item.assignedStaffId,
+                    assignedStaffName = item.assignedStaffName,
+                    status = CarWashStatus.QUEUED,
+                ),
+            )
         }
 
         // 5. F&B: Release Table if associated
@@ -123,7 +125,7 @@ class ProcessSaleUseCase @Inject constructor(
                     cashAmount = cashAmount,
                     otherAmount = otherAmount,
                     taxAmount = sale.taxAmount,
-                    rounding = sale.roundingAdjustment
+                    rounding = sale.roundingAdjustment,
                 )
             }
         }
@@ -131,29 +133,35 @@ class ProcessSaleUseCase @Inject constructor(
 
     private fun enqueueBranchSync(saleId: String) {
         val workRequest = OneTimeWorkRequestBuilder<BranchSyncWorker>()
-            .setInputData(workDataOf(
-                BranchSyncWorker.KEY_SALE_ID to saleId
-            ))
+            .setInputData(
+                workDataOf(
+                    BranchSyncWorker.KEY_SALE_ID to saleId,
+                )
+            )
             .build()
         WorkManager.getInstance(context).enqueue(workRequest)
     }
 
     private fun enqueueAutoCountSync(saleId: String, token: String) {
         val workRequest = OneTimeWorkRequestBuilder<AutoCountSyncWorker>()
-            .setInputData(workDataOf(
-                AutoCountSyncWorker.KEY_SALE_ID to saleId,
-                AutoCountSyncWorker.KEY_TOKEN to token
-            ))
+            .setInputData(
+                workDataOf(
+                    AutoCountSyncWorker.KEY_SALE_ID to saleId,
+                    AutoCountSyncWorker.KEY_TOKEN to token,
+                )
+            )
             .build()
         WorkManager.getInstance(context).enqueue(workRequest)
     }
 
     private fun enqueueEInvoiceSubmission(saleId: String, isConsolidated: Boolean = false) {
         val workRequest = OneTimeWorkRequestBuilder<EInvoiceSubmissionWorker>()
-            .setInputData(workDataOf(
-                EInvoiceSubmissionWorker.KEY_SALE_ID to saleId,
-                EInvoiceSubmissionWorker.KEY_IS_CONSOLIDATED to isConsolidated
-            ))
+            .setInputData(
+                workDataOf(
+                    EInvoiceSubmissionWorker.KEY_SALE_ID to saleId,
+                    EInvoiceSubmissionWorker.KEY_IS_CONSOLIDATED to isConsolidated,
+                )
+            )
             .build()
         WorkManager.getInstance(context).enqueue(workRequest)
     }
