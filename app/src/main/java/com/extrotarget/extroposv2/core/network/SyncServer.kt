@@ -49,7 +49,7 @@ class SyncServer @Inject constructor(
                 }
             }
             install(WebSockets)
-            
+
             routing {
                 intercept(ApplicationCallPipeline.Call) {
                     val token = call.request.header(SyncConfig.HEADER_SYNC_TOKEN)

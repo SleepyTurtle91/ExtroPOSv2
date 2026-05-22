@@ -46,7 +46,7 @@ class KdsViewModel @Inject constructor(
                     val update = Gson().fromJson(json, Map::class.java)
                     if (update["type"] == SyncMessageType.SALE_COMPLETED) {
                         // In a real KDS, we might want to trigger a sound or highlight
-                        // Since we are observing the DB flow in uiState, 
+                        // Since we are observing the DB flow in uiState,
                         // the change to DB will automatically refresh the list if the slave synced.
                         // However, for KDS standalone terminals, we might just update local DB or state.
                     }

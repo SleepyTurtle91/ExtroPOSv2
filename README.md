@@ -25,6 +25,11 @@ ExtroPOS v2 is a high-performance, modular Kotlin-based Android Point of Sale sy
 
 ## 🏗️ Industry-Specific Modules
 
+### 🛒 General Retail
+- **Inventory Management**: High-speed SKU tracking and barcode scanning integration.
+- **Fast Checkout**: Optimized UI for high-volume transactions with quick-pay buttons.
+- **Stock Alerts**: Real-time notifications for low-stock items based on configurable thresholds.
+
 ### 🚗 Car Wash & Service
 - **Staff Commission Engine**: Assignment of staff to specific line-items (e.g., Ali did the Interior, Abu did the Wax).
 - **Earnings Logic**: $E_{staff} = \sum (P_i \times C_i) + F_i$ (Price × Rate% + Fixed Fee).
@@ -39,6 +44,13 @@ ExtroPOS v2 is a high-performance, modular Kotlin-based Android Point of Sale sy
 - **Weight-Based Pricing**: Digital scale integration logic.
 - **Order Lifecycle**: Tracking from Received ➔ Processing ➔ Ready ➔ Collected.
 - **WhatsApp Alerts**: Automated "Cucian Siap" notifications.
+
+### 🏨 Hotel & Homestay
+- **Room Management**: Real-time status tracking (Available, Occupied, Dirty, Maintenance).
+- **Booking Lifecycle**: Streamlined flow from reservation and check-in to final bill generation and check-out.
+- **Guest Profiles**: Integrated guest database with identity tracking and loyalty tiering (Regular, VIP, etc.).
+- **Add-on Services**: Capability to link additional charges like meals, tours, or transport directly to the room bill.
+- **Financial Settlement**: Integrated check-out workflow that handles room nights, addons, and deposit reconciliation with the central POS engine.
 
 ---
 

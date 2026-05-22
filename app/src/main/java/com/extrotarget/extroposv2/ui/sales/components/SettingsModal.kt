@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
@@ -131,9 +132,9 @@ fun SettingsModal(
                                     Icon(mode.icon, contentDescription = null, tint = Color.White)
                                 }
                                 Spacer(Modifier.height(16.dp))
-                                Text(mode.displayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                                Text(stringResource(mode.displayName), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                                 Spacer(Modifier.height(4.dp))
-                                Text(mode.description, color = Color(0xFF94A3B8), fontSize = 12.sp, lineHeight = 16.sp)
+                                Text(stringResource(mode.description), color = Color(0xFF94A3B8), fontSize = 12.sp, lineHeight = 16.sp)
                             }
                             if (isSelected) {
                                 Icon(

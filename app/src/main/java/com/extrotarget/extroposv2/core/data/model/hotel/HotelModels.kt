@@ -1,9 +1,11 @@
 package com.extrotarget.extroposv2.core.data.model.hotel
 
+import androidx.annotation.StringRes
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.extrotarget.extroposv2.R
 import java.math.BigDecimal
 
 @Entity(tableName = "hotel_rooms")
@@ -17,12 +19,12 @@ data class Room(
     val imageUrl: String? = null
 )
 
-enum class RoomStatus {
-    AVAILABLE,
-    OCCUPIED,
-    MAINTENANCE,
-    DIRTY,
-    RESERVED
+enum class RoomStatus(@StringRes val displayName: Int) {
+    AVAILABLE(R.string.status_room_available),
+    OCCUPIED(R.string.status_room_occupied),
+    MAINTENANCE(R.string.status_room_maintenance),
+    DIRTY(R.string.status_room_dirty),
+    RESERVED(R.string.status_room_reserved)
 }
 
 @Entity(tableName = "hotel_guests")
@@ -68,12 +70,12 @@ data class Booking(
     val timestamp: Long = System.currentTimeMillis()
 )
 
-enum class BookingStatus {
-    CONFIRMED,
-    CHECKED_IN,
-    CHECKED_OUT,
-    CANCELLED,
-    NO_SHOW
+enum class BookingStatus(@StringRes val displayName: Int) {
+    CONFIRMED(R.string.status_room_reserved), // Reusing RESERVED for now or add specific
+    CHECKED_IN(R.string.hotel_check_in),
+    CHECKED_OUT(R.string.hotel_check_out),
+    CANCELLED(R.string.btn_cancel),
+    NO_SHOW(R.string.status_error)
 }
 
 @Entity(

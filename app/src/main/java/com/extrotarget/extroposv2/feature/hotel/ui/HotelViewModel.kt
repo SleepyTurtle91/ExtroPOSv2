@@ -3,12 +3,14 @@ package com.extrotarget.extroposv2.feature.hotel.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.extrotarget.extroposv2.core.data.model.hotel.*
+import com.extrotarget.extroposv2.feature.hotel.data.BookingFinancialSummary
 import com.extrotarget.extroposv2.feature.hotel.data.HotelRepository
 import com.extrotarget.extroposv2.feature.hotel.domain.usecase.GetOccupancyRateUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.math.BigDecimal
 import java.util.*
 import javax.inject.Inject
 
@@ -21,6 +23,15 @@ class HotelViewModel @Inject constructor(
 
     private val _selectedDate = MutableStateFlow(System.currentTimeMillis())
     val selectedDate: StateFlow<Long> = _selectedDate.asStateFlow()
+
+    private val _showBookingWizard = MutableStateFlow(false)
+    val showBookingWizard: StateFlow<Boolean> = _showBookingWizard.asStateFlow()
+
+    private val _showSettlementDialog = MutableStateFlow<Booking?>(null)
+    val showSettlementDialog: StateFlow<Booking?> = _showSettlementDialog.asStateFlow()
+
+    private val _financialSummary = MutableStateFlow<BookingFinancialSummary?>(null)
+    val financialSummary: StateFlow<BookingFinancialSummary?> = _financialSummary.asStateFlow()
 
     val occupancyRate: StateFlow<Float> = selectedDate.flatMapLatest { date ->
         getOccupancyRateUseCase(date)
@@ -37,6 +48,48 @@ class HotelViewModel @Inject constructor(
 
     fun selectDate(timestamp: Long) {
         _selectedDate.value = timestamp
+    }
+
+    fun toggleBookingWizard(show: Boolean) {
+        _showBookingWizard.value = show
+    }
+
+    fun startSettlement(booking: Booking) {
+        viewModelScope.launch {
+            val summary = repository.getBookingFinancialSummary(booking.id)
+            _financialSummary.value = summary
+            _showSettlementDialog.value = booking
+        }
+    }
+
+    fun dismissSettlement() {
+        _showSettlementDialog.value = null
+        _financialSummary.value = null
+    }
+
+    fun createBooking(room: Room, guestName: String, guestId: String, checkIn: Long, checkOut: Long, deposit: BigDecimal) {
+        viewModelScope.launch {
+            val guest = Guest(
+                id = UUID.randomUUID().toString(),
+                name = guestName,
+                idNumber = guestId
+            )
+            val nights = ((checkOut - checkIn) / (24 * 60 * 60 * 1000)).coerceAtLeast(1).toBigDecimal()
+            val total = room.basePrice.multiply(nights)
+            
+            val booking = Booking(
+                id = UUID.randomUUID().toString(),
+                roomId = room.id,
+                guestId = guest.id,
+                checkInDate = checkIn,
+                checkOutDate = checkOut,
+                totalAmount = total,
+                depositAmount = deposit,
+                status = BookingStatus.CONFIRMED
+            )
+            repository.createBooking(booking, guest)
+            _showBookingWizard.value = false
+        }
     }
 
     fun checkIn(booking: Booking) {

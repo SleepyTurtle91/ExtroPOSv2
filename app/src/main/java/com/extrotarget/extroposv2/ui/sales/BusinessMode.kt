@@ -1,5 +1,6 @@
 package com.extrotarget.extroposv2.ui.sales
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Hotel
@@ -9,11 +10,12 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.extrotarget.extroposv2.R
 
 enum class BusinessMode(
     val id: String,
-    val displayName: String,
-    val description: String,
+    @StringRes val displayName: Int,
+    @StringRes val description: Int,
     val icon: ImageVector,
     val color: Color,
     val hasTables: Boolean = false,
@@ -24,39 +26,39 @@ enum class BusinessMode(
 ) {
     RETAIL(
         id = "retail",
-        displayName = "General Retail",
-        description = "Inventory-focused POS for shops and marts.",
+        displayName = R.string.mode_retail_name,
+        description = R.string.mode_retail_desc,
         icon = Icons.Default.ShoppingCart,
         color = Color(0xFF3B82F6) // Blue 500
     ),
     FNB(
         id = "fnb",
-        displayName = "F&B (Cafe/Resto)",
-        description = "Table management, kitchen display, and modifiers.",
+        displayName = R.string.mode_fnb_name,
+        description = R.string.mode_fnb_desc,
         icon = Icons.Default.Restaurant,
         color = Color(0xFFF97316), // Orange 500
         hasTables = true
     ),
     CARWASH(
         id = "carwash",
-        displayName = "Car Wash",
-        description = "Service tracking and staff commission engine.",
+        displayName = R.string.mode_carwash_name,
+        description = R.string.mode_carwash_desc,
         icon = Icons.Default.DirectionsCar,
         color = Color(0xFF10B981), // Emerald 500
         hasStaffAssignment = true
     ),
     LAUNDRY(
         id = "laundry",
-        displayName = "Dobi (Laundry)",
-        description = "Weight-based pricing and order lifecycle.",
+        displayName = R.string.mode_laundry_name,
+        description = R.string.mode_laundry_desc,
         icon = Icons.Default.LocalLaundryService,
         color = Color(0xFF6366F1), // Indigo 500
         hasWeightSupport = true
     ),
     HOTEL(
         id = "hotel",
-        displayName = "Hotel & Resort",
-        description = "Room management, bookings, and check-in/out.",
+        displayName = R.string.mode_hotel_name,
+        description = R.string.mode_hotel_desc,
         icon = Icons.Default.Hotel,
         color = Color(0xFF8B5CF6), // Violet 500
         hasBookings = true,
@@ -64,8 +66,8 @@ enum class BusinessMode(
     ),
     HOMESTAY(
         id = "homestay",
-        displayName = "Homestay",
-        description = "Simplified booking for single or multiple properties.",
+        displayName = R.string.mode_homestay_name,
+        description = R.string.mode_homestay_desc,
         icon = Icons.Default.Home,
         color = Color(0xFFEC4899), // Pink 500
         hasBookings = true,

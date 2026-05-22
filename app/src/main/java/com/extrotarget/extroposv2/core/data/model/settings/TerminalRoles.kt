@@ -1,38 +1,40 @@
 package com.extrotarget.extroposv2.core.data.model.settings
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Dvr
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.extrotarget.extroposv2.R
 
-enum class TerminalRole(val displayName: String) {
-    MASTER("Master (Main Station)"),
-    SLAVE("Slave (Counter Extension)")
+enum class TerminalRole(@StringRes val displayName: Int) {
+    MASTER(R.string.role_master),
+    SLAVE(R.string.role_slave)
 }
 
 enum class OperationMode(
     val id: String, 
-    val displayName: String, 
+    @StringRes val displayName: Int, 
     val icon: ImageVector,
-    val description: String
+    @StringRes val description: Int
 ) {
     POS_ONLY(
         id = "pos_only",
-        displayName = "Counter Mode",
+        displayName = R.string.op_mode_pos_name,
         icon = Icons.Default.PointOfSale,
-        description = "Optimized for sales. Connects to Backend for data."
+        description = R.string.op_mode_pos_desc
     ),
     BACKEND_ONLY(
         id = "backend_only",
-        displayName = "Backend Mode",
+        displayName = R.string.op_mode_backend_name,
         icon = Icons.Default.Computer,
-        description = "HQ management station for Products, Stocks, and Reports."
+        description = R.string.op_mode_backend_desc
     ),
     HYBRID(
         id = "hybrid",
-        displayName = "Hybrid Mode",
+        displayName = R.string.op_mode_hybrid_name,
         icon = Icons.Default.Dvr,
-        description = "Stand-alone operation. Both Sales and Management in one app."
+        description = R.string.op_mode_hybrid_desc
     )
 }

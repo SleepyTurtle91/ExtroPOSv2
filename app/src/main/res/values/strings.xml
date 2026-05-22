@@ -342,6 +342,81 @@
 
     <string name="whatsapp_order_ready_msg">*EXTRO POS: Pesanan Dobi Sedia Diambil!* 🧺\n\nHai %1$s,\n\nPesanan anda (#%2$s) telah siap diproses dan sedia untuk diambil.\n\n*Butiran:*\nBerat: %3$s KG\nJumlah: %4$s\n\nTerima kasih kerana menggunakan perkhidmatan kami!</string>
 
+    <!-- Business Modes -->
+    <string name="mode_retail_name">General Retail</string>
+    <string name="mode_retail_desc">Inventory-focused POS for shops and marts.</string>
+    <string name="mode_fnb_name">F&amp;B (Cafe/Resto)</string>
+    <string name="mode_fnb_desc">Table management, kitchen display, and modifiers.</string>
+    <string name="mode_carwash_name">Car Wash</string>
+    <string name="mode_carwash_desc">Service tracking and staff commission engine.</string>
+    <string name="mode_laundry_name">Dobi (Laundry)</string>
+    <string name="mode_laundry_desc">Weight-based pricing and order lifecycle.</string>
+    <string name="mode_hotel_name">Hotel &amp; Resort</string>
+    <string name="mode_hotel_desc">Room management, bookings, and check-in/out.</string>
+    <string name="mode_homestay_name">Homestay</string>
+    <string name="mode_homestay_desc">Simplified booking for single or multiple properties.</string>
+
+    <!-- Terminal & Operation Modes -->
+    <string name="role_master">Master (Main Station)</string>
+    <string name="role_slave">Slave (Counter Extension)</string>
+    <string name="op_mode_pos_name">Counter Mode</string>
+    <string name="op_mode_pos_desc">Optimized for sales. Connects to Backend for data.</string>
+    <string name="op_mode_backend_name">Backend Mode</string>
+    <string name="op_mode_backend_desc">HQ management station for Products, Stocks, and Reports.</string>
+    <string name="op_mode_hybrid_name">Hybrid Mode</string>
+    <string name="op_mode_hybrid_desc">Stand-alone operation. Both Sales and Management in one app.</string>
+
+    <!-- Mode Selection Screen -->
+    <string name="mode_selection_title">Terminal Configuration</string>
+    <string name="mode_selection_business_title">Primary Business Function</string>
+    <string name="mode_selection_hierarchy_title">Terminal Hierarchy</string>
+    <string name="mode_selection_focus_title">Operational Focus</string>
+    <string name="mode_selection_restart_note">Changes to Hierarchy require an app restart to re-initialize P2P services.</string>
+
+    <!-- Hotel & Homestay -->
+    <string name="hotel_dashboard_title">Hotel Management</string>
+    <string name="homestay_dashboard_title">Homestay Management</string>
+    <string name="hotel_occupancy_rate">Occupancy Rate</string>
+    <string name="hotel_active_bookings">Active Bookings</string>
+    <string name="hotel_room_status">Room Status</string>
+    <string name="hotel_arrivals_departures">Arrivals &amp; Departures</string>
+    <string name="hotel_current_date">Current Date</string>
+    <string name="hotel_select_date">Select Date</string>
+    <string name="hotel_check_in">Check-in</string>
+    <string name="hotel_check_out">Check-out</string>
+    <string name="hotel_mark_cleaned">Mark Cleaned</string>
+    <string name="hotel_view_details">View Details</string>
+    <string name="hotel_booking_label">Booking #%1$s</string>
+
+    <string name="status_room_available">AVAILABLE</string>
+    <string name="status_room_occupied">OCCUPIED</string>
+    <string name="status_room_maintenance">MAINTENANCE</string>
+    <string name="status_room_dirty">DIRTY</string>
+    <string name="status_room_reserved">RESERVED</string>
+
+    <string name="hotel_place_booking">Place Booking</string>
+    <string name="hotel_new_booking">New Booking</string>
+    <string name="hotel_guest_details">Guest Details</string>
+    <string name="hotel_dates">Dates &amp; Duration</string>
+    <string name="hotel_summary">Booking Summary</string>
+    <string name="hotel_settlement">Settlement (Check-out)</string>
+    <string name="hotel_collect_deposit">Collect Deposit</string>
+    <string name="hotel_final_payment">Final Payment</string>
+    <string name="hotel_room_charge">Room Charge</string>
+    <string name="hotel_guest_name">Guest Name</string>
+    <string name="hotel_guest_id">Guest ID (Passport/IC)</string>
+    <string name="hotel_check_in_date">Check-in Date</string>
+    <string name="hotel_check_out_date">Check-out Date</string>
+    <string name="hotel_select_room">Select Room</string>
+    <string name="hotel_nights_count">%1$d Nights</string>
+    <string name="hotel_total_stay">Total Stay</string>
+    <string name="hotel_addons_total">Addons Total</string>
+    <string name="hotel_deposit_paid">Deposit Paid</string>
+    <string name="hotel_balance_due">Balance Due</string>
+    <string name="hotel_confirm_booking">Confirm &amp; Save Booking</string>
+    <string name="hotel_booking_success">Booking placed successfully!</string>
+    <string name="hotel_settlement_success">Settlement completed and booking closed.</string>
+
     <string name="biometric_title">Biometric Login</string>
     <string name="biometric_subtitle">Log in using your biometric credential</string>
 </resources>

@@ -24,6 +24,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.res.stringResource
+import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 import com.extrotarget.extroposv2.core.data.model.settings.TerminalRole
@@ -41,10 +43,10 @@ fun ModeSelectionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Terminal Configuration", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.mode_selection_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.btn_back))
                     }
                 }
             )
@@ -60,7 +62,7 @@ fun ModeSelectionScreen(
         ) {
             // 1. Business Mode (Loyverse style)
             Text(
-                "Primary Business Function",
+                stringResource(R.string.mode_selection_business_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier.align(Alignment.Start)
@@ -86,7 +88,7 @@ fun ModeSelectionScreen(
 
             // 2. Terminal Role (Master / Slave)
             Text(
-                "Terminal Hierarchy",
+                stringResource(R.string.mode_selection_hierarchy_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier.align(Alignment.Start)
@@ -103,7 +105,7 @@ fun ModeSelectionScreen(
                         color = if (isSelected) Color(0xFFEFF6FF) else Color.White
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(role.displayName, fontWeight = FontWeight.Bold, color = if (isSelected) Color(0xFF3B82F6) else Color.Gray)
+                            Text(stringResource(role.displayName), fontWeight = FontWeight.Bold, color = if (isSelected) Color(0xFF3B82F6) else Color.Gray)
                         }
                     }
                 }
@@ -113,7 +115,7 @@ fun ModeSelectionScreen(
 
             // 3. Operation Mode (POS / Backend / Hybrid)
             Text(
-                "Operational Focus",
+                stringResource(R.string.mode_selection_focus_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Black,
                 modifier = Modifier.align(Alignment.Start)
@@ -124,8 +126,8 @@ fun ModeSelectionScreen(
                 val isSelected = uiState.operationMode == mode
                 ListItem(
                     modifier = Modifier.clickable { viewModel.setOperationMode(mode) }.padding(vertical = 4.dp),
-                    headlineContent = { Text(mode.displayName, fontWeight = FontWeight.Bold) },
-                    supportingContent = { Text(mode.description) },
+                    headlineContent = { Text(stringResource(mode.displayName), fontWeight = FontWeight.Bold) },
+                    supportingContent = { Text(stringResource(mode.description)) },
                     leadingContent = { 
                         Surface(
                             modifier = Modifier.size(48.dp),
@@ -153,7 +155,7 @@ fun ModeSelectionScreen(
                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF854D0E))
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        "Changes to Hierarchy require an app restart to re-initialize P2P services.",
+                        stringResource(R.string.mode_selection_restart_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF854D0E)
                     )
@@ -204,7 +206,7 @@ fun ModeCard(
             }
             Spacer(Modifier.height(16.dp))
             Text(
-                mode.displayName,
+                stringResource(mode.displayName),
                 fontWeight = FontWeight.Black,
                 fontSize = 16.sp,
                 color = if (isSelected) mode.color else Color(0xFF1E293B)

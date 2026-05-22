@@ -138,6 +138,37 @@ class SalesViewModel @Inject constructor(
         }
     }
 
+    fun processHospitalityCheckout(
+        total: BigDecimal,
+        label: String,
+        onComplete: (String) -> Unit
+    ) {
+        _uiState.update { state ->
+            state.copy(
+                cartItems = listOf(
+                    CartItem(
+                        product = Product(
+                            id = "hospitality_settlement",
+                            name = label,
+                            sku = "HOSP",
+                            barcode = null,
+                            price = total,
+                            taxRate = BigDecimal.ZERO,
+                            stockQuantity = BigDecimal.ONE,
+                            categoryId = "service"
+                        ),
+                        quantity = BigDecimal.ONE,
+                        unitPrice = total,
+                        taxRate = BigDecimal.ZERO
+                    )
+                ),
+                activeTab = "pos"
+            )
+        }
+        // This is a simplified integration. Ideally, we'd have a separate flow 
+        // that doesn't overwrite the current cart, but for now, we use the standard POS flow.
+    }
+
     fun unlock(pin: String) {
         viewModelScope.launch {
             val staff = staffRepository.getStaffByPin(pin)

@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.ui.components.ProductCard
@@ -49,7 +50,7 @@ fun PosContent(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                 placeholder = {
                     Text(
-                        "SEARCH ${activeMode.displayName.uppercase()}...",
+                        "SEARCH ${stringResource(activeMode.displayName).uppercase()}...",
                         fontWeight = FontWeight.Black,
                         fontSize = 14.sp,
                         letterSpacing = 1.sp

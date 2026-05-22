@@ -21,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.auth.SessionManager
 import com.extrotarget.extroposv2.core.network.SyncStatus
@@ -78,7 +79,7 @@ fun SaleHeader(
                 border = BorderStroke(1.dp, activeMode.color.copy(alpha = 0.2f))
             ) {
                 Text(
-                    activeMode.displayName.uppercase(),
+                    stringResource(activeMode.displayName).uppercase(),
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                     color = activeMode.color,
                     fontSize = 11.sp,
