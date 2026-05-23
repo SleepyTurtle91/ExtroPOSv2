@@ -39,6 +39,12 @@ ExtroPOS v2 is a high-performance, modular Kotlin-based Android Point of Sale sy
 - **Table Management**: Visual floor plan with real-time order status.
 - **Kitchen Printing**: Split routing of orders (Food to Kitchen, Drinks to Bar).
 - **Modifiers**: Support for local preferences like "Bungkus" and "Ikat Tepi".
+- **Real-time KDS Sync**: Immediate synchronization of orders across all kitchen screens via P2P.
+
+### 🖥️ Kitchen Display System (KDS) & Web Dashboard
+- **P2P Synchronization**: Order status updates (e.g., "Mark Ready") sync instantly across all Android terminals and WebApp instances.
+- **Responsive Web Dashboard**: Access the KDS from any device on the local network (PC, Tablet, Smart TV) via `http://<device-ip>:8080`.
+- **Audio & Visual Alerts**: Real-time notifications for new orders to ensure kitchen efficiency.
 
 ### 🧺 Dobi (Laundry)
 - **Weight-Based Pricing**: Digital scale integration logic.
@@ -56,7 +62,7 @@ ExtroPOS v2 is a high-performance, modular Kotlin-based Android Point of Sale sy
 
 ## 🛠️ Technical Stack
 
-- **UI**: Jetpack Compose (Material 3) with "Fat-Finger" touch targets.
+- **UI**: Jetpack Compose (Material 3) with "Fat-Finger" touch targets and **Scrollable Sidebar Navigation** for high-density functionality.
 - **Architecture**: MVVM with Clean Architecture principles.
 - **DI**: Hilt (Dependency Injection).
 - **Database**: Room (Offline-first approach).
@@ -81,6 +87,7 @@ See `PROGRESSION.md` for the latest implementation milestones.
 - ✅ Phase 1-9: Core Engine, Hardware, Sales, Industry Modules, UI, Analytics, Security, Data Portability & Advanced P2P Sync.
 - ✅ Phase 10: Final Hardening & LHDN Sandbox (LHDN MyInvois V1.1 Integration, Status Polling, and Stock Consistency).
 - ✅ Phase 11-13: Enterprise Integration, Customer Loyalty, Tax Genericization, and Production Hardening.
+- ✅ **Special Enhancement (May 2026)**: P2P Kitchen Display System (KDS) & Remote Web Dashboard Integration.
 
 ---
 
