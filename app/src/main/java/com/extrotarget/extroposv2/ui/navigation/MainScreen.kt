@@ -3,6 +3,8 @@ package com.extrotarget.extroposv2.ui.navigation
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -144,29 +146,39 @@ fun MainScreen(
                         }
                     }
 
-                    Spacer(Modifier.height(48.dp))
+                    Spacer(Modifier.height(32.dp))
 
-                    // Main Navigation
-                    screens.forEach { screen ->
-                        val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
-                        NavButton(
-                            icon = screen.icon,
-                            label = screen.title,
-                            isSelected = isSelected,
-                            onClick = {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                    // Scrollable Navigation Items
+                    val scrollState = rememberScrollState()
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(scrollState),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        screens.forEach { screen ->
+                            val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+                            NavButton(
+                                icon = screen.icon,
+                                label = screen.title,
+                                isSelected = isSelected,
+                                onClick = {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
-                            }
-                        )
-                        Spacer(Modifier.height(16.dp))
+                            )
+                            Spacer(Modifier.height(12.dp))
+                        }
                     }
 
-                    Spacer(Modifier.weight(1f))
+                    Spacer(Modifier.height(16.dp))
 
                     // Bottom Actions (Lock, Settings, Logout)
                     Column(

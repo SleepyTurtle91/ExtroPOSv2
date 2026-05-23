@@ -82,11 +82,6 @@ data class RawAddonPerformance(
     val totalRevenue: BigDecimal
 )
 
-data class PaymentBreakdown(
-    val paymentMethod: String,
-    val totalAmount: BigDecimal
-)
-
 data class RawProductPerformance(
     val productId: String,
     val productName: String,
