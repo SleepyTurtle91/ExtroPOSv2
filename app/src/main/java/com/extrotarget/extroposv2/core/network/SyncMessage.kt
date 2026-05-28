@@ -13,6 +13,9 @@ object SyncMessageType {
     const val PRODUCT_SYNC = "PRODUCT_SYNC"
     const val UPDATE_PRODUCT = "UPDATE_PRODUCT"
     const val UPDATE_STOCK = "UPDATE_STOCK"
+    
+    // Kiosk Enhancements
+    const val KIOSK_NEW_ORDER = "KIOSK_NEW_ORDER"
 }
 
 /**

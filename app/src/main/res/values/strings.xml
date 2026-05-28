@@ -356,6 +356,8 @@
     <string name="mode_hotel_desc">Room management, bookings, and check-in/out.</string>
     <string name="mode_homestay_name">Homestay</string>
     <string name="mode_homestay_desc">Simplified booking for single or multiple properties.</string>
+    <string name="mode_kiosk_name">Self-Ordering Kiosk</string>
+    <string name="mode_kiosk_desc">Customer self-service terminal connected to cashier.</string>
 
     <!-- Terminal & Operation Modes -->
     <string name="role_master">Master (Main Station)</string>

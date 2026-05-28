@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.Hotel
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Monitor
 import androidx.compose.material.icons.filled.LocalLaundryService
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -72,5 +73,12 @@ enum class BusinessMode(
         color = Color(0xFFEC4899), // Pink 500
         hasBookings = true,
         hasRoomManagement = false
+    ),
+    KIOSK(
+        id = "kiosk",
+        displayName = R.string.mode_kiosk_name,
+        description = R.string.mode_kiosk_desc,
+        icon = Icons.Default.Monitor,
+        color = Color(0xFF1E293B) // Slate 800
     )
 }

@@ -84,6 +84,11 @@ fun MainScreen(
     val screens = remember(activeBusinessMode, operationMode) {
         val allScreens = mutableListOf<Screen>()
         
+        // 0. Kiosk Mode Override
+        if (activeBusinessMode == BusinessMode.KIOSK) {
+            return@remember listOf(Screen.Kiosk, Screen.Settings)
+        }
+
         // 1. Sales & Operations (Hidden in Backend Mode)
         if (operationMode != com.extrotarget.extroposv2.core.data.model.settings.OperationMode.BACKEND_ONLY) {
             allScreens.add(Screen.Sales)

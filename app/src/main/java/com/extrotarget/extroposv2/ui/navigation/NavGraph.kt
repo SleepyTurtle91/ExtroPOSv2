@@ -51,6 +51,7 @@ import com.extrotarget.extroposv2.ui.settings.ModeSelectionScreen
 import com.extrotarget.extroposv2.ui.inventory.transfer.StockTransferScreen
 import com.extrotarget.extroposv2.ui.settings.branch.BranchSettingsScreen
 import com.extrotarget.extroposv2.ui.inventory.InventoryManagementScreen
+import com.extrotarget.extroposv2.ui.kiosk.KioskScreen
 
 @Composable
 fun NavGraph(
@@ -281,6 +282,10 @@ fun NavGraph(
             RoomManagementScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+
+        composable(Screen.Kiosk.route) {
+            KioskScreen(viewModel = hiltViewModel())
         }
     }
 }

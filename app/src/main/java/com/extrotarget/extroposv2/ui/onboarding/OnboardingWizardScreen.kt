@@ -383,6 +383,7 @@ fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel)
                                 BusinessMode.LAUNDRY -> "LAUNDRY"
                                 BusinessMode.HOTEL -> "HOTEL"
                                 BusinessMode.HOMESTAY -> "HOMESTAY"
+                                BusinessMode.KIOSK -> "KIOSK"
                             },
                             color = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
                             style = MaterialTheme.typography.labelMedium,

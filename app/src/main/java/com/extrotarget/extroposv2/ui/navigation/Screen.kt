@@ -51,4 +51,5 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     // Analytics Sub-screens
     object InventoryAnalytics : Screen("inventory_analytics", "Low Stock", Icons.Default.Inventory)
     object StaffEarnings : Screen("staff_earnings", "Staff Earnings", Icons.Default.Badge)
+    object Kiosk : Screen("kiosk_mode", "Self-Ordering Kiosk", Icons.Default.Monitor)
 }
