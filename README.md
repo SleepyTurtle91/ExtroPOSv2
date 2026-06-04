@@ -46,6 +46,12 @@ ExtroPOS v2 is a high-performance, modular Kotlin-based Android Point of Sale sy
 - **Responsive Web Dashboard**: Access the KDS from any device on the local network (PC, Tablet, Smart TV) via `http://<device-ip>:8080`.
 - **Audio & Visual Alerts**: Real-time notifications for new orders to ensure kitchen efficiency.
 
+### 🤖 Self-Ordering Kiosk (McDonald's/KFC Style)
+- **Customer Self-Service**: High-impact portrait UI with "Tap to Start" attract loop and visual product selection.
+- **Automated Order Pushing**: Orders are instantly transmitted to the Cashier (Master) terminal and Kitchen via P2P.
+- **Smart Queue Management**: Generates unique 4-digit order numbers (e.g., #A12B) for customer tracking.
+- **Resilient Connectivity**: Built-in "Offline Safety" checks to ensure zero order loss if the Cashier station is disconnected.
+
 ### 🧺 Dobi (Laundry)
 - **Weight-Based Pricing**: Digital scale integration logic.
 - **Order Lifecycle**: Tracking from Received ➔ Processing ➔ Ready ➔ Collected.
@@ -88,6 +94,7 @@ See `PROGRESSION.md` for the latest implementation milestones.
 - ✅ Phase 10: Final Hardening & LHDN Sandbox (LHDN MyInvois V1.1 Integration, Status Polling, and Stock Consistency).
 - ✅ Phase 11-13: Enterprise Integration, Customer Loyalty, Tax Genericization, and Production Hardening.
 - ✅ **Special Enhancement (May 2026)**: P2P Kitchen Display System (KDS) & Remote Web Dashboard Integration.
+- ✅ **Final Pre-Release (June 2026)**: Self-Ordering Kiosk Module & Enterprise Stability Hardening.
 
 ---
 
