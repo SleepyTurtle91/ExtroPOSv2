@@ -18,13 +18,17 @@ import io.ktor.util.cio.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.jvm.javaio.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.io.File
@@ -51,6 +55,7 @@ class SyncClient @Inject constructor(
     val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
 
     private var session: DefaultClientWebSocketSession? = null
+    private var connectionJob: Job? = null
 
     fun isConnected(): Boolean = _syncStatus.value == SyncStatus.CONNECTED
 
@@ -62,46 +67,53 @@ class SyncClient @Inject constructor(
         }
     }
 
-    suspend fun connectToRealtime(masterIp: String, port: Int = AppConfig.Network.SYNC_PORT, syncToken: String? = null) {
-        var delayMs = 1000L
-        while (true) {
-            _syncStatus.value = SyncStatus.CONNECTING
-            try {
-                client.webSocket(
-                    method = HttpMethod.Get,
-                    host = masterIp,
-                    port = port,
-                    path = AppConfig.Network.ENDPOINT_SYNC_REALTIME,
-                    request = {
-                        syncToken?.let { header(AppConfig.Network.HEADER_SYNC_TOKEN, it) }
-                    },
-                ) {
-                    session = this
-                    _syncStatus.value = SyncStatus.CONNECTED
-                    
-                    // On connection, push all pending local sales to master
-                    pushUnsyncedSales()
+    fun connectToRealtime(masterIp: String, port: Int = AppConfig.Network.SYNC_PORT, syncToken: String? = null) {
+        connectionJob?.cancel()
+        connectionJob = CoroutineScope(Dispatchers.IO).launch {
+            var delayMs = 1000L
+            while (isActive) {
+                _syncStatus.value = SyncStatus.CONNECTING
+                try {
+                    client.webSocket(
+                        method = HttpMethod.Get,
+                        host = masterIp,
+                        port = port,
+                        path = AppConfig.Network.ENDPOINT_SYNC_REALTIME,
+                        request = {
+                            syncToken?.let { header(AppConfig.Network.HEADER_SYNC_TOKEN, it) }
+                        },
+                    ) {
+                        session = this
+                        _syncStatus.value = SyncStatus.CONNECTED
+                        
+                        // On connection, push all pending local sales to master
+                        pushUnsyncedSales()
 
-                    delayMs = 1000L // Reset delay on success
-                    for (frame in incoming) {
-                        if (frame is Frame.Text) {
-                            val text = frame.readText()
-                            _realtimeUpdates.emit(text)
+                        delayMs = 1000L // Reset delay on success
+                        for (frame in incoming) {
+                            if (frame is Frame.Text) {
+                                val text = frame.readText()
+                                _realtimeUpdates.emit(text)
+                            }
                         }
                     }
+                } catch (e: Exception) {
+                    if (isActive) {
+                        _syncStatus.value = SyncStatus.ERROR(e.message ?: "Realtime connection failed")
+                        e.printStackTrace()
+                    }
+                } finally {
+                    _syncStatus.value = SyncStatus.DISCONNECTED
+                    session = null
                 }
-            } catch (e: Exception) {
-                _syncStatus.value = SyncStatus.ERROR(e.message ?: "Realtime connection failed")
-                e.printStackTrace()
-            } finally {
-                _syncStatus.value = SyncStatus.DISCONNECTED
-                session = null
+                
+                // Exponential backoff
+                if (isActive) {
+                    kotlinx.coroutines.delay(delayMs)
+                    delayMs = (delayMs * 2).coerceAtMost(30000L) // Max 30 seconds
+                    Timber.d("Retrying P2P connection in ${delayMs/1000}s...")
+                }
             }
-            
-            // Exponential backoff
-            kotlinx.coroutines.delay(delayMs)
-            delayMs = (delayMs * 2).coerceAtMost(30000L) // Max 30 seconds
-            Timber.d("Retrying P2P connection in ${delayMs/1000}s...")
         }
     }
 

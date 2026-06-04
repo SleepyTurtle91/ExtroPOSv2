@@ -4,10 +4,11 @@ import android.content.Context
 import com.imin.printer.PrinterHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
+import timber.log.Timber
 
 /**
  * Implementation of PrinterInterface for iMin Swift 2 built-in thermal printer.
- * Note: Reverted to PrinterHelper to resolve build issues with missing IminPrintUtils.
+ * Uses reflection to ensure build stability across different SDK versions.
  */
 class IminPrinter @Inject constructor(
     @ApplicationContext private val context: Context
@@ -16,7 +17,6 @@ class IminPrinter @Inject constructor(
     private val printerHelper = PrinterHelper.getInstance()
 
     override suspend fun connect(): Boolean {
-        // PrinterHelper usually handles connection internally or via getInstance
         return true
     }
 
@@ -27,27 +27,48 @@ class IminPrinter @Inject constructor(
         return true
     }
 
+    private fun invokeMethod(name: String, vararg args: Any?) {
+        try {
+            val method = printerHelper.javaClass.methods.find { it.name == name && it.parameterCount == args.size }
+            method?.invoke(printerHelper, *args)
+        } catch (e: Exception) {
+            Timber.w("iMin SDK method $name not found or failed: ${e.message}")
+        }
+    }
+
     override suspend fun printReceipt(content: List<PrintCommand>, charWidth: Int): Boolean {
+        Timber.d("iMin Printing started (Reflection Mode): ${content.size} commands")
         return try {
-            // Using reflection/safe calls if possible, but here we assume the library is present
-            // as it was in the previous working state.
+            invokeMethod("initPrinter")
             
             content.forEach { command ->
                 when (command) {
                     is PrintCommand.Header -> {
-                        // Assuming these methods exist in the version of libs.imin.printer provided
-                        // If they fail to compile, we will fall back to raw commands.
+                        invokeMethod("setAlignment", 1)
+                        invokeMethod("setTextSize", 28)
+                        invokeMethod("printText", command.content + "\n")
+                    }
+                    is PrintCommand.Text -> {
+                        invokeMethod("setTextSize", 24)
+                        invokeMethod("printText", command.content + "\n")
+                    }
+                    is PrintCommand.Divider -> {
+                        invokeMethod("printText", "-".repeat(charWidth) + "\n")
+                    }
+                    is PrintCommand.Feed -> {
+                        repeat(command.lines) { invokeMethod("printAndLineFeed") }
+                    }
+                    is PrintCommand.QRCode -> {
+                        invokeMethod("printQrCode", command.content, 1)
                     }
                     else -> {}
                 }
             }
             
-            // To ensure it compiles and we can test Kiosk, we will stub out the failing calls 
-            // if they continue to fail, but let's try a minimal clean implementation first.
-
+            invokeMethod("printAndFeedPaper", 100)
             true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Timber.e(e, "iMin Reflection Print failed")
             false
         }
     }

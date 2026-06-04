@@ -215,14 +215,29 @@ class ZReportViewModel @Inject constructor(
                 val state = _uiState.value
                 val closedShift = shift.copy(
                     endTime = System.currentTimeMillis(),
-                    endActualCash = try { BigDecimal(state.actualDrawerCash) } catch (e: Exception) { BigDecimal.ZERO },
+                    endActualCash = try { 
+                        if (state.actualDrawerCash.isBlank()) BigDecimal.ZERO 
+                        else BigDecimal(state.actualDrawerCash) 
+                    } catch (e: Exception) { 
+                        BigDecimal.ZERO 
+                    },
                     endExpectedCash = state.calculatedExpectedCash,
                     totalCashSales = cashSales,
                     totalOtherSales = otherSales,
                     totalTax = tax,
                     totalRounding = rounding,
-                    cashIn = try { BigDecimal(state.cashIn) } catch (e: Exception) { BigDecimal.ZERO },
-                    cashOut = try { BigDecimal(state.cashOut) } catch (e: Exception) { BigDecimal.ZERO },
+                    cashIn = try { 
+                        if (state.cashIn.isBlank()) BigDecimal.ZERO 
+                        else BigDecimal(state.cashIn) 
+                    } catch (e: Exception) { 
+                        BigDecimal.ZERO 
+                    },
+                    cashOut = try { 
+                        if (state.cashOut.isBlank()) BigDecimal.ZERO 
+                        else BigDecimal(state.cashOut) 
+                    } catch (e: Exception) { 
+                        BigDecimal.ZERO 
+                    },
                     isClosed = true
                 )
                 shiftRepository.closeShift(closedShift)

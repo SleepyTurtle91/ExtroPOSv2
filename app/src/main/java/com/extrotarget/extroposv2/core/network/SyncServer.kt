@@ -12,8 +12,12 @@ import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.server.http.content.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import com.extrotarget.extroposv2.core.config.AppConfig
+import com.extrotarget.extroposv2.core.data.model.Sale
+import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.core.data.model.inventory.StockTransfer
 import com.extrotarget.extroposv2.core.data.model.loyalty.Member
@@ -63,6 +67,9 @@ class SyncServer @Inject constructor(
                 get("/") {
                     call.respond(mapOf("status" to "ExtroPOS Sync Server Running", "version" to "v2.0"))
                 }
+
+                // Serve KDS WebApp
+                staticResources("/kds", "webapp")
 
                 // Database Export for Slaves
                 get("/sync/database") {
@@ -114,6 +121,44 @@ class SyncServer @Inject constructor(
 
                                                 // Re-broadcast to all other slaves
                                                 broadcastUpdate(SyncMessageType.SALE_COMPLETED, saleWithItems)
+                                            }
+                                        }
+                                        SyncMessageType.KIOSK_NEW_ORDER -> {
+                                            val dataJson = com.google.gson.Gson().toJson(message["data"])
+                                            val kioskOrder = com.google.gson.Gson().fromJson(dataJson, Map::class.java)
+                                            
+                                            scope.launch {
+                                                val orderId = kioskOrder["orderId"] as String
+                                                val itemsJson = com.google.gson.Gson().toJson(kioskOrder["items"])
+                                                val items = com.google.gson.Gson().fromJson(itemsJson, Array<com.extrotarget.extroposv2.ui.sales.CartItem>::class.java).toList()
+                                                
+                                                val sale = Sale(
+                                                    id = orderId,
+                                                    totalAmount = java.math.BigDecimal(kioskOrder["total"].toString()),
+                                                    status = AppConfig.SaleStatus.PENDING,
+                                                    paymentMethod = "KIOSK",
+                                                    timestamp = System.currentTimeMillis()
+                                                )
+                                                
+                                                val saleItems = items.map { cartItem ->
+                                                    SaleItem(
+                                                        id = java.util.UUID.randomUUID().toString(),
+                                                        saleId = orderId,
+                                                        productId = cartItem.product.id,
+                                                        productName = cartItem.product.name,
+                                                        quantity = cartItem.quantity,
+                                                        unitPrice = cartItem.unitPrice,
+                                                        taxRate = cartItem.taxRate,
+                                                        taxAmount = cartItem.taxAmount,
+                                                        totalAmount = cartItem.totalPrice,
+                                                        printerTag = cartItem.product.printerTag ?: "KITCHEN"
+                                                    )
+                                                }
+                                                
+                                                database.saleDao().completeSale(sale, saleItems)
+                                                
+                                                // Notify KDS stations
+                                                broadcastUpdate(SyncMessageType.SALE_COMPLETED, SaleWithItems(sale, saleItems))
                                             }
                                         }
                                         SyncMessageType.UPDATE_PRODUCT -> {

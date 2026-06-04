@@ -199,6 +199,17 @@ fun KioskMainLayout(uiState: KioskUiState, viewModel: KioskViewModel) {
                     
                     Spacer(Modifier.height(24.dp))
                     
+                    if (uiState.errorMessage != null) {
+                        Text(
+                            uiState.errorMessage,
+                            color = Color.Red,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
                     Button(
                         onClick = viewModel::checkout,
                         modifier = Modifier.fillMaxWidth().height(80.dp),

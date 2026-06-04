@@ -23,7 +23,8 @@ data class KioskUiState(
     val selectedCategoryId: String? = null,
     val cartItems: List<CartItem> = emptyList(),
     val isProcessing: Boolean = false,
-    val orderSuccess: String? = null // Holds the order number/ID
+    val orderSuccess: String? = null, // Holds the order number/ID
+    val errorMessage: String? = null
 ) {
     val subtotal: BigDecimal = cartItems.fold(BigDecimal.ZERO) { acc, item ->
         acc.add(item.totalPrice)
@@ -94,13 +95,16 @@ class KioskViewModel @Inject constructor(
     fun checkout() {
         if (_uiState.value.cartItems.isEmpty()) return
         
-        _uiState.update { it.copy(isProcessing = true) }
+        _uiState.update { it.copy(isProcessing = true, errorMessage = null) }
         
         viewModelScope.launch {
             try {
+                if (!syncClient.isConnected()) {
+                    _uiState.update { it.copy(isProcessing = false, errorMessage = "Cashier station is offline. Please order at the counter.") }
+                    return@launch
+                }
+
                 val orderId = UUID.randomUUID().toString().takeLast(4).uppercase()
-                // In a real implementation, we'd send a full Sale object, 
-                // but for the P2P prototype, we broadcast a specialized kiosk message.
                 syncClient.sendRealtimeMessage(
                     SyncMessageType.KIOSK_NEW_ORDER,
                     mapOf(
@@ -116,7 +120,7 @@ class KioskViewModel @Inject constructor(
                 kotlinx.coroutines.delay(10000)
                 _uiState.update { it.copy(isAttractMode = true, orderSuccess = null, cartItems = emptyList()) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(isProcessing = false) }
+                _uiState.update { it.copy(isProcessing = false, errorMessage = "Failed to submit order: ${e.message}") }
             }
         }
     }
