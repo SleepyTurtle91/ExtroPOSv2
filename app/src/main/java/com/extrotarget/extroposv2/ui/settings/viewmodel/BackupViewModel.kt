@@ -18,13 +18,18 @@ import java.util.Locale
 import android.app.Application
 import javax.inject.Inject
 
+import com.extrotarget.extroposv2.core.auth.GoogleAuthManager
+import com.extrotarget.extroposv2.core.util.backup.DriveBackupManager
+
 data class BackupUiState(
     val isLoading: Boolean = false,
     val message: String? = null,
     val isError: Boolean = false,
     val isRestoreSuccessful: Boolean = false,
     val recentBackups: List<BackupFile> = emptyList(),
-    val exportPassword: String = ""
+    val exportPassword: String = "",
+    val isDriveSignedIn: Boolean = false,
+    val driveAccountName: String? = null
 )
 
 data class BackupFile(
@@ -38,7 +43,9 @@ data class BackupFile(
 class BackupViewModel @Inject constructor(
     private val application: Application,
     private val backupManager: BackupManager,
-    private val masterExportManager: MasterExportManager
+    private val masterExportManager: MasterExportManager,
+    private val googleAuthManager: GoogleAuthManager,
+    private val driveBackupManager: DriveBackupManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BackupUiState())
@@ -46,6 +53,92 @@ class BackupViewModel @Inject constructor(
 
     init {
         loadRecentBackups()
+        checkDriveStatus()
+    }
+
+    private fun checkDriveStatus() {
+        _uiState.update { 
+            it.copy(
+                isDriveSignedIn = googleAuthManager.isUserSignedIn(),
+                driveAccountName = googleAuthManager.userEmail.value
+            )
+        }
+    }
+
+    fun signInToDrive(serverClientId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = googleAuthManager.signIn(serverClientId)
+            if (result.isSuccess) {
+                val email = result.getOrNull()?.id ?: ""
+                driveBackupManager.initializeWithAccount(email)
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        isDriveSignedIn = true,
+                        driveAccountName = email,
+                        message = "Signed in to Google Drive"
+                    )
+                }
+            } else {
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false,
+                        message = "Sign-in failed: ${result.exceptionOrNull()?.message}",
+                        isError = true
+                    )
+                }
+            }
+        }
+    }
+
+    fun backupToDrive() {
+        viewModelScope.launch {
+            if (!driveBackupManager.isInitialized()) {
+                val email = googleAuthManager.userEmail.value
+                if (email != null) {
+                    driveBackupManager.initializeWithAccount(email)
+                } else {
+                    _uiState.update { it.copy(message = "Please sign in to Drive first", isError = true) }
+                    return@launch
+                }
+            }
+
+            _uiState.update { it.copy(isLoading = true, message = "Uploading to Google Drive...") }
+            val result = driveBackupManager.backupDatabase()
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    message = if (result.isSuccess) "Drive backup successful" else "Drive backup failed: ${result.exceptionOrNull()?.message}",
+                    isError = result.isFailure
+                )
+            }
+        }
+    }
+
+    fun restoreFromDrive() {
+        viewModelScope.launch {
+            if (!driveBackupManager.isInitialized()) {
+                val email = googleAuthManager.userEmail.value
+                if (email != null) {
+                    driveBackupManager.initializeWithAccount(email)
+                } else {
+                    _uiState.update { it.copy(message = "Please sign in to Drive first", isError = true) }
+                    return@launch
+                }
+            }
+
+            _uiState.update { it.copy(isLoading = true, message = "Downloading from Google Drive...") }
+            val result = driveBackupManager.restoreLatestBackup()
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    message = if (result.isSuccess) "Restore successful. Please restart the app." else "Drive restore failed: ${result.exceptionOrNull()?.message}",
+                    isError = result.isFailure,
+                    isRestoreSuccessful = result.isSuccess
+                )
+            }
+        }
     }
 
     fun loadRecentBackups() {

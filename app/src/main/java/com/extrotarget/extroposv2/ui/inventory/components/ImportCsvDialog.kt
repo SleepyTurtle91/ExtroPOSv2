@@ -65,11 +65,25 @@ fun ImportCsvDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = { pickerLauncher.launch(arrayOf("text/comma-separated-values", "text/csv")) },
-                enabled = !uiState.isLoading
-            ) {
-                Text("Select CSV File")
+            Row {
+                if (uiState.isError) {
+                    Button(
+                        onClick = { viewModel.repairWithAi() },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        Icon(androidx.compose.material.icons.Icons.Default.Add, contentDescription = null)
+                        Spacer(Modifier.width(4.dp))
+                        Text(androidx.compose.ui.res.stringResource(com.extrotarget.extroposv2.R.string.ai_repair_csv))
+                    }
+                }
+                
+                Button(
+                    onClick = { pickerLauncher.launch(arrayOf("text/comma-separated-values", "text/csv")) },
+                    enabled = !uiState.isLoading
+                ) {
+                    Text("Select CSV File")
+                }
             }
         },
         dismissButton = {

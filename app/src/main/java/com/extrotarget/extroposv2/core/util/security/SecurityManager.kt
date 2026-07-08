@@ -44,5 +44,7 @@ class SecurityManager @Inject constructor(
         const val KEY_LHDN_CLIENT_ID = "lhdn_client_id"
         const val KEY_LHDN_CLIENT_SECRET = "lhdn_client_secret"
         const val KEY_DUITNOW_MERCHANT_ID = "duitnow_merchant_id"
+        const val KEY_GEMINI_API_KEY = "gemini_api_key"
+        const val KEY_GOOGLE_DRIVE_TOKEN = "google_drive_token"
     }
 }

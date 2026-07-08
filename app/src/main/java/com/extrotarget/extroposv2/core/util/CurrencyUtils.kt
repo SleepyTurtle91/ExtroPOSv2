@@ -53,7 +53,7 @@ object CurrencyUtils {
      * 6, 7 -> 5 (Round down)
      * 8, 9 -> 10 (Round up)
      */
-    fun applyMalaysianRounding(amount: BigDecimal): BigDecimal {
+    fun calculateMalaysianRounding(amount: BigDecimal): RoundingResult {
         val amountInSen = amount.multiply(BigDecimal("100")).setScale(0, RoundingMode.HALF_UP)
         val lastDigit = amountInSen.remainder(BigDecimal.TEN).toInt()
         
@@ -69,27 +69,15 @@ object CurrencyUtils {
             else -> 0
         }
         
-        return amount.add(BigDecimal(adjustmentInSen).divide(BigDecimal("100"), 2, RoundingMode.HALF_EVEN))
-            .setScale(2, RoundingMode.HALF_EVEN)
+        val adjustment = BigDecimal(adjustmentInSen).divide(BigDecimal("100"), 2, RoundingMode.HALF_EVEN)
+        return RoundingResult(
+            adjustment = adjustment,
+            finalTotal = amount.add(adjustment).setScale(2, RoundingMode.HALF_EVEN)
+        )
     }
 
-    /**
-     * Returns the rounding adjustment amount (positive or negative).
-     */
-    fun calculateRoundingAdjustment(totalAmount: BigDecimal): BigDecimal {
-        val amountInSen = totalAmount.multiply(BigDecimal("100")).setScale(0, RoundingMode.HALF_UP)
-        val lastDigit = amountInSen.remainder(BigDecimal.TEN).toInt()
-        val adjustmentInSen = when (lastDigit) {
-            1 -> -1
-            2 -> -2
-            3 -> 2
-            4 -> 1
-            6 -> -1
-            7 -> -2
-            8 -> 2
-            9 -> 1
-            else -> 0
-        }
-        return BigDecimal(adjustmentInSen).divide(BigDecimal("100"), 2, RoundingMode.HALF_EVEN)
-    }
+    data class RoundingResult(
+        val adjustment: BigDecimal,
+        val finalTotal: BigDecimal
+    )
 }

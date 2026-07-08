@@ -83,15 +83,13 @@ data class SalesUiState(
         }
     } else BigDecimal.ZERO
 
-    val totalTax: BigDecimal = if (taxConfig?.isTaxEnabled == true) {
-        val baseForTax = subtotal.subtract(totalDiscount).add(totalServiceCharge)
-        baseForTax.multiply(taxConfig.defaultTaxRate)
-            .divide(BigDecimal("100"), 2, java.math.RoundingMode.HALF_EVEN)
-    } else BigDecimal.ZERO
+    val totalTax: BigDecimal = cartItems.fold(BigDecimal.ZERO) { acc, item ->
+        acc.add(item.taxAmount)
+    }
 
     val amountBeforeRounding: BigDecimal = subtotal.subtract(totalDiscount).add(totalServiceCharge).add(totalTax)
     
-    private val roundingResult = RoundingUtils.calculateBNMRounding(amountBeforeRounding)
+    private val roundingResult = com.extrotarget.extroposv2.core.util.CurrencyUtils.calculateMalaysianRounding(amountBeforeRounding)
     
     val roundingAdjustment: BigDecimal = roundingResult.adjustment
     val totalAmount: BigDecimal = amountBeforeRounding

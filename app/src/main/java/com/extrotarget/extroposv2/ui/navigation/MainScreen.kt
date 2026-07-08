@@ -29,11 +29,14 @@ import com.extrotarget.extroposv2.ui.auth.LoginScreen
 import com.extrotarget.extroposv2.ui.auth.MainViewModel
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.components.NavButton
+import com.extrotarget.extroposv2.ui.components.ai.AiAssistantOverlay
+import com.extrotarget.extroposv2.ui.components.ai.AiAssistantViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    viewModel: MainViewModel = hiltViewModel()
+    viewModel: MainViewModel = hiltViewModel(),
+    assistantViewModel: AiAssistantViewModel = hiltViewModel()
 ) {
     val sessionManager = viewModel.sessionManager
     val currentUser by sessionManager.currentUser.collectAsState()
@@ -222,6 +225,11 @@ fun MainScreen(
                 NavGraph(
                     navController = navController,
                     sessionManager = sessionManager
+                )
+                
+                // AI Assistant Overlay (Global)
+                AiAssistantOverlay(
+                    auditorEngine = assistantViewModel.auditorEngine
                 )
             }
         }

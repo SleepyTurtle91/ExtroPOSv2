@@ -21,12 +21,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.extrotarget.extroposv2.ui.settings.viewmodel.BackupViewModel
 import kotlinx.coroutines.launch
+
+import androidx.compose.material.icons.filled.CloudDone
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Sync
+import com.extrotarget.extroposv2.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +44,9 @@ fun BackupScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+
+    // Using a placeholder or actual Client ID from BuildConfig
+    val googleClientId = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
 
     val backupLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/octet-stream"),
@@ -166,6 +176,64 @@ fun BackupScreen(
                 Icon(Icons.Default.Restore, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Restore from File")
+            }
+
+            Spacer(Modifier.height(24.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+            Spacer(Modifier.height(16.dp))
+
+            // Google Drive Section
+            Text("Cloud Backup (Google Drive)", style = MaterialTheme.typography.titleSmall, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    if (!uiState.isDriveSignedIn) {
+                        Text("Connect your Google account to enable automatic cloud backups.", style = MaterialTheme.typography.bodySmall)
+                        Spacer(Modifier.height(12.dp))
+                        Button(
+                            onClick = { viewModel.signInToDrive(googleClientId) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.Sync, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Connect Google Drive")
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.CloudDone, contentDescription = null, tint = Color(0xFF10B981))
+                            Spacer(Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Connected to Google Drive", fontWeight = FontWeight.Bold)
+                                Text(uiState.driveAccountName ?: "Active", style = MaterialTheme.typography.labelSmall)
+                            }
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilledTonalButton(
+                                onClick = { viewModel.backupToDrive() },
+                                modifier = Modifier.weight(1f),
+                                enabled = !uiState.isLoading
+                            ) {
+                                Icon(Icons.Default.CloudUpload, contentDescription = null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Sync Now")
+                            }
+                            FilledTonalButton(
+                                onClick = { viewModel.restoreFromDrive() },
+                                modifier = Modifier.weight(1f),
+                                enabled = !uiState.isLoading
+                            ) {
+                                Icon(Icons.Default.Restore, contentDescription = null)
+                                Spacer(Modifier.width(4.dp))
+                                Text("Drive Restore")
+                            }
+                        }
+                    }
+                }
             }
 
             if (uiState.isLoading) {

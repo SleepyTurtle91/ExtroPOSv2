@@ -430,4 +430,12 @@
     <string name="staff_role_hint">Role (e.g. WASHER, SUPERVISOR, ADMIN, CASHIER)</string>
     <string name="staff_phone_hint">Phone (Optional)</string>
     <string name="staff_pin_hint">PIN (4&#8211;6 digits)</string>
+
+    <!-- AI Auditor -->
+    <string name="ai_auditor_title">AI Silent Auditor</string>
+    <string name="ai_auditor_hint">How can I assist you with reports, inventory, or sales today?</string>
+    <string name="ai_auditor_search_hint">Ask about sales or reports...</string>
+    <string name="ai_repair_csv">AI Auto-Fix CSV</string>
+    <string name="ai_repairing">Repairing CSV data...</string>
+    <string name="ai_repair_success">CSV Template fixed and ready for import.</string>
 </resources>

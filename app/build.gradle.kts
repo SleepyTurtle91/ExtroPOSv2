@@ -177,8 +177,15 @@ dependencies {
     implementation(libs.hilt.work)
     ksp(libs.hilt.compiler) // Already added but hilt-work needs ksp
 
-    // iMin SDK for mobile flavor
-    "mobileImplementation"(libs.imin.printer)
+    // Google & AI
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.googleid)
+    implementation("com.google.apis:google-api-services-drive:v3-rev20260624-2.0.0")
+    implementation("com.google.api-client:google-api-client-android:2.9.0")
+    implementation("com.google.http-client:google-http-client-gson:1.42.3")
+    implementation(libs.google.auth.library.oauth2.http)
+    implementation(libs.generativeai)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -1,0 +1,25 @@
+# task.artifact.md
+
+- [/] Phase 1: Structural Refactoring & Bug Fixes
+    - [ ] Fix Tax Calculation in `SalesUiState`
+    - [ ] Consolidate Rounding Logic in `CurrencyUtils`
+    - [ ] Refactor `SalesViewModel` (Split into smaller delegates)
+- [ ] Phase 2: Google Integration
+    - [ ] Research Google Sign-In & Drive API for Android
+    - [ ] Implement Google Sign-In Flow
+    - [ ] Implement Google Drive Backup Manager
+- [/] Phase 3: AI Silent Auditor (Gemini 3.5 Flash-Lite)
+    - [ ] Design Auditor Logic (Anomaly detection for sales/voids)
+    - [ ] Implement Background Auditing Engine
+    - [ ] Add Auditor Reports UI
+    - [ ] Implement Use Case 3: CSV Auto-Repair
+    - [ ] Implement Use Case 4: Semantic Search Optimization
+    - [ ] Implement Use Case 7: Barcode/Item Finder Optimizer
+- [ ] Phase 4: POS Feature Enhancements
+    - [ ] Implement F&B Split Billing
+    - [ ] Implement Promotion/Bundle Engine
+    - [ ] Implement Stock Take/Audit Module
+- [ ] Phase 5: Verification & Hardening
+    - [ ] Unit tests for new logic
+    - [ ] Manual verification of Drive backups
+    - [ ] AI Auditor trial run

@@ -223,6 +223,12 @@ fun SettingsScreen(
                     onClick = { onNavigateTo(Screen.SecurityAudit.route) }
                 )
                 SettingsItem(
+                    title = "AI Silent Auditor",
+                    subtitle = "Configure Gemini 3.1 BYOK settings",
+                    icon = Icons.Default.SmartToy,
+                    onClick = { onNavigateTo(Screen.AiAuditorSettings.route) }
+                )
+                SettingsItem(
                     title = "Multi-Terminal Sync",
                     subtitle = "Sync data between Master and Slave devices",
                     icon = Icons.Default.CastConnected,

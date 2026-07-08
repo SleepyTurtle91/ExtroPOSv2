@@ -31,6 +31,7 @@ import com.extrotarget.extroposv2.ui.settings.receipt.ReceiptSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.lhdn.LhdnSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.autocount.AutoCountSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.audit.AuditScreen
+import com.extrotarget.extroposv2.ui.settings.audit.AiAuditorSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.sync.SyncScreen
 import com.extrotarget.extroposv2.ui.loyalty.MemberManagementScreen
 import com.extrotarget.extroposv2.ui.loyalty.LoyaltySettingsScreen
@@ -216,6 +217,13 @@ fun NavGraph(
 
         composable(Screen.SecurityAudit.route) {
             AuditScreen(viewModel = hiltViewModel())
+        }
+
+        composable(Screen.AiAuditorSettings.route) {
+            AiAuditorSettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                viewModel = hiltViewModel()
+            )
         }
 
         composable(Screen.TerminalSync.route) {

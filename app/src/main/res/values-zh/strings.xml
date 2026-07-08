@@ -196,4 +196,12 @@
     <string name="general_assigned">负责人：%1$s</string>
     <string name="general_sale_label">销售单 #%1$s</string>
     <string name="general_shift_label">班次 #%1$s</string>
+
+    <!-- AI Auditor -->
+    <string name="ai_auditor_title">AI 智能审计员</string>
+    <string name="ai_auditor_hint">今天有什么可以帮您的？我可以协助查看报告、库存或销售情况。</string>
+    <string name="ai_auditor_search_hint">询问关于销售或报告的问题...</string>
+    <string name="ai_repair_csv">AI 自动修复 CSV</string>
+    <string name="ai_repairing">正在修复 CSV 数据...</string>
+    <string name="ai_repair_success">CSV 模板已修复，可以开始导入。</string>
 </resources>

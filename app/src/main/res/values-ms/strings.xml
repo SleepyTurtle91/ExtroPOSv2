@@ -205,4 +205,12 @@
     <string name="staff_role_hint">Jawatan (cth. WASHER, SUPERVISOR, ADMIN, CASHIER)</string>
     <string name="staff_phone_hint">No. Telefon (Pilihan)</string>
     <string name="staff_pin_hint">PIN (4–6 digit)</string>
+
+    <!-- AI Auditor -->
+    <string name="ai_auditor_title">Juruaudit AI Senyap</string>
+    <string name="ai_auditor_hint">Bagaimana saya boleh membantu anda dengan laporan, inventori, atau jualan hari ini?</string>
+    <string name="ai_auditor_search_hint">Tanya mengenai jualan atau laporan...</string>
+    <string name="ai_repair_csv">AI Baiki CSV Automasik</string>
+    <string name="ai_repairing">Membaiki data CSV...</string>
+    <string name="ai_repair_success">Templat CSV dibaiki dan sedia untuk diimport.</string>
 </resources>
