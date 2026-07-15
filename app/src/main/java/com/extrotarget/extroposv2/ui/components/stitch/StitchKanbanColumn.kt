@@ -12,10 +12,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.extrotarget.extroposv2.ui.theme.StitchColor
 import com.extrotarget.extroposv2.ui.theme.labelCaps
 
@@ -42,7 +43,16 @@ fun <T> StitchKanbanColumn(
                 .fillMaxWidth()
                 .background(StitchColor.Surface)
                 .padding(12.dp)
-                .drawBehindBorderBottom(),
+                .drawBehind {
+                    val strokeWidth = 1.dp.toPx()
+                    val y = size.height - strokeWidth / 2
+                    drawLine(
+                        color = StitchColor.OutlineVariant.copy(alpha = 0.5f),
+                        start = Offset(0f, y),
+                        end = Offset(size.width, y),
+                        strokeWidth = strokeWidth
+                    )
+                },
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -83,18 +93,3 @@ fun <T> StitchKanbanColumn(
         }
     }
 }
-
-// Simple helper for bottom border
-private fun Modifier.drawBehindBorderBottom(): Modifier = this.drawBehind {
-    val strokeWidth = 1.dp.toPx()
-    val y = size.height - strokeWidth / 2
-    drawLine(
-        color = StitchColor.OutlineVariant.copy(alpha = 0.5f),
-        start = androidx.compose.ui.geometry.Offset(0f, y),
-        end = androidx.compose.ui.geometry.Offset(size.width, y),
-        strokeWidth = strokeWidth
-    )
-}
-
-// Ensure drawBehind is imported
-import androidx.compose.ui.draw.drawBehind

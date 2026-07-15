@@ -1,6 +1,7 @@
 package com.extrotarget.extroposv2.core.data.local.converter
 
 import androidx.room.TypeConverter
+import com.extrotarget.extroposv2.core.data.model.platform.Capability
 import com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -28,5 +29,16 @@ class Converters {
     fun toLaundryItemList(value: String): List<LaundryItem> {
         val listType = object : TypeToken<List<LaundryItem>>() {}.type
         return gson.fromJson(value, listType)
+    }
+
+    @TypeConverter
+    fun fromCapabilitySet(value: Set<Capability>): String {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toCapabilitySet(value: String): Set<Capability> {
+        val type = object : TypeToken<Set<Capability>>() {}.type
+        return gson.fromJson(value, type)
     }
 }

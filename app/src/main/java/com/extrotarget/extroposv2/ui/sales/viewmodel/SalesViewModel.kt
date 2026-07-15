@@ -61,6 +61,7 @@ class SalesViewModel @Inject constructor(
     private val taxRepository: com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository,
     private val shiftRepository: ShiftRepository,
     private val modifierRepository: com.extrotarget.extroposv2.core.data.repository.fnb.ModifierRepository,
+    private val workspaceRepository: com.extrotarget.extroposv2.core.data.repository.platform.WorkspaceRepository,
     private val trainingDbManager: com.extrotarget.extroposv2.core.data.local.training.TrainingDbManager,
     private val dataSeeder: com.extrotarget.extroposv2.core.data.seeder.DataSeeder,
     @ApplicationContext private val context: Context

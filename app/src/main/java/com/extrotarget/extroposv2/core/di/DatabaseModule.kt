@@ -158,4 +158,7 @@ object DatabaseModule {
 
     @Provides
     fun provideHotelDao(mainDb: AppDatabase): HotelDao = mainDb.hotelDao()
+
+    @Provides
+    fun provideWorkspaceDao(mainDb: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao = mainDb.workspaceDao()
 }

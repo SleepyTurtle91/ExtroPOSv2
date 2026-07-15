@@ -13,6 +13,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.extrotarget.extroposv2.R
 
+import com.extrotarget.extroposv2.core.data.model.platform.Capability
+import com.extrotarget.extroposv2.core.platform.models.DashboardActionId
+
 enum class BusinessMode(
     val id: String,
     @StringRes val displayName: Int,
@@ -24,13 +27,17 @@ enum class BusinessMode(
     val hasWeightSupport: Boolean = false,
     val hasBookings: Boolean = false,
     val hasRoomManagement: Boolean = false,
+    val defaultCapabilities: Set<Capability> = emptySet(),
+    val defaultActions: List<DashboardActionId> = emptyList()
 ) {
     RETAIL(
         id = "retail",
         displayName = R.string.mode_retail_name,
         description = R.string.mode_retail_desc,
         icon = Icons.Default.ShoppingCart,
-        color = Color(0xFF3B82F6) // Blue 500
+        color = Color(0xFF3B82F6), // Blue 500
+        defaultCapabilities = setOf(Capability.LOYALTY_SYSTEM, Capability.DUITNOW_DYNAMIC_QR),
+        defaultActions = listOf(DashboardActionId.NEW_SALE, DashboardActionId.INVENTORY_CHECK)
     ),
     FNB(
         id = "fnb",
@@ -38,7 +45,9 @@ enum class BusinessMode(
         description = R.string.mode_fnb_desc,
         icon = Icons.Default.Restaurant,
         color = Color(0xFFF97316), // Orange 500
-        hasTables = true
+        hasTables = true,
+        defaultCapabilities = setOf(Capability.TABLE_MANAGEMENT, Capability.KITCHEN_DISPLAY, Capability.DUITNOW_DYNAMIC_QR),
+        defaultActions = listOf(DashboardActionId.TABLE_ORDER, DashboardActionId.KITCHEN_QUEUE)
     ),
     CARWASH(
         id = "carwash",
@@ -46,7 +55,9 @@ enum class BusinessMode(
         description = R.string.mode_carwash_desc,
         icon = Icons.Default.DirectionsCar,
         color = Color(0xFF10B981), // Emerald 500
-        hasStaffAssignment = true
+        hasStaffAssignment = true,
+        defaultCapabilities = setOf(Capability.STAFF_COMMISSION, Capability.DUITNOW_DYNAMIC_QR),
+        defaultActions = listOf(DashboardActionId.NEW_CARWASH_JOB, DashboardActionId.CARWASH_QUEUE)
     ),
     LAUNDRY(
         id = "laundry",
@@ -54,7 +65,9 @@ enum class BusinessMode(
         description = R.string.mode_laundry_desc,
         icon = Icons.Default.LocalLaundryService,
         color = Color(0xFF6366F1), // Indigo 500
-        hasWeightSupport = true
+        hasWeightSupport = true,
+        defaultCapabilities = setOf(Capability.WEIGHT_BASED_PRICING, Capability.DUITNOW_DYNAMIC_QR),
+        defaultActions = listOf(DashboardActionId.RECEIVE_LAUNDRY, DashboardActionId.LAUNDRY_PICKUP)
     ),
     HOTEL(
         id = "hotel",
@@ -63,7 +76,9 @@ enum class BusinessMode(
         icon = Icons.Default.Hotel,
         color = Color(0xFF8B5CF6), // Violet 500
         hasBookings = true,
-        hasRoomManagement = true
+        hasRoomManagement = true,
+        defaultCapabilities = setOf(Capability.BOOKING_MANAGEMENT, Capability.ROOM_MANAGEMENT),
+        defaultActions = listOf(DashboardActionId.ROOM_BOOKING)
     ),
     HOMESTAY(
         id = "homestay",
@@ -72,13 +87,17 @@ enum class BusinessMode(
         icon = Icons.Default.Home,
         color = Color(0xFFEC4899), // Pink 500
         hasBookings = true,
-        hasRoomManagement = false
+        hasRoomManagement = false,
+        defaultCapabilities = setOf(Capability.BOOKING_MANAGEMENT),
+        defaultActions = listOf(DashboardActionId.ROOM_BOOKING)
     ),
     KIOSK(
         id = "kiosk",
         displayName = R.string.mode_kiosk_name,
         description = R.string.mode_kiosk_desc,
         icon = Icons.Default.Monitor,
-        color = Color(0xFF1E293B) // Slate 800
+        color = Color(0xFF1E293B), // Slate 800
+        defaultCapabilities = setOf(Capability.KIOSK_SELF_SERVICE, Capability.DUITNOW_DYNAMIC_QR),
+        defaultActions = listOf(DashboardActionId.NEW_SALE)
     )
 }

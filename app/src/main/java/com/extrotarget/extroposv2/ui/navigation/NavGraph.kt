@@ -14,6 +14,7 @@ import com.extrotarget.extroposv2.ui.carwash.staff.StaffManagementScreen
 import com.extrotarget.extroposv2.ui.dobi.LaundryOrderScreen
 import com.extrotarget.extroposv2.ui.carwash.CarWashJobQueueScreen
 import com.extrotarget.extroposv2.ui.fnb.TableFloorPlanScreen
+import com.extrotarget.extroposv2.ui.fnb.viewmodel.TableViewModel
 import com.extrotarget.extroposv2.ui.analytics.AnalyticsScreen
 import com.extrotarget.extroposv2.ui.analytics.AnalyticsScreen
 import com.extrotarget.extroposv2.ui.analytics.InventoryAnalyticsScreen
@@ -62,9 +63,30 @@ fun NavGraph(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Sales.route,
+        startDestination = Screen.Dashboard.route,
         modifier = modifier
     ) {
+        composable(Screen.Dashboard.route) {
+            WorkspaceDashboardScreen(
+                onNavigateToAction = { actionId ->
+                    when (actionId) {
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.NEW_SALE -> navController.navigate(Screen.Sales.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.TABLE_ORDER -> navController.navigate(Screen.Tables.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.KITCHEN_QUEUE -> navController.navigate(Screen.Kds.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.INVENTORY_CHECK -> navController.navigate(Screen.Inventory.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.ADD_PRODUCT -> navController.navigate(Screen.ProductManagement.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.RECEIVE_LAUNDRY -> navController.navigate(Screen.Laundry.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.LAUNDRY_PICKUP -> navController.navigate(Screen.Laundry.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.NEW_CARWASH_JOB -> navController.navigate(Screen.Sales.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.CARWASH_QUEUE -> navController.navigate(Screen.CarWash.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.STAFF_EARNINGS -> navController.navigate(Screen.StaffEarnings.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.ROOM_BOOKING -> navController.navigate(Screen.HotelDashboard.route)
+                        com.extrotarget.extroposv2.core.platform.models.DashboardActionId.REPORTS -> navController.navigate(Screen.Analytics.route)
+                    }
+                }
+            )
+        }
+
         composable(Screen.Sales.route) {
             SalesScreen(
                 viewModel = hiltViewModel(),

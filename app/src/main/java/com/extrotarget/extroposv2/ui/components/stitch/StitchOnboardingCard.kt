@@ -1,10 +1,10 @@
 package com.extrotarget.extroposv2.ui.components.stitch
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -117,7 +117,7 @@ fun StitchOnboardingCard(
                     tags.forEach { tag ->
                         Surface(
                             color = StitchColor.SurfaceContainerHigh,
-                            shape = RoundedCornerShape(full = 999.dp)
+                            shape = CircleShape
                         ) {
                             Text(
                                 text = tag.uppercase(),

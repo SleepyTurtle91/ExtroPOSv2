@@ -39,6 +39,32 @@ fun ModeSelectionScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val currentMode = uiState.activeMode
+    var modeToSwitch by remember { mutableStateOf<BusinessMode?>(null) }
+
+    if (modeToSwitch != null) {
+        AlertDialog(
+            onDismissRequest = { modeToSwitch = null },
+            title = { Text("Switch Business Mode?") },
+            text = { 
+                Text("Changing to ${stringResource(modeToSwitch!!.displayName)} will update your workspace dashboard and workflows. Your existing sales data will remain safe.") 
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.setBusinessMode(modeToSwitch!!)
+                        modeToSwitch = null
+                    }
+                ) {
+                    Text("Switch Now")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { modeToSwitch = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -79,7 +105,7 @@ fun ModeSelectionScreen(
                     ModeCard(
                         mode = mode,
                         isSelected = uiState.activeMode == mode,
-                        onClick = { viewModel.setBusinessMode(mode) }
+                        onClick = { modeToSwitch = mode }
                     )
                 }
             }

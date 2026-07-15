@@ -98,6 +98,7 @@ android {
         }
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "META-INF/DEPENDENCIES"
             pickFirsts += "META-INF/INDEX.LIST"
             pickFirsts += "META-INF/io.netty.versions.properties"
         }
@@ -175,7 +176,6 @@ dependencies {
     // WorkManager
     implementation(libs.androidx.work.runtime)
     implementation(libs.hilt.work)
-    ksp(libs.hilt.compiler) // Already added but hilt-work needs ksp
 
     // Google & AI
     implementation(libs.androidx.credentials)

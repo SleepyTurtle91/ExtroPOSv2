@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.extrotarget.extroposv2.ui.inventory.viewmodel.InventoryImportViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 
 @Composable
 fun ImportCsvDialog(
@@ -72,7 +74,7 @@ fun ImportCsvDialog(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        Icon(androidx.compose.material.icons.Icons.Default.Add, contentDescription = null)
+                        Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(4.dp))
                         Text(androidx.compose.ui.res.stringResource(com.extrotarget.extroposv2.R.string.ai_repair_csv))
                     }

@@ -1,33 +1,31 @@
 package com.extrotarget.extroposv2.ui.fnb
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.TableBar
+import androidx.compose.material.icons.automirrored.filled.CallMerge
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import com.extrotarget.extroposv2.R
-import com.extrotarget.extroposv2.ui.fnb.components.TableActionDialog
-import com.extrotarget.extroposv2.ui.fnb.components.MoveJoinDialog
-import com.extrotarget.extroposv2.ui.fnb.components.TableQrDialog
+import androidx.compose.ui.unit.sp
 import com.extrotarget.extroposv2.core.data.model.fnb.Table
 import com.extrotarget.extroposv2.core.data.model.fnb.TableStatus
+import com.extrotarget.extroposv2.ui.components.stitch.StitchTableCard
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchButton
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchOutlinedButton
 import com.extrotarget.extroposv2.ui.fnb.viewmodel.TableViewModel
-
-import com.extrotarget.extroposv2.ui.fnb.components.ZoneSelector
+import com.extrotarget.extroposv2.ui.theme.StitchColor
+import com.extrotarget.extroposv2.ui.theme.labelCaps
 
 @Composable
 fun TableFloorPlanScreen(
@@ -35,238 +33,95 @@ fun TableFloorPlanScreen(
     onTableClick: (Table) -> Unit
 ) {
     val tables by viewModel.tables.collectAsState()
-    val zones by viewModel.zones.collectAsState()
-    val selectedZone by viewModel.selectedZone.collectAsState()
-    var showAddDialog by remember { mutableStateOf(false) }
-    var selectedTableForActions by remember { mutableStateOf<Table?>(null) }
-    var showMoveJoinDialog by remember { mutableStateOf<Pair<Table, Boolean>?>(null) } // Table, isMove
-    var showQrDialog by remember { mutableStateOf<Table?>(null) }
 
-    Scaffold(
-        topBar = {
-            Column {
-                Text(
-                    text = stringResource(R.string.fnb_floor_plan),
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(16.dp)
-                )
-                ZoneSelector(
-                    zones = zones,
-                    selectedZone = selectedZone,
-                    onZoneSelected = { viewModel.selectZone(it) }
-                )
-            }
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.fnb_add_table))
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 140.dp),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                items(tables) { table ->
-                    TableCard(
-                        table = table,
-                        onClick = { 
-                            if (table.status == TableStatus.AVAILABLE || table.status == TableStatus.OCCUPIED) {
-                                onTableClick(table) 
-                            } else {
-                                selectedTableForActions = table
-                            }
-                        },
-                        onLongClick = { selectedTableForActions = table }
-                    )
-                }
-            }
-        }
-    }
-
-    selectedTableForActions?.let { table ->
-        TableActionDialog(
-            table = table,
-            onDismiss = { selectedTableForActions = null },
-            onAction = { action ->
-                when (action) {
-                    "MOVE" -> showMoveJoinDialog = table to true
-                    "JOIN" -> showMoveJoinDialog = table to false
-                    "DIRTY" -> viewModel.updateTableStatus(table, TableStatus.DIRTY)
-                    "CLEAN" -> viewModel.updateTableStatus(table, TableStatus.AVAILABLE)
-                    "OPEN" -> onTableClick(table)
-                    "DELETE" -> viewModel.deleteTable(table.id)
-                    "QR_GEN" -> showQrDialog = table
-                }
-                selectedTableForActions = null
-            }
-        )
-    }
-
-    showQrDialog?.let { table ->
-        TableQrDialog(
-            table = table,
-            onDismiss = { showQrDialog = null },
-            onPrint = { qrContent ->
-                viewModel.printTableQr(table, qrContent)
-            }
-        )
-    }
-
-    showMoveJoinDialog?.let { (table, isMove) ->
-        val availableTables = tables.filter { it.id != table.id }
-        MoveJoinDialog(
-            sourceTable = table,
-            isMove = isMove,
-            targetTables = availableTables,
-            onDismiss = { showMoveJoinDialog = null },
-            onConfirm = { targetTableId ->
-                if (isMove) viewModel.moveTable(table.id, targetTableId)
-                else viewModel.joinTable(table.id, targetTableId)
-                showMoveJoinDialog = null
-            }
-        )
-    }
-
-    if (showAddDialog) {
-        AddTableDialog(
-            currentZone = selectedZone,
-            onDismiss = { showAddDialog = false },
-            onConfirm = { name, cap, zone ->
-                viewModel.addTable(name, cap, zone)
-                showAddDialog = false
-            }
-        )
-    }
-}
-
-@Composable
-fun TableCard(
-    table: Table,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    val backgroundColor = when (table.status) {
-        TableStatus.AVAILABLE -> Color(0xFF4CAF50) // Green
-        TableStatus.OCCUPIED -> Color(0xFFF44336) // Red
-        TableStatus.BILLING -> Color(0xFF2196F3)  // Blue
-        TableStatus.RESERVED -> Color(0xFFFF9800) // Orange
-        TableStatus.DIRTY -> Color(0xFF795548)    // Brown
-    }
-
-    Card(
+    Column(
         modifier = Modifier
-            .size(140.dp)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onTap = { onClick() },
-                    onLongPress = { onLongClick() }
-                )
-            },
-        colors = CardDefaults.cardColors(containerColor = backgroundColor)
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(
-                    imageVector = Icons.Default.TableBar,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(40.dp)
+        // Section Filters
+        LazyRow(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                StitchButton(
+                    text = "MAIN HALL",
+                    onClick = { /* TODO */ },
+                    containerColor = StitchColor.Primary,
+                    contentColor = Color.White
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = table.name,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+            }
+            item {
+                StitchOutlinedButton(
+                    text = "TERRACE",
+                    onClick = { /* TODO */ },
+                    contentColor = StitchColor.OnSurfaceVariant
                 )
-                Text(
-                    text = stringResource(R.string.fnb_pax_count, table.capacity),
-                    color = Color.White.copy(alpha = 0.8f),
-                    style = MaterialTheme.typography.bodySmall
+            }
+            item {
+                StitchOutlinedButton(
+                    text = "VIP ROOM",
+                    onClick = { /* TODO */ },
+                    contentColor = StitchColor.OnSurfaceVariant
                 )
-                Text(
-                    text = when (table.status) {
-                        TableStatus.AVAILABLE -> stringResource(R.string.fnb_status_available)
-                        TableStatus.OCCUPIED -> stringResource(R.string.fnb_status_occupied)
-                        TableStatus.BILLING -> stringResource(R.string.fnb_status_billing)
-                        TableStatus.RESERVED -> stringResource(R.string.fnb_status_reserved)
-                        TableStatus.DIRTY -> stringResource(R.string.fnb_status_dirty)
-                    },
-                    color = Color.White.copy(alpha = 0.9f),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.ExtraBold
+            }
+        }
+
+        // Legend & Actions
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                LegendItem("Available", StitchColor.TertiaryContainer)
+                LegendItem("Occupied", StitchColor.PrimaryContainer)
+                LegendItem("Reserved", StitchColor.ErrorContainer)
+                LegendItem("Cleaning", StitchColor.OutlineVariant)
+            }
+            
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StitchOutlinedButton(
+                    text = "Transfer",
+                    icon = Icons.Default.SwapHoriz,
+                    onClick = { /* TODO */ },
+                    contentColor = StitchColor.OnSurface
                 )
-                
-                if (table.status == TableStatus.OCCUPIED) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Surface(
-                        color = if (table.hasUnsentItems) Color(0xFFFFEB3B) else Color(0xFFE8F5E9), // Yellow for unsent, Light Green for sent
-                        shape = MaterialTheme.shapes.extraSmall
-                    ) {
-                        Text(
-                            text = if (table.hasUnsentItems) stringResource(R.string.fnb_pending_order) else stringResource(R.string.fnb_order_sent),
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (table.hasUnsentItems) Color.Black else Color(0xFF2E7D32),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                StitchOutlinedButton(
+                    text = "Merge",
+                    icon = Icons.AutoMirrored.Filled.CallMerge,
+                    onClick = { /* TODO */ },
+                    contentColor = StitchColor.OnSurface
+                )
+            }
+        }
+
+        // Floor Plan Grid
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 180.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(tables) { table ->
+                StitchTableCard(
+                    table = table,
+                    onClick = { onTableClick(table) },
+                    itemCount = 0, // TODO: Fetch from ViewModel
+                    orderAmount = java.math.BigDecimal.ZERO // TODO: Fetch from ViewModel
+                )
             }
         }
     }
 }
 
 @Composable
-fun AddTableDialog(
-    currentZone: String,
-    onDismiss: () -> Unit,
-    onConfirm: (String, Int, String) -> Unit
-) {
-    var name by remember { mutableStateOf("") }
-    var capacity by remember { mutableStateOf("4") }
-    var zone by remember { mutableStateOf(currentZone) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.fnb_add_table)) },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.fnb_table_name_label)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = capacity,
-                    onValueChange = { capacity = it },
-                    label = { Text(stringResource(R.string.fnb_capacity_label)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = zone,
-                    onValueChange = { zone = it },
-                    label = { Text(stringResource(R.string.fnb_zone_label)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(name, capacity.toIntOrNull() ?: 4, zone) }) {
-                Text(stringResource(R.string.staff_add))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.btn_cancel))
-            }
-        }
-    )
+private fun LegendItem(label: String, color: Color) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Box(modifier = Modifier.size(8.dp).background(color, CircleShape))
+        Text(text = label, style = MaterialTheme.typography.bodySmall.copy(color = StitchColor.OnSurfaceVariant))
+    }
 }

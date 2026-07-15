@@ -25,6 +25,7 @@ import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
 import com.extrotarget.extroposv2.ui.sales.CartItem
 import com.extrotarget.extroposv2.ui.sales.SalesUiState
+import com.extrotarget.extroposv2.ui.theme.*
 import java.math.BigDecimal
 
 @Composable
@@ -41,77 +42,51 @@ fun CartSidebar(
 ) {
     Surface(
         modifier = Modifier
-            .width(420.dp)
+            .width(420.dp) // Fixed sidebar width as per DESIGN.md
             .fillMaxHeight(),
-        color = Color.White,
-        tonalElevation = 2.dp,
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+        color = SurfaceLevel1,
+        border = BorderStroke(1.dp, SurfaceOutline)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Cart Header
+            // High-Density Order Header
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF8FAFC))
-                    .padding(20.dp),
+                    .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
                     Text(
-                        stringResource(R.string.sales_cart).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
+                        "ORDER SUMMARY",
+                        style = TitleMedium,
                         fontWeight = FontWeight.Black,
-                        color = Color(0xFF0F172A)
+                        color = HighDensityOnSurface
                     )
                     Text(
-                        stringResource(R.string.sales_ticket_label, (System.currentTimeMillis() / 1000000).toString().takeLast(6)),
-                        color = Color(0xFF64748B),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.sp
+                        "Register 01 • Table ${uiState.activeMode.name}",
+                        style = BodySmall,
+                        color = HighDensityOnSurface.copy(alpha = 0.6f)
                     )
                 }
                 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    IconButton(
-                        onClick = onAddCustomer,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(
-                                if (uiState.selectedMember != null) Color(0xFFEFF6FF) else Color.White,
-                                RoundedCornerShape(12.dp)
-                            )
-                            .border(
-                                1.dp,
-                                if (uiState.selectedMember != null) Color(0xFF3B82F6) else Color(0xFFE2E8F0),
-                                RoundedCornerShape(12.dp)
-                            )
-                    ) {
-                        Icon(
-                            if (uiState.selectedMember != null) Icons.Default.Person else Icons.Default.PersonAdd,
-                            contentDescription = null,
-                            tint = if (uiState.selectedMember != null) Color(0xFF3B82F6) else Color(0xFF64748B),
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    
-                    IconButton(
-                        onClick = onClearCart,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(Color(0xFFFEF2F2), RoundedCornerShape(12.dp))
-                            .border(1.dp, Color(0xFFFEE2E2), RoundedCornerShape(12.dp))
-                    ) {
-                        Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = Color(0xFFEF4444), modifier = Modifier.size(20.dp))
-                    }
+                IconButton(
+                    onClick = onClearCart,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .border(1.dp, SurfaceOutline, RoundedCornerShape(4.dp))
+                ) {
+                    Icon(Icons.Default.MoreVert, contentDescription = null, tint = HighDensityOnSurface)
                 }
             }
 
-            // Cart Items
+            HorizontalDivider(color = SurfaceOutline)
+
+            // Cart Items List
             LazyColumn(
-                modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                modifier = Modifier.weight(1f).background(SurfaceLevel0),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 16.dp)
+                contentPadding = PaddingValues(8.dp)
             ) {
                 if (uiState.cartItems.isEmpty()) {
                     item {
@@ -120,158 +95,105 @@ fun CartSidebar(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(Icons.Default.ShoppingBag, contentDescription = null, modifier = Modifier.size(64.dp), tint = Color(0xFFE2E8F0))
+                            Icon(Icons.Default.ShoppingBag, contentDescription = null, modifier = Modifier.size(64.dp), tint = SurfaceOutline)
                             Spacer(Modifier.height(16.dp))
-                            Text(stringResource(R.string.sales_no_items), color = Color(0xFF94A3B8), fontWeight = FontWeight.Black, fontSize = 12.sp, letterSpacing = 1.sp)
+                            Text("NO ITEMS IN CART", style = LabelCaps, color = HighDensityOutline)
                         }
                     }
                 } else {
                     items(uiState.cartItems) { item ->
                         CartItemTile(
                             item = item,
-                            activeColor = uiState.activeMode.color,
                             onUpdateQty = { onUpdateQuantity(item, it) },
-                            onShowModifiers = { onShowModifiers(item) },
-                            onRemove = { onRemoveFromCart(item) }
+                            onShowModifiers = { onShowModifiers(item) }
                         )
                     }
                 }
             }
 
-            // Footer / Payment Area
+            // High-Density Footer
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = Color(0xFFF8FAFC),
-                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+                color = SurfaceLevel1,
+                border = BorderStroke(1.dp, SurfaceOutline)
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        if (uiState.selectedMember != null) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 8.dp)
-                                    .background(Color(0xFFF1F5F9), RoundedCornerShape(8.dp))
-                                    .padding(8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(16.dp))
-                                    Column {
-                                        Text(uiState.selectedMember.name.uppercase(), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Black)
-                                        Text(stringResource(R.string.sales_pts_label, uiState.selectedMember.totalPoints.toInt()), style = MaterialTheme.typography.labelSmall)
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Summary Rows
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SummaryRow("SUBTOTAL", CurrencyUtils.format(uiState.subtotal))
+                        
+                        if (uiState.totalTax > BigDecimal.ZERO) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text("SST (6%)", style = BodySmall, color = HighDensityOnSurface.copy(alpha = 0.6f))
+                                    Surface(color = HighDensityTertiary, shape = RoundedCornerShape(99.dp)) {
+                                        Text("TAX", style = LabelCaps, color = Color.White, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
                                     }
                                 }
-                                IconButton(onClick = { onAddCustomer() }, modifier = Modifier.size(24.dp)) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Change", modifier = Modifier.size(14.dp), tint = Color(0xFF64748B))
-                                }
-                            }
-                            if (uiState.selectedMember.totalPoints >= BigDecimal("100")) {
-                                Button(
-                                    onClick = { onRedeemPoints(if (uiState.redeemedPoints > BigDecimal.ZERO) BigDecimal.ZERO else uiState.selectedMember.totalPoints) },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (uiState.redeemedPoints > BigDecimal.ZERO) Color(0xFF10B981) else Color(0xFFF59E0B)
-                                    ),
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        if (uiState.redeemedPoints > BigDecimal.ZERO) stringResource(R.string.sales_redeemed_label, uiState.redeemedAmount) else stringResource(R.string.sales_redeem_points),
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 12.sp
-                                    )
-                                }
+                                Text(CurrencyUtils.format(uiState.totalTax), style = BodyBase, color = HighDensityOnSurface)
                             }
                         }
-                        SummaryRow(stringResource(R.string.sales_subtotal).uppercase(), CurrencyUtils.format(uiState.subtotal))
-                        if (uiState.taxConfig?.isTaxEnabled == true || uiState.totalTax > BigDecimal.ZERO) {
-                            val taxName = uiState.taxConfig?.taxName ?: stringResource(R.string.sales_tax)
-                            val taxRate = uiState.taxConfig?.defaultTaxRate?.stripTrailingZeros()?.toPlainString() ?: "0"
-                            val taxLabel = "${taxName.uppercase()} (${taxRate}%)"
-                            SummaryRow(taxLabel, CurrencyUtils.format(uiState.totalTax), valueColor = Color(0xFF10B981))
-                        }
-                        if (uiState.totalDiscount > BigDecimal.ZERO) {
-                            SummaryRow(stringResource(R.string.sales_discount).uppercase(), "-${CurrencyUtils.format(uiState.totalDiscount)}", valueColor = Color(0xFFEF4444))
-                        }
-                        if (uiState.totalServiceCharge > BigDecimal.ZERO) {
-                            val scRate = uiState.taxConfig?.serviceChargeRate?.stripTrailingZeros()?.toPlainString() ?: "0"
-                            val scLabel = "SERVICE CHARGE (${scRate}%)"
-                            SummaryRow(scLabel, CurrencyUtils.format(uiState.totalServiceCharge))
-                        }
+
                         if (uiState.roundingAdjustment != BigDecimal.ZERO) {
-                            SummaryRow(stringResource(R.string.sales_rounding_bnm), CurrencyUtils.format(uiState.roundingAdjustment), valueColor = Color(0xFFF59E0B))
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text("BNM ROUNDING", style = BodySmall, color = HighDensityOnSurface.copy(alpha = 0.6f))
+                                    Surface(color = PosCyan, shape = RoundedCornerShape(99.dp)) {
+                                        Text("BNM", style = LabelCaps, color = Color.White, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Text(CurrencyUtils.format(uiState.roundingAdjustment), style = BodyBase, color = HighDensityOnSurface)
+                            }
                         }
                     }
-                    
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), color = Color(0xFFE2E8F0))
-                    
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = SurfaceOutline)
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Bottom
                     ) {
-                        Text(stringResource(R.string.sales_total_payable).uppercase(), color = Color(0xFF0F172A), fontWeight = FontWeight.Black, fontSize = 14.sp)
-                        Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                CurrencyUtils.format(uiState.totalAmountCash),
-                                color = Color(0xFF3B82F6),
-                                fontWeight = FontWeight.Black,
-                                fontSize = 32.sp,
-                                letterSpacing = (-1).sp
-                            )
-                            if (uiState.roundingAdjustment != BigDecimal.ZERO) {
-                                Text(
-                                    stringResource(R.string.sales_excl_rounding, CurrencyUtils.format(uiState.totalAmount)),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Color.Gray
-                                )
-                            }
+                        Text("TOTAL", style = TitleMedium, fontWeight = FontWeight.Black)
+                        Text(
+                            CurrencyUtils.format(uiState.totalAmountCash),
+                            style = PriceLarge,
+                            color = HighDensityPrimary
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Action Buttons
+                    Button(
+                        onClick = { onCompleteSale("OPEN_DIALOG") },
+                        modifier = Modifier.fillMaxWidth().height(64.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = HighDensityPrimary),
+                        enabled = uiState.cartItems.isNotEmpty()
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Payments, contentDescription = null)
+                            Text("PAY ${CurrencyUtils.format(uiState.totalAmountCash)}", style = TitleMedium, fontWeight = FontWeight.Bold)
                         }
                     }
-                    
-                    Spacer(Modifier.height(24.dp))
-                    
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        if (uiState.activeMode.hasTables) {
-                            val allSaved = uiState.cartItems.isNotEmpty() && uiState.cartItems.all { it.isSentToKitchen }
-                            Button(
-                                onClick = onSendToKitchen,
-                                modifier = Modifier.weight(0.4f).height(64.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (allSaved) Color(0xFF10B981) else Color(0xFF475569)
-                                ),
-                                enabled = uiState.cartItems.isNotEmpty()
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(
-                                        if (allSaved) Icons.Default.CheckCircle else Icons.Default.Save,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        if (allSaved) stringResource(R.string.sales_sent) else stringResource(R.string.sales_send),
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Black
-                                    )
-                                }
-                            }
-                        }
-                        
-                        Button(
-                            onClick = { onCompleteSale("OPEN_DIALOG") },
-                            modifier = Modifier.weight(1f).height(64.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF3B82F6)),
-                            enabled = uiState.cartItems.isNotEmpty()
+
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { /* Hold logic */ },
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            border = BorderStroke(1.dp, SurfaceOutline)
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Icon(Icons.Default.Payments, contentDescription = null, modifier = Modifier.size(24.dp))
-                                Text(stringResource(R.string.sales_pay).uppercase(), fontWeight = FontWeight.Black, fontSize = 18.sp)
-                            }
+                            Text("HOLD", style = LabelCaps, color = HighDensityOnSurface)
+                        }
+                        OutlinedButton(
+                            onClick = onClearCart,
+                            modifier = Modifier.weight(1f).height(48.dp),
+                            shape = RoundedCornerShape(4.dp),
+                            border = BorderStroke(1.dp, HighDensityError.copy(alpha = 0.2f))
+                        ) {
+                            Text("VOID", style = LabelCaps, color = HighDensityError)
                         }
                     }
                 }
@@ -283,133 +205,89 @@ fun CartSidebar(
 @Composable
 private fun CartItemTile(
     item: CartItem,
-    activeColor: Color,
     onUpdateQty: (BigDecimal) -> Unit,
-    onShowModifiers: () -> Unit,
-    onRemove: () -> Unit
+    onShowModifiers: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(
-                elevation = 4.dp,
-                shape = RoundedCornerShape(24.dp),
-                ambientColor = Color(0xFF64748B).copy(alpha = 0.1f),
-                spotColor = Color(0xFF64748B).copy(alpha = 0.1f)
-            )
-            .clip(RoundedCornerShape(24.dp))
             .clickable { onShowModifiers() },
-        color = Color(0xFFF8FAFC)
+        color = SurfaceLevel1,
+        border = BorderStroke(1.dp, SurfaceOutline),
+        shape = RoundedCornerShape(4.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        item.product.name.uppercase(),
-                        fontWeight = FontWeight.Black,
-                        fontSize = 13.sp,
-                        lineHeight = 16.sp,
-                        color = Color(0xFF0F172A)
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(top = 2.dp)
-                    ) {
-                        Text(
-                            CurrencyUtils.format(item.unitPrice),
-                            color = Color(0xFF94A3B8),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 10.sp
-                        )
-                        if (item.assignedStaffName != null) {
-                            Text(
-                                "• ${item.assignedStaffName}",
-                                color = activeColor,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 9.sp
-                            )
-                        }
-                    }
-                    if (item.selectedModifiers.isNotEmpty()) {
-                        Text(
-                            item.selectedModifiers.joinToString(", ") { it.name }.uppercase(),
-                            color = activeColor,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 9.sp,
-                            modifier = Modifier.padding(top = 4.dp),
-                            letterSpacing = 0.5.sp
-                        )
-                    }
-                }
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Category Strip
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .height(40.dp)
+                    .background(HighDensitySecondary, RoundedCornerShape(99.dp))
+            )
+            
+            Spacer(Modifier.width(8.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    CurrencyUtils.format(item.totalPrice),
-                    fontWeight = FontWeight.Black,
-                    fontSize = 16.sp,
-                    color = Color(0xFF0F172A)
+                    item.product.name.uppercase(),
+                    style = BodyBase,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
+                Text(
+                    CurrencyUtils.format(item.unitPrice),
+                    style = LabelCaps,
+                    color = HighDensityOutline
                 )
             }
-            
-            Spacer(Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(
-                    onClick = onRemove,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color(0xFFEF4444).copy(alpha = 0.5f)
-                    )
-                }
 
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // Stepper
                 Row(
                     modifier = Modifier
-                        .background(Color.White, RoundedCornerShape(12.dp))
-                        .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
-                        .padding(2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        .height(32.dp)
+                        .border(1.dp, SurfaceOutline, RoundedCornerShape(4.dp))
+                        .background(SurfaceLevel1),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = { onUpdateQty(item.quantity.subtract(BigDecimal.ONE)) },
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(Color(0xFFF8FAFC), RoundedCornerShape(8.dp))
+                        onClick = { if (item.quantity > BigDecimal.ONE) onUpdateQty(item.quantity.subtract(BigDecimal.ONE)) },
+                        modifier = Modifier.size(32.dp)
                     ) {
-                        Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color(0xFF94A3B8))
+                        Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                     Text(
                         item.quantity.stripTrailingZeros().toPlainString(),
-                        fontWeight = FontWeight.Black,
-                        fontSize = 14.sp,
-                        modifier = Modifier.widthIn(min = 20.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        style = BodyBase,
+                        modifier = Modifier.padding(horizontal = 8.dp)
                     )
                     IconButton(
                         onClick = { onUpdateQty(item.quantity.add(BigDecimal.ONE)) },
-                        modifier = Modifier
-                            .size(28.dp)
-                            .background(activeColor, RoundedCornerShape(8.dp))
+                        modifier = Modifier.size(32.dp).border(BorderStroke(1.dp, SurfaceOutline), RoundedCornerShape(0.dp))
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                 }
+                
+                Text(
+                    CurrencyUtils.format(item.totalPrice),
+                    style = TitleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.width(80.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SummaryRow(label: String, value: String, valueColor: Color = Color(0xFF0F172A)) {
+private fun SummaryRow(label: String, value: String) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(label, color = Color(0xFF64748B), fontWeight = FontWeight.Bold, fontSize = 12.sp)
-        Text(value, color = valueColor, fontWeight = FontWeight.Black, fontSize = 13.sp)
+        Text(label, style = BodySmall, color = HighDensityOnSurface.copy(alpha = 0.6f))
+        Text(value, style = BodyBase, color = HighDensityOnSurface)
     }
 }

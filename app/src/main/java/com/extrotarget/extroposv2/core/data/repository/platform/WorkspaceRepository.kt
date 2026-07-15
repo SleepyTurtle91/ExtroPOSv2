@@ -5,6 +5,7 @@ import com.extrotarget.extroposv2.core.data.model.platform.WorkspaceEntity
 import com.extrotarget.extroposv2.core.data.model.settings.OperationMode
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -34,11 +35,4 @@ class WorkspaceRepository @Inject constructor(
     }
 }
 
-// Helper extension if needed
-suspend fun <T> Flow<T>.firstOrNull(): T? {
-    return try {
-        kotlinx.coroutines.flow.first()
-    } catch (e: Exception) {
-        null
-    }
-}
+

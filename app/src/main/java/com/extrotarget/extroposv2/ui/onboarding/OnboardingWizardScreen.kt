@@ -23,13 +23,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Devices
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
+import com.extrotarget.extroposv2.core.data.repository.platform.WorkspaceRepository
+import com.extrotarget.extroposv2.core.data.seeder.DataSeeder
+import com.extrotarget.extroposv2.ui.sales.BusinessMode
+import com.extrotarget.extroposv2.ui.theme.StitchColor
+import com.extrotarget.extroposv2.ui.theme.labelCaps
+import com.extrotarget.extroposv2.ui.components.stitch.StitchOnboardingCard
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchButton
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchOutlinedButton
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchTextField
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchButtonSize
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,12 +47,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
-import com.extrotarget.extroposv2.core.data.seeder.DataSeeder
-import com.extrotarget.extroposv2.ui.sales.BusinessMode
 
 // --- UI State ---
 
@@ -63,7 +66,10 @@ data class OnboardingUIState(
     val activationKey: String = "",
     val isActivating: Boolean = false,
     val activationError: String? = null,
-    val isTrialStarted: Boolean = false
+    val isTrialStarted: Boolean = false,
+    // Step 4: Generation
+    val generationProgress: Float = 0f,
+    val generationStatus: String = ""
 ) {
     val isStep1Valid: Boolean
         get() = storeName.isNotBlank() && regNo.isNotBlank() && contactNo.isNotBlank()
@@ -80,6 +86,7 @@ data class OnboardingUIState(
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
+    private val workspaceRepository: WorkspaceRepository,
     private val dataSeeder: DataSeeder
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(OnboardingUIState())
@@ -102,15 +109,38 @@ class OnboardingViewModel @Inject constructor(
     fun updateActivationKey(value: String) = _uiState.update { it.copy(activationKey = value) }
 
     fun nextStep() {
-        if (_uiState.value.currentStep < 2) {
+        if (_uiState.value.currentStep < 3) {
             _uiState.update { it.copy(currentStep = it.currentStep + 1) }
         }
     }
 
     fun previousStep() {
-        if (_uiState.value.currentStep > 0) {
+        if (_uiState.value.currentStep > 0 && _uiState.value.currentStep < 3) {
             _uiState.update { it.copy(currentStep = it.currentStep - 1) }
         }
+    }
+
+    private suspend fun runWorkspaceGeneration(onSuccess: () -> Unit) {
+        val state = _uiState.value
+        _uiState.update { it.copy(currentStep = 3) }
+
+        val tasks = listOf(
+            "Configuring ${state.businessMode.name} Personality..." to 0.2f,
+            "Setting up permissions & policies..." to 0.4f,
+            "Building task-oriented dashboard..." to 0.6f,
+            "Optimizing for tablet operation..." to 0.8f,
+            "Securing workspace DNA..." to 1.0f
+        )
+
+        for ((status, progress) in tasks) {
+            _uiState.update { it.copy(generationStatus = status, generationProgress = progress) }
+            delay(800)
+        }
+
+        workspaceRepository.initializeWorkspace(state.storeName, state.businessMode)
+        settingsRepository.updateBusinessMode(state.businessMode)
+        settingsRepository.setOnboardingCompleted(true)
+        onSuccess()
     }
 
     fun activateLicense(onSuccess: () -> Unit) {
@@ -126,9 +156,7 @@ class OnboardingViewModel @Inject constructor(
                     adminUsername = state.adminUsername,
                     adminPin = state.adminPin
                 )
-                settingsRepository.updateBusinessMode(state.businessMode)
-                settingsRepository.setOnboardingCompleted(true)
-                onSuccess()
+                runWorkspaceGeneration(onSuccess)
             } else {
                 _uiState.update { it.copy(isActivating = false, activationError = "ERROR_ACTIVATION_FAILED") }
             }
@@ -145,10 +173,7 @@ class OnboardingViewModel @Inject constructor(
                 adminUsername = state.adminUsername,
                 adminPin = state.adminPin
             )
-            settingsRepository.updateBusinessMode(state.businessMode)
-            settingsRepository.setOnboardingCompleted(true)
-            delay(500)
-            onSuccess()
+            runWorkspaceGeneration(onSuccess)
         }
     }
 }
@@ -162,86 +187,89 @@ fun OnboardingWizardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF0F172A)), // Slate 900
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth(0.65f)
-                .wrapContentHeight()
-                .padding(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E293B)), // Slate 800
-            shape = RoundedCornerShape(24.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(40.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
+    Scaffold(
+        containerColor = StitchColor.Background
+    ) { innerPadding ->
+        Row(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            // Sidebar simulation
+            Surface(
+                modifier = Modifier.width(80.dp).fillMaxHeight(),
+                color = StitchColor.InverseSurface
             ) {
-                // Header & Progress
-                OnboardingHeader(currentStep = uiState.currentStep)
-                
-                Spacer(modifier = Modifier.height(48.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(vertical = 24.dp)) {
+                    Surface(modifier = Modifier.size(40.dp), shape = RoundedCornerShape(8.dp), color = StitchColor.Primary) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Flag, contentDescription = null, tint = Color.White)
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text("SETUP", style = MaterialTheme.typography.labelCaps.copy(fontSize = 8.sp, color = Color.White))
+                }
+            }
 
-                // Step Content
-                AnimatedContent(
-                    targetState = uiState.currentStep,
-                    transitionSpec = {
-                        if (targetState > initialState) {
-                            slideInHorizontally { it } + fadeIn() togetherWith slideOutHorizontally { -it } + fadeOut()
-                        } else {
-                            slideInHorizontally { -it } + fadeIn() togetherWith slideOutHorizontally { it } + fadeOut()
-                        }.using(SizeTransform(clip = false))
-                    },
-                    label = "StepTransition"
-                ) { step ->
-                    when (step) {
-                        0 -> StoreDetailsStep(uiState, viewModel)
-                        1 -> AdminAccountStep(uiState, viewModel)
-                        2 -> ActivationStep(uiState, viewModel, onSetupComplete)
+            // Main Content Area
+            Column(modifier = Modifier.weight(1f).fillMaxHeight().background(StitchColor.SurfaceContainerLow)) {
+                // Scrollable Content
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 48.dp, vertical = 32.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    if (uiState.currentStep < 3) {
+                        OnboardingHeader(currentStep = uiState.currentStep)
+                        Spacer(Modifier.height(48.dp))
+                    }
+
+                    AnimatedContent(
+                        targetState = uiState.currentStep,
+                        transitionSpec = {
+                            fadeIn() togetherWith fadeOut()
+                        },
+                        label = "StepTransition"
+                    ) { step ->
+                        when (step) {
+                            0 -> StoreDetailsStep(uiState, viewModel)
+                            1 -> AdminAccountStep(uiState, viewModel)
+                            2 -> ActivationStep(uiState, viewModel, onSetupComplete)
+                            3 -> GenerationStep(uiState)
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Navigation Buttons
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    if (uiState.currentStep > 0) {
-                        OutlinedButton(
-                            onClick = { viewModel.previousStep() },
-                            modifier = Modifier.height(56.dp).weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.2f)),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                // Footer Actions
+                if (uiState.currentStep < 3) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().height(80.dp),
+                        color = StitchColor.Surface,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 48.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(stringResource(R.string.btn_back), fontSize = 18.sp)
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                    }
+                            StitchOutlinedButton(
+                                text = if (uiState.currentStep == 0) "Cancel Setup" else "Back",
+                                onClick = { if (uiState.currentStep > 0) viewModel.previousStep() },
+                                icon = Icons.AutoMirrored.Filled.ArrowBack
+                            )
 
-                    if (uiState.currentStep < 2) {
-                        Button(
-                            onClick = { viewModel.nextStep() },
-                            modifier = Modifier.height(56.dp).weight(1f),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0EA5E9)),
-                            enabled = when (uiState.currentStep) {
-                        0 -> uiState.isStep1Valid
-                        1 -> uiState.isStep2Valid
-                        else -> true
-                    }
-                        ) {
-                            Text(stringResource(R.string.btn_next), fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null)
+                            if (uiState.currentStep < 2) {
+                                StitchButton(
+                                    text = "Continue",
+                                    onClick = { viewModel.nextStep() },
+                                    size = StitchButtonSize.LARGE,
+                                    icon = Icons.AutoMirrored.Filled.ArrowForward,
+                                    enabled = when (uiState.currentStep) {
+                                        0 -> uiState.isStep1Valid
+                                        1 -> uiState.isStep2Valid
+                                        else -> true
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -252,329 +280,225 @@ fun OnboardingWizardScreen(
 
 @Composable
 fun OnboardingHeader(currentStep: Int) {
-    val steps = listOf(
-        stringResource(R.string.onboarding_step_store),
-        stringResource(R.string.onboarding_step_admin),
-        stringResource(R.string.onboarding_step_license)
-    )
+    val steps = listOf("Industry", "Profile", "Hardware", "Review")
     
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
-            text = stringResource(R.string.onboarding_welcome),
-            style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
-            fontWeight = FontWeight.ExtraBold
+            text = "Step ${currentStep + 1} of 4",
+            style = MaterialTheme.typography.labelCaps.copy(color = StitchColor.Primary, letterSpacing = 2.sp)
         )
         Text(
-            text = stringResource(R.string.onboarding_subtitle),
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White.copy(alpha = 0.6f)
+            text = when(currentStep) {
+                0 -> "Select Your Industry"
+                1 -> "Create Admin Account"
+                2 -> "Activate License"
+                else -> "Preparing Workspace"
+            },
+            style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Black)
         )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            steps.forEachIndexed { index, title ->
-                StepIndicator(
-                    index = index + 1,
-                    title = title,
-                    isSelected = currentStep >= index,
-                    isLast = index == steps.size - 1
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun StepIndicator(index: Int, title: String, isSelected: Boolean, isLast: Boolean) {
-    val activeColor = Color(0xFF0EA5E9)
-    val inactiveColor = Color.White.copy(alpha = 0.1f)
-    val color = if (isSelected) activeColor else inactiveColor
-
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(color),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isSelected && index <= 0 /* This would be for completed state */) {
-                   Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(24.dp))
-                } else {
-                    Text(
-                        text = index.toString(),
-                        color = if (isSelected) Color.White else Color.White.copy(alpha = 0.4f),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (isSelected) Color.White else Color.White.copy(alpha = 0.4f)
-            )
-        }
-        
-        if (!isLast) {
-            Box(
-                modifier = Modifier
-                    .width(60.dp)
-                    .height(2.dp)
-                    .padding(horizontal = 8.dp)
-                    .background(if (isSelected) activeColor.copy(alpha = 0.5f) else inactiveColor)
-            )
-        }
+        Text(
+            text = "Configure ExtroPOS v2 with industry-specific workflows and presets.",
+            style = MaterialTheme.typography.bodyLarge.copy(color = StitchColor.OnSurfaceVariant),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }
 
 @Composable
 fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp)) {
         Text(
-            stringResource(R.string.onboarding_select_business),
-            color = Color.White.copy(alpha = 0.7f),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold
+            "SELECT INDUSTRY",
+            style = MaterialTheme.typography.labelCaps.copy(fontWeight = FontWeight.Black, letterSpacing = 1.sp),
+            modifier = Modifier.padding(bottom = 16.dp)
         )
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            BusinessMode.entries.forEach { mode ->
-                val isSelected = uiState.businessMode == mode
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(110.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .clickable { viewModel.updateBusinessMode(mode) }
-                        .border(
-                            2.dp,
-                            if (isSelected) mode.color else Color.White.copy(alpha = 0.1f),
-                            RoundedCornerShape(20.dp)
-                        ),
-                    color = if (isSelected) mode.color.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f)
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                        modifier = Modifier.padding(8.dp)
-                    ) {
-                        Icon(
-                            mode.icon, 
-                            contentDescription = null, 
-                            tint = if (isSelected) mode.color else Color.White.copy(alpha = 0.5f),
-                            modifier = Modifier.size(32.dp)
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            text = when(mode) {
-                                BusinessMode.RETAIL -> stringResource(R.string.nav_inventory)
-                                BusinessMode.FNB -> "F&B"
-                                BusinessMode.CARWASH -> "CARWASH"
-                                BusinessMode.LAUNDRY -> "LAUNDRY"
-                                BusinessMode.HOTEL -> "HOTEL"
-                                BusinessMode.HOMESTAY -> "HOMESTAY"
-                                BusinessMode.KIOSK -> "KIOSK"
-                            },
-                            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Black,
-                            textAlign = TextAlign.Center,
-                            lineHeight = 14.sp
-                        )
-                    }
-                }
-            }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            StitchOnboardingCard(
+                title = "Food & Beverage",
+                description = "Optimized for Restaurants, Cafes, and Quick Service.",
+                icon = Icons.Default.Restaurant,
+                isSelected = uiState.businessMode == BusinessMode.FNB,
+                onClick = { viewModel.updateBusinessMode(BusinessMode.FNB) },
+                tags = listOf("SST Ready", "KDS"),
+                modifier = Modifier.weight(1f)
+            )
+            StitchOnboardingCard(
+                title = "Retail & Grocery",
+                description = "Built for high-volume scanning and inventory.",
+                icon = Icons.Default.ShoppingCart,
+                isSelected = uiState.businessMode == BusinessMode.RETAIL,
+                onClick = { viewModel.updateBusinessMode(BusinessMode.RETAIL) },
+                tags = listOf("BNM Rounding"),
+                modifier = Modifier.weight(1f)
+            )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(32.dp))
 
-        WizardTextField(
-            label = stringResource(R.string.onboarding_store_name),
-            value = uiState.storeName,
-            onValueChange = viewModel::updateStoreName,
-            icon = Icons.Default.Store
-        )
-        WizardTextField(
-            label = stringResource(R.string.onboarding_reg_no),
-            value = uiState.regNo,
-            onValueChange = viewModel::updateRegNo,
-            icon = Icons.Default.Business
-        )
-        WizardTextField(
-            label = stringResource(R.string.onboarding_contact_no),
-            value = uiState.contactNo,
-            onValueChange = viewModel::updateContactNo,
-            icon = Icons.Default.Phone,
-            keyboardType = KeyboardType.Phone
-        )
-        WizardTextField(
-            label = stringResource(R.string.onboarding_address),
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            StitchTextField(
+                value = uiState.storeName,
+                onValueChange = viewModel::updateStoreName,
+                label = "Store Name",
+                placeholder = "e.g. My Cafe",
+                modifier = Modifier.weight(1f)
+            )
+            StitchTextField(
+                value = uiState.regNo,
+                onValueChange = viewModel::updateRegNo,
+                label = "Registration No.",
+                placeholder = "SSM / SST ID",
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        StitchTextField(
             value = uiState.address,
             onValueChange = viewModel::updateAddress,
-            icon = Icons.Default.LocationOn,
+            label = "Full Address",
+            placeholder = "Business location",
             singleLine = false,
-            minLines = 3
+            minLines = 3,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
 
 @Composable
 fun AdminAccountStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel) {
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(
-            stringResource(R.string.onboarding_admin_desc),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.White.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        WizardTextField(
-            label = stringResource(R.string.onboarding_admin_name),
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 100.dp)) {
+        StitchTextField(
             value = uiState.adminName,
             onValueChange = viewModel::updateAdminName,
-            icon = Icons.Default.Person
+            label = "Admin Full Name",
+            leadingIcon = Icons.Default.Person,
+            modifier = Modifier.fillMaxWidth()
         )
-        WizardTextField(
-            label = stringResource(R.string.onboarding_username),
+        Spacer(Modifier.height(16.dp))
+        StitchTextField(
             value = uiState.adminUsername,
             onValueChange = viewModel::updateAdminUsername,
-            icon = Icons.Default.Badge
+            label = "Username / Phone",
+            leadingIcon = Icons.Default.Badge,
+            modifier = Modifier.fillMaxWidth()
         )
-        WizardTextField(
-            label = stringResource(R.string.onboarding_pin_label),
+        Spacer(Modifier.height(16.dp))
+        StitchTextField(
             value = uiState.adminPin,
             onValueChange = viewModel::updateAdminPin,
-            icon = Icons.Default.Lock,
-            keyboardType = KeyboardType.NumberPassword,
-            visualTransformation = PasswordVisualTransformation()
+            label = "Master PIN (4 Digits)",
+            leadingIcon = Icons.Default.Lock,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
 
 @Composable
-fun ActivationStep(
-    uiState: OnboardingUIState,
-    viewModel: OnboardingViewModel,
-    onSetupComplete: () -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            stringResource(R.string.onboarding_final_step),
-            style = MaterialTheme.typography.titleLarge,
-            color = Color.White,
-            fontWeight = FontWeight.Bold
+fun ActivationStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel, onSetupComplete: () -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 100.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        StitchTextField(
+            value = uiState.activationKey,
+            onValueChange = viewModel::updateActivationKey,
+            label = "License Key",
+            placeholder = "XXXX-XXXX-XXXX",
+            modifier = Modifier.fillMaxWidth()
         )
+        
+        Spacer(Modifier.height(32.dp))
 
-        Column(modifier = Modifier.fillMaxWidth()) {
-            WizardTextField(
-                label = stringResource(R.string.onboarding_activation_key),
-                value = uiState.activationKey,
-                onValueChange = viewModel::updateActivationKey,
-                icon = Icons.Default.VpnKey,
-                placeholder = stringResource(R.string.onboarding_placeholder_key)
-            )
-            if (uiState.activationError != null) {
-                Text(
-                    text = if (uiState.activationError == "ERROR_ACTIVATION_FAILED") 
-                        stringResource(R.string.onboarding_activation_failed)
-                    else uiState.activationError,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 4.dp, start = 16.dp)
-                )
-            }
-        }
-
-        Button(
+        StitchButton(
+            text = "VERIFY & ACTIVATE",
             onClick = { viewModel.activateLicense(onSetupComplete) },
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0EA5E9)),
+            size = StitchButtonSize.LARGE,
+            modifier = Modifier.fillMaxWidth(),
+            containerColor = StitchColor.Primary,
             enabled = uiState.activationKey.isNotBlank() && !uiState.isActivating
-        ) {
-            if (uiState.isActivating) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-            } else {
-                Text(stringResource(R.string.onboarding_verify_activate), fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            }
-        }
+        )
 
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 8.dp)) {
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.1f))
-            Text(stringResource(R.string.onboarding_or), modifier = Modifier.padding(horizontal = 16.dp), color = Color.White.copy(alpha = 0.3f), style = MaterialTheme.typography.labelMedium)
-            HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(alpha = 0.1f))
-        }
+        Spacer(Modifier.height(16.dp))
 
-        OutlinedButton(
+        StitchOutlinedButton(
+            text = "START 14-DAY TRIAL",
             onClick = { viewModel.startTrial(onSetupComplete) },
-            modifier = Modifier.fillMaxWidth().height(64.dp),
-            shape = RoundedCornerShape(12.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF0EA5E9).copy(alpha = 0.5f)),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF38BDF8)),
+            modifier = Modifier.fillMaxWidth(),
             enabled = !uiState.isActivating
-        ) {
-            Text(stringResource(R.string.onboarding_start_trial), fontSize = 18.sp)
-        }
+        )
     }
 }
 
 @Composable
-fun WizardTextField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    icon: ImageVector,
-    placeholder: String = "",
-    keyboardType: KeyboardType = KeyboardType.Text,
-    visualTransformation: androidx.compose.ui.text.input.VisualTransformation = androidx.compose.ui.text.input.VisualTransformation.None,
-    singleLine: Boolean = true,
-    minLines: Int = 1
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = Modifier.fillMaxWidth(),
-        label = { Text(label) },
-        placeholder = { if (placeholder.isNotEmpty()) Text(placeholder) },
-        leadingIcon = { Icon(icon, contentDescription = null, tint = Color(0xFF38BDF8)) },
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        visualTransformation = visualTransformation,
-        singleLine = singleLine,
-        minLines = minLines,
-        shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            focusedBorderColor = Color(0xFF0EA5E9),
-            unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
-            focusedLabelColor = Color(0xFF38BDF8),
-            unfocusedLabelColor = Color.White.copy(alpha = 0.5f),
-            cursorColor = Color(0xFF0EA5E9)
-        )
+fun GenerationStep(uiState: OnboardingUIState) {
+    val checklistItems = listOf(
+        "Configuring personality",
+        "Setting up permissions",
+        "Building dashboard",
+        "Optimizing for tablet",
+        "Securing workspace DNA"
     )
-}
+    
+    val currentProgress = uiState.generationProgress
 
-@Preview(device = Devices.TABLET, showBackground = true, backgroundColor = 0xFF0F172A)
-@Composable
-fun OnboardingPreview() {
-    // Note: This preview will not work correctly in a real build environment
-    // as it lacks a provided SettingsRepository, but it helps with UI design.
-    MaterialTheme {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Text("Onboarding Wizard Preview (Tablet)", color = Color.White)
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                progress = { currentProgress },
+                modifier = Modifier.size(160.dp),
+                color = StitchColor.Primary,
+                strokeWidth = 12.dp,
+                trackColor = StitchColor.SurfaceContainerLow
+            )
+            Text(
+                text = "${(currentProgress * 100).toInt()}%",
+                color = StitchColor.OnSurface,
+                style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Black)
+            )
+        }
+        
+        Spacer(Modifier.height(48.dp))
+        
+        Text(
+            text = "PREPARING YOUR WORKSPACE",
+            style = MaterialTheme.typography.labelCaps.copy(color = StitchColor.OnSurfaceVariant, letterSpacing = 2.sp)
+        )
+        
+        Spacer(Modifier.height(24.dp))
+        
+        Column(
+            modifier = Modifier.width(300.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            checklistItems.forEachIndexed { index, item ->
+                val itemProgress = (index + 1).toFloat() / checklistItems.size
+                val isDone = currentProgress >= itemProgress
+                val isCurrent = currentProgress >= (index.toFloat() / checklistItems.size) && !isDone
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        if (isDone) Icons.Default.CheckCircle else Icons.Default.Circle,
+                        contentDescription = null,
+                        tint = if (isDone) StitchColor.Tertiary else if (isCurrent) StitchColor.Primary else StitchColor.OutlineVariant,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = item.uppercase(),
+                        color = if (isDone || isCurrent) StitchColor.OnSurface else StitchColor.Outline,
+                        style = MaterialTheme.typography.labelCaps.copy(
+                            fontWeight = if (isCurrent) FontWeight.Black else FontWeight.Bold
+                        )
+                    )
+                }
+            }
         }
     }
 }

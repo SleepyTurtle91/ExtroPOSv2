@@ -1,362 +1,205 @@
 package com.extrotarget.extroposv2.ui.dobi
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.LocalLaundryService
-import androidx.compose.material.icons.filled.Whatsapp
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.extrotarget.extroposv2.R
+import androidx.compose.ui.unit.sp
 import com.extrotarget.extroposv2.core.data.model.dobi.LaundryOrder
 import com.extrotarget.extroposv2.core.data.model.dobi.LaundryStatus
-import com.extrotarget.extroposv2.core.util.CurrencyUtils
+import com.extrotarget.extroposv2.ui.components.stitch.StitchKanbanColumn
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchButton
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchTextField
 import com.extrotarget.extroposv2.ui.dobi.viewmodel.LaundryViewModel
-import java.math.BigDecimal
-import java.net.URLEncoder
-import java.util.UUID
+import com.extrotarget.extroposv2.ui.theme.StitchColor
+import com.extrotarget.extroposv2.ui.theme.labelCaps
 
 @Composable
 fun LaundryOrderScreen(
     viewModel: LaundryViewModel
 ) {
     val orders by viewModel.orders.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
-    var showAddDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.laundry_new_order))
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Text(
-                text = stringResource(R.string.laundry_orders),
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(16.dp)
-            )
-
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(orders) { order ->
-                    LaundryOrderCard(
-                        order = order,
-                        onStatusChange = { newStatus -> viewModel.updateStatus(order, newStatus) }
-                    )
-                }
-            }
-        }
-    }
-
-    if (showAddDialog) {
-        AddLaundryOrderDialog(
-            availableProducts = uiState.availableProducts,
-            liveWeight = uiState.liveWeight,
-            onTare = viewModel::tareScale,
-            onDismiss = { showAddDialog = false },
-            onConfirm = { name, phone, weight, note, items ->
-                viewModel.createOrder(name, phone, weight, note, items)
-                showAddDialog = false
-            }
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Kanban Columns
+        StitchKanbanColumn(
+            title = "RECEIVED",
+            items = orders.filter { it.status == LaundryStatus.RECEIVED },
+            statusColor = StitchColor.Outline,
+            itemContent = { order -> LaundryOrderStitchCard(order) },
+            modifier = Modifier.weight(1f)
         )
+
+        StitchKanbanColumn(
+            title = "PROCESSING",
+            items = orders.filter { it.status == LaundryStatus.PROCESSING },
+            statusColor = StitchColor.Secondary,
+            itemContent = { order -> LaundryOrderStitchCard(order) },
+            modifier = Modifier.weight(1f)
+        )
+
+        StitchKanbanColumn(
+            title = "READY / SIAP",
+            items = orders.filter { it.status == LaundryStatus.READY },
+            statusColor = StitchColor.Primary,
+            itemContent = { order -> LaundryOrderStitchCard(order) },
+            modifier = Modifier.weight(1f)
+        )
+
+        // Right Sidebar: Quick Check-in
+        Surface(
+            modifier = Modifier
+                .width(420.dp)
+                .fillMaxHeight(),
+            color = StitchColor.SurfaceContainerLowest,
+            shape = RoundedCornerShape(12.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant)
+        ) {
+            Column(modifier = Modifier.padding(24.dp)) {
+                Text(
+                    "QUICK CHECK-IN",
+                    style = MaterialTheme.typography.labelCaps.copy(
+                        color = StitchColor.OnSurface,
+                        fontSize = 14.sp
+                    )
+                )
+                
+                Spacer(Modifier.height(24.dp))
+
+                StitchTextField(
+                    value = "",
+                    onValueChange = {},
+                    label = "CUSTOMER (OPTIONAL)",
+                    placeholder = "Phone or Name...",
+                    leadingIcon = Icons.Default.PersonAdd
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                // Weight Input Simulation
+                Surface(
+                    color = StitchColor.SurfaceContainerLow,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text("WEIGHT / LOAD", style = MaterialTheme.typography.labelCaps)
+                            Surface(
+                                color = StitchColor.Primary.copy(alpha = 0.1f),
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    "Scale Connected",
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    style = MaterialTheme.typography.labelCaps.copy(fontSize = 10.sp, color = StitchColor.Primary)
+                                )
+                            }
+                        }
+                        
+                        Spacer(Modifier.height(16.dp))
+                        
+                        Text(
+                            "0.0",
+                            modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.displayLarge.copy(
+                                fontWeight = FontWeight.Black,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        )
+                    }
+                }
+
+                Spacer(Modifier.weight(1f))
+
+                StitchButton(
+                    text = "CREATE ORDER",
+                    onClick = { /* TODO */ },
+                    size = com.extrotarget.extroposv2.ui.components.stitch.common.StitchButtonSize.LARGE,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = Icons.Default.ReceiptLong
+                )
+            }
+        }
     }
 }
 
 @Composable
-fun LaundryOrderCard(
-    order: LaundryOrder,
-    onStatusChange: (LaundryStatus) -> Unit
-) {
-    val context = LocalContext.current
-    val statusColor = when (order.status) {
-        LaundryStatus.RECEIVED -> Color.Gray
-        LaundryStatus.PROCESSING -> MaterialTheme.colorScheme.primary
-        LaundryStatus.READY -> Color(0xFF4CAF50) // Green
-        LaundryStatus.COLLECTED -> Color.DarkGray
-    }
-
-    Card(
+private fun LaundryOrderStitchCard(order: LaundryOrder) {
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant),
+        color = StitchColor.Surface
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = order.customerName,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = order.customerPhone,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Surface(
-                    color = statusColor,
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Text(
-                        text = when (order.status) {
-                            LaundryStatus.RECEIVED -> stringResource(R.string.laundry_status_received)
-                            LaundryStatus.PROCESSING -> stringResource(R.string.laundry_status_processing)
-                            LaundryStatus.READY -> stringResource(R.string.laundry_status_ready)
-                            LaundryStatus.COLLECTED -> stringResource(R.string.laundry_status_collected)
-                        },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        color = Color.White,
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            }
-
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-
+        Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = "${stringResource(R.string.inv_stock)}: ${order.weightKg} KG", style = MaterialTheme.typography.bodyLarge)
                 Text(
-                    text = CurrencyUtils.format(order.totalPrice),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    "#${order.id.takeLast(4)}",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
                 )
-            }
-
-            if (order.status != LaundryStatus.COLLECTED) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                Surface(
+                    color = StitchColor.SurfaceContainerHigh,
+                    shape = RoundedCornerShape(4.dp)
                 ) {
-                    if (order.customerPhone.isNotBlank()) {
-                        IconButton(onClick = {
-                            val statusStr = when (order.status) {
-                                LaundryStatus.RECEIVED -> context.getString(R.string.laundry_status_received)
-                                LaundryStatus.PROCESSING -> context.getString(R.string.laundry_status_processing)
-                                LaundryStatus.READY -> context.getString(R.string.laundry_status_ready)
-                                LaundryStatus.COLLECTED -> context.getString(R.string.laundry_status_collected)
-                            }.lowercase()
-                            val message = context.getString(
-                                R.string.laundry_whatsapp_msg,
-                                order.customerName,
-                                order.id.takeLast(4),
-                                statusStr,
-                                CurrencyUtils.format(order.totalPrice)
-                            )
-                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                data = Uri.parse("https://api.whatsapp.com/send?phone=${order.customerPhone}&text=${URLEncoder.encode(message, "UTF-8")}")
-                            }
-                            context.startActivity(intent)
-                        }) {
-                            Icon(Icons.Default.Whatsapp, contentDescription = "WhatsApp Notification", tint = Color(0xFF25D366))
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    if (order.status == LaundryStatus.RECEIVED || order.status == LaundryStatus.PROCESSING) {
-                        Button(onClick = { onStatusChange(LaundryStatus.READY) }) {
-                            Text(stringResource(R.string.laundry_mark_ready))
-                        }
-                    } else if (order.status == LaundryStatus.READY) {
-                        Button(
-                            onClick = { onStatusChange(LaundryStatus.COLLECTED) },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4CAF50))
-                        ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.laundry_collect))
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AddLaundryOrderDialog(
-    availableProducts: List<com.extrotarget.extroposv2.core.data.model.Product>,
-    liveWeight: BigDecimal = BigDecimal.ZERO,
-    onTare: () -> Unit = {},
-    onDismiss: () -> Unit,
-    onConfirm: (String, String, BigDecimal, String?, List<com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem>) -> Unit
-) {
-    var name by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
-    var weight by remember { mutableStateOf("") }
-    var note by remember { mutableStateOf("") }
-    
-    val selectedItems = remember { mutableStateListOf<com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem>() }
-
-    val calculatedTotal = remember(selectedItems.toList()) {
-        selectedItems.fold(BigDecimal.ZERO) { acc, item -> acc.add(item.totalPrice) }
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.laundry_new_order)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Live Scale Reading Section
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    Text(
+                        (order.items.firstOrNull()?.name ?: "SERVICE").uppercase(),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelCaps.copy(fontSize = 9.sp)
                     )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(stringResource(R.string.laundry_live_scale), style = MaterialTheme.typography.labelSmall)
-                            Text(
-                                "${liveWeight.setScale(2, java.math.RoundingMode.HALF_EVEN)} KG",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Black,
-                                color = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        }
-                        Row {
-                            TextButton(onClick = onTare) {
-                                Text(stringResource(R.string.laundry_tare))
-                            }
-                            Button(onClick = { weight = liveWeight.toString() }) {
-                                Text(stringResource(R.string.laundry_capture))
-                            }
-                        }
-                    }
-                }
-
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.laundry_customer_name)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = phone,
-                    onValueChange = { phone = it },
-                    label = { Text(stringResource(R.string.laundry_phone_number)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = weight,
-                    onValueChange = { weight = it },
-                    label = { Text(stringResource(R.string.laundry_weight_kg)) },
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = { Text("KG", modifier = Modifier.padding(end = 8.dp)) }
-                )
-
-                Text(stringResource(R.string.laundry_items), style = MaterialTheme.typography.titleMedium)
-                availableProducts.forEach { product ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                val weightVal = if (product.isWeightBased) weight.toBigDecimalOrNull() ?: BigDecimal.ZERO else BigDecimal.ONE
-                                if (weightVal > BigDecimal.ZERO) {
-                                    selectedItems.add(com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem(
-                                        name = product.name,
-                                        quantity = weightVal,
-                                        unitPrice = product.price,
-                                        isWeightBased = product.isWeightBased
-                                    ))
-                                }
-                            }
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(product.name)
-                        Text(CurrencyUtils.format(product.price) + if (product.isWeightBased) "/KG" else "/pc")
-                    }
-                }
-
-                if (selectedItems.isNotEmpty()) {
-                    Divider()
-                    selectedItems.forEach { item ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text("${item.quantity} x ${item.name}", style = MaterialTheme.typography.bodySmall)
-                            Text(CurrencyUtils.format(item.totalPrice), style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text(stringResource(R.string.laundry_note_optional)) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(stringResource(R.string.laundry_total_price), style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            CurrencyUtils.format(calculatedTotal),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
                 }
             }
-        },
-        confirmButton = {
-            Button(
-                onClick = { 
-                    val w = weight.toBigDecimalOrNull() ?: BigDecimal.ZERO
-                    if (name.isNotBlank() && selectedItems.isNotEmpty()) {
-                        onConfirm(name, phone, w, note, selectedItems.toList())
-                    }
-                }
+            
+            Text(
+                order.customerName,
+                style = MaterialTheme.typography.bodySmall.copy(color = StitchColor.OnSurfaceVariant),
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            
+            Spacer(Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
             ) {
-                Text(stringResource(R.string.laundry_create_order))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.btn_cancel))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Scale, contentDescription = null, modifier = Modifier.size(14.dp), tint = StitchColor.Primary)
+                        Text("${order.weightKg} kg", style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                Text(
+                    "RM ${order.totalPrice}",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold, color = StitchColor.Primary)
+                )
             }
         }
-    )
+    }
 }

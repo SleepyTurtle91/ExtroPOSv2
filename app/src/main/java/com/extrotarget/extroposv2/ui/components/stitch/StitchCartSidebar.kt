@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -114,7 +115,7 @@ fun StitchCartSidebar(
                             Text("SST (6%)", style = MaterialTheme.typography.bodySmall)
                             Surface(
                                 color = StitchColor.Tertiary,
-                                shape = RoundedCornerShape(full = 999.dp)
+                                shape = CircleShape
                             ) {
                                 Text(
                                     "TAX",
@@ -135,7 +136,7 @@ fun StitchCartSidebar(
                             Text("BNM Rounding", style = MaterialTheme.typography.bodySmall)
                             Surface(
                                 color = StitchColor.BNM,
-                                shape = RoundedCornerShape(full = 999.dp)
+                                shape = CircleShape
                             ) {
                                 Text(
                                     "BNM",

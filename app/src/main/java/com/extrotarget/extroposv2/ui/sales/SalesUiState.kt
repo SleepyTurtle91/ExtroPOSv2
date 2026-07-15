@@ -3,7 +3,6 @@ package com.extrotarget.extroposv2.ui.sales
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.loyalty.Member
-import com.extrotarget.extroposv2.core.util.RoundingUtils
 import java.math.BigDecimal
 
 import java.util.UUID

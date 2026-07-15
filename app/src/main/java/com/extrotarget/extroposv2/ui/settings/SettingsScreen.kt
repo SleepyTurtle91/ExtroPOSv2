@@ -83,6 +83,25 @@ fun SettingsScreen(
                         )
                     }
                 )
+
+                // Maintenance Mode Toggle
+                ListItem(
+                    headlineContent = { Text("Maintenance Mode") },
+                    supportingContent = { Text("Admin-only diagnostics and hardware tests.") },
+                    leadingContent = { 
+                        Icon(
+                            Icons.Default.Build, 
+                            contentDescription = null, 
+                            tint = Color(0xFF64748B) // Slate 500
+                        ) 
+                    },
+                    trailingContent = {
+                        Switch(
+                            checked = false, // TODO: Connect to OperationMode
+                            onCheckedChange = { /* TODO: Safety Dialog + Admin PIN */ }
+                        )
+                    }
+                )
             }
 
             item {

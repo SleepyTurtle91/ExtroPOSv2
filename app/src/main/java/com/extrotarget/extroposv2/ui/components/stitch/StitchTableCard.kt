@@ -38,6 +38,7 @@ fun StitchTableCard(
         TableStatus.OCCUPIED -> StitchColor.PrimaryContainer
         TableStatus.RESERVED -> StitchColor.ErrorContainer
         TableStatus.DIRTY -> StitchColor.OutlineVariant
+        else -> StitchColor.OutlineVariant
     }
 
     Surface(

@@ -65,6 +65,8 @@ import com.extrotarget.extroposv2.core.data.model.hotel.Room
 import com.extrotarget.extroposv2.core.data.model.hotel.Booking
 import com.extrotarget.extroposv2.core.data.model.hotel.Guest
 import com.extrotarget.extroposv2.core.data.model.hotel.HotelAddon
+import com.extrotarget.extroposv2.core.data.model.platform.WorkspaceEntity
+import com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao
 
 
 @Database(
@@ -104,8 +106,9 @@ import com.extrotarget.extroposv2.core.data.model.hotel.HotelAddon
         Booking::class,
         Guest::class,
         HotelAddon::class,
+        WorkspaceEntity::class,
     ],
-    version = 26,
+    version = 27,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -135,6 +138,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun modifierDao(): ModifierDao
     abstract fun reportingDao(): ReportingDao
     abstract fun hotelDao(): HotelDao
+    abstract fun workspaceDao(): WorkspaceDao
 
 
 

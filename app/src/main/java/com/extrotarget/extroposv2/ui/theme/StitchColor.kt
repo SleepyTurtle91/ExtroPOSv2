@@ -7,6 +7,7 @@ object StitchColor {
     val Primary = Color(0xFF0058BE) // Vibrant POS Blue
     val PrimaryContainer = Color(0xFF2170E4)
     val OnPrimary = Color(0xFFFFFFFF)
+    val OnPrimaryContainer = Color(0xFFFEFCFF)
     
     val Secondary = Color(0xFF006874) // Muted Cyan / Modifier Context
     val SecondaryContainer = Color(0xFF5CE9FE)
@@ -31,6 +32,7 @@ object StitchColor {
     val SurfaceContainer = Color(0xFFEAEDFF)
     val SurfaceContainerHigh = Color(0xFFE2E7FF)
     val SurfaceContainerHighest = Color(0xFFDAE2FD) // Level 2 - In-Cart / Highlight
+    val SurfaceVariant = Color(0xFFDAE2FD)
     
     val InverseSurface = Color(0xFF283044) // Sidebar Background
     val OnSurface = Color(0xFF131B2E) // Dark Slate Typography
@@ -41,4 +43,10 @@ object StitchColor {
     
     // Functional Accents
     val BNM = Color(0xFFF59E0B) // Amber for Rounding
+    
+    // Fixed Tones
+    val PrimaryFixedDim = Color(0xFFADC6FF)
+    val PrimaryFixed = Color(0xFFD8E2FF)
+    val TertiaryFixedDim = Color(0xFF4EDEA3)
+    val TertiaryFixed = Color(0xFF6FFBBE)
 }

@@ -172,6 +172,3 @@ private fun SidebarItem(
         }
     }
 }
-
-// Fixed color reference for Pro indicator
-private val StitchColor.PrimaryFixedDim get() = Color(0xFFADC6FF)

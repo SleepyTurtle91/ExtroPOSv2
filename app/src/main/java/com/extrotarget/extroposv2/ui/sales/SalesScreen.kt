@@ -1,261 +1,94 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.extrotarget.extroposv2.ui.sales
 
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.ui.res.stringResource
-import com.extrotarget.extroposv2.R
-import com.extrotarget.extroposv2.ui.components.qr.QrCodeView
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.extrotarget.extroposv2.core.util.CurrencyUtils
-import com.extrotarget.extroposv2.ui.components.ProductCard
-import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
-import com.extrotarget.extroposv2.ui.sales.components.*
-import com.extrotarget.extroposv2.ui.fnb.TableFloorPlanScreen
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.extrotarget.extroposv2.core.auth.SessionManager
-import com.extrotarget.extroposv2.ui.loyalty.MemberManagementScreen
+import com.extrotarget.extroposv2.ui.components.stitch.StitchCartSidebar
+import com.extrotarget.extroposv2.ui.components.stitch.StitchProductCard
+import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
+import com.extrotarget.extroposv2.ui.theme.StitchColor
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchButton
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchOutlinedButton
 
 @Composable
 fun SalesScreen(
-    modifier: Modifier = Modifier,
     viewModel: SalesViewModel,
     sessionManager: SessionManager,
-    onNavigateToShift: () -> Unit = {},
+    onNavigateToShift: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var currentTime by remember { mutableStateOf(java.util.Date()) }
 
-    LaunchedEffect(uiState.terminalStatus) {
-        if (uiState.terminalStatus == "SHIFT_CLOSED") {
-            onNavigateToShift()
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            currentTime = java.util.Date()
-            kotlinx.coroutines.delay(1000)
-        }
-    }
-
-    if (uiState.isLocked) {
-        LockScreen(
-            onUnlock = { viewModel.unlock(it) },
-            errorMessage = uiState.adminAuthError
-        )
-        return
-    }
-
-    val isMobile = com.extrotarget.extroposv2.BuildConfig.FLAVOR.contains("mobile", ignoreCase = true)
-    val activeMode = uiState.activeMode
-
-    if (isMobile) {
-        MobileSalesLayout(
-            modifier = modifier,
-            uiState = uiState,
-            currentTime = currentTime,
-            activeMode = activeMode,
-            sessionManager = sessionManager,
-            viewModel = viewModel,
-            onNavigateToShift = onNavigateToShift
-        )
-    } else {
-        Row(modifier = modifier.fillMaxSize().background(Color(0xFFF1F5F9))) {
-            Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
-                // 1. Top Header
-                SaleHeader(
-                    activeMode = activeMode,
-                    uiState = uiState,
-                    currentTime = currentTime,
-                    syncStatus = uiState.syncStatus,
-                    sessionManager = sessionManager,
-                    onOpenShift = { onNavigateToShift() },
-                    onOpenDrawer = { viewModel.openDrawer() },
-                    onSearchQueryChange = { viewModel.updateSearchQuery(it) }
-                )
-
-                // 2. Main Content Area (Product Grid / Tables / etc.)
-                Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                    PosContentGrid(
-                        uiState = uiState,
-                        onProductClick = { viewModel.addToCart(it) },
-                        onSelectCategory = { viewModel.selectCategory(it) },
-                    )
-                }
-            }
-
-            // 3. Right Cart Sidebar (Permanent)
-            CartSidebar(
-                uiState = uiState,
-                onUpdateQuantity = { item, qty -> viewModel.updateQuantity(item, qty) },
-                onShowModifiers = { viewModel.showModifierSelection(it) },
-                onRemoveFromCart = { viewModel.removeFromCart(it) },
-                onClearCart = { viewModel.clearCartWithConfirm() },
-                onSendToKitchen = { viewModel.sendToKitchen() },
-                onCompleteSale = { viewModel.completeSale(it) },
-                onAddCustomer = { viewModel.setShowMemberSelection(show = true) },
-                onRedeemPoints = { viewModel.setRedeemedPoints(it) }
-            )
-        }
-    }
-
-    if (uiState.showPaymentMethodDialog) {
-        PaymentMethodDialog(
-            totalAmount = uiState.totalAmount,
-            onSelectMethod = { viewModel.completeSale(it) },
-            onDismiss = { viewModel.completeSale("CLOSE_DIALOG") },
-        )
-    }
-
-    if (uiState.showCashReceivedDialog) {
-        CashReceivedDialog(
-            totalAmount = uiState.totalAmountCash,
-            onConfirm = { viewModel.confirmCashReceived(it) },
-            onDismiss = { viewModel.dismissCashReceived() }
-        )
-    }
-
-    if (uiState.showConfirmClearCart) {
-        AlertDialog(
-            onDismissRequest = { viewModel.cancelClearCart() },
-            title = { Text(stringResource(R.string.sales_clear_cart).uppercase(), fontWeight = FontWeight.Black) },
-            text = { Text(stringResource(R.string.sales_clear_cart_confirm)) },
-            confirmButton = {
-                TextButton(
-                    onClick = { viewModel.executeClearCart() },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFFEF4444))
-                ) {
-                    Text(stringResource(R.string.sales_clear_all).uppercase(), fontWeight = FontWeight.Black)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.cancelClearCart() }) {
-                    Text(stringResource(R.string.btn_cancel).uppercase(), fontWeight = FontWeight.Black, color = Color(0xFF64748B))
-                }
-            },
-            shape = RoundedCornerShape(24.dp),
-        )
-    }
-
-    if (uiState.showSettingsModal) {
-        SettingsModal(
-            currentMode = uiState.activeMode,
-            onSelectMode = { viewModel.setBusinessMode(it) },
-            onClose = { viewModel.toggleSettingsModal(false) },
-            onSignOut = { /* Handle Sign Out */ }
-        )
-    }
-
-    if (uiState.showDiscountDialog) {
-        DiscountDialog(
-            initialDiscount = if (uiState.itemAwaitingDiscount != null) uiState.itemAwaitingDiscount!!.discount else uiState.cartDiscount,
-            onDismiss = { viewModel.dismissDiscountDialog() },
-            onApply = { viewModel.applyDiscount(it) }
-        )
-    }
-
-    if (uiState.showPaymentSuccess) {
-        OrderSuccessDialog(
-            uiState = uiState,
-            onDismiss = { viewModel.dismissPaymentSuccess() },
-            onReprint = { viewModel.reprintLastReceipt() }
-        )
-    }
-
-    if (uiState.itemAwaitingModifiers != null) {
-        ModifierDialog(
-            item = uiState.itemAwaitingModifiers!!,
-            availableModifiers = uiState.availableModifiers,
-            onToggleModifier = { viewModel.toggleModifier(it) },
-            onDismiss = { viewModel.dismissModifierSelection() }
-        )
-    }
-
-    if (uiState.showStaffSelection && (uiState.itemAwaitingStaff != null)) {
-        StaffSelectionDialog(
-            staffList = uiState.staffList,
-            onSelect = { viewModel.assignStaffToItem(it) },
-            onDismiss = { viewModel.cancelStaffSelection() }
-        )
-    }
-
-    if (uiState.showWeightInput && (uiState.productAwaitingWeight != null)) {
-        WeightInputDialog(
-            product = uiState.productAwaitingWeight!!,
-            onConfirm = { weight -> viewModel.addWeightBasedItem(weight) },
-            onDismiss = { viewModel.cancelWeightInput() }
-        )
-    }
-
-    if (uiState.showTerminalProgress) {
-        TerminalProgressDialog(
-            status = uiState.terminalStatus,
-            totalAmount = uiState.totalAmount
-        )
-    }
-
-    if ((uiState.terminalStatus != null) && !uiState.showTerminalProgress) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissTerminalError() },
-            title = { Text("Terminal Status") },
-            text = { Text(uiState.terminalStatus!!) },
-            confirmButton = {
-                Button(onClick = { viewModel.dismissTerminalError() }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
-
-    if (uiState.showAdminAuthDialog) {
-        AdminAuthDialog(
-            onDismiss = { viewModel.dismissAdminAuth() },
-            onConfirm = { pin -> viewModel.authenticateAdmin(pin) },
-            errorMessage = uiState.adminAuthError
-        )
-    }
-
-    if (uiState.showMemberSelection) {
-        Dialog(
-            onDismissRequest = { viewModel.setShowMemberSelection(show = false) },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
+    Row(modifier = Modifier.fillMaxSize()) {
+        // Main Product Area
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .padding(16.dp)
         ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.surface
+            // Category Filters
+            LazyRow(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Select Member", style = MaterialTheme.typography.headlineMedium)
-                        IconButton(onClick = { viewModel.setShowMemberSelection(show = false) }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close")
-                        }
-                    }
-                    MemberManagementScreen(
-                        onMemberSelected = { viewModel.selectMember(it) }
+                item {
+                    StitchButton(
+                        text = "ALL ITEMS",
+                        onClick = { viewModel.selectCategory(null) },
+                        containerColor = if (uiState.selectedCategoryId == null) StitchColor.Primary else StitchColor.SurfaceContainerLow,
+                        contentColor = if (uiState.selectedCategoryId == null) StitchColor.OnPrimary else StitchColor.OnSurfaceVariant
+                    )
+                }
+                items(uiState.categories) { category ->
+                    val isSelected = uiState.selectedCategoryId == category.id
+                    StitchButton(
+                        text = category.name,
+                        onClick = { viewModel.selectCategory(category.id) },
+                        containerColor = if (isSelected) StitchColor.Primary else StitchColor.SurfaceContainerLow,
+                        contentColor = if (isSelected) StitchColor.OnPrimary else StitchColor.OnSurfaceVariant
+                    )
+                }
+            }
+
+            // Product Grid
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 160.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(uiState.filteredProducts) { product ->
+                    val cartItem = uiState.cartItems.find { it.product.id == product.id }
+                    StitchProductCard(
+                        product = product,
+                        isSelected = cartItem != null,
+                        selectedQuantity = cartItem?.quantity ?: java.math.BigDecimal.ZERO,
+                        onClick = { viewModel.addToCart(product) }
                     )
                 }
             }
         }
+
+        // Checkout Sidebar
+        StitchCartSidebar(
+            cartItems = uiState.cartItems,
+            subtotal = uiState.subtotal,
+            taxAmount = uiState.totalTax,
+            rounding = uiState.roundingAdjustment,
+            total = uiState.totalAmount,
+            onUpdateQuantity = { item, qty -> viewModel.updateQuantity(item, qty) },
+            onRemoveItem = { item -> viewModel.removeFromCart(item) },
+            onPay = { viewModel.completeSale("CASH") },
+            onHold = { viewModel.saveOrder() },
+            onVoid = { viewModel.clearCartWithConfirm() }
+        )
     }
 }
-

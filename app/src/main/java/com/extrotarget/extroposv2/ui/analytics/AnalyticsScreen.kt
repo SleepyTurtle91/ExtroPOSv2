@@ -2,363 +2,161 @@ package com.extrotarget.extroposv2.ui.analytics
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.ui.res.stringResource
-import com.extrotarget.extroposv2.R
-import com.extrotarget.extroposv2.core.util.CurrencyUtils
-import com.extrotarget.extroposv2.ui.analytics.components.SimpleBarChart
+import androidx.compose.ui.unit.sp
 import com.extrotarget.extroposv2.ui.analytics.viewmodel.AnalyticsViewModel
-import java.text.SimpleDateFormat
-import java.util.*
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
+import com.extrotarget.extroposv2.ui.components.stitch.StitchKpiCard
+import com.extrotarget.extroposv2.ui.components.stitch.common.StitchButton
+import com.extrotarget.extroposv2.ui.theme.StitchColor
+import com.extrotarget.extroposv2.ui.theme.labelCaps
 
-import androidx.hilt.navigation.compose.hiltViewModel
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalyticsScreen(
-    viewModel: AnalyticsViewModel = hiltViewModel(),
+    viewModel: AnalyticsViewModel,
     onNavigateToLowStock: () -> Unit,
     onNavigateToStaffEarnings: () -> Unit,
     onNavigateToReporting: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val dateFormat = remember { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()) }
-    val scope = rememberCoroutineScope()
-    val context = androidx.compose.ui.platform.LocalContext.current
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/csv"),
-        onResult = { uri ->
-            uri?.let {
-                scope.launch {
-                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
-                        val result = viewModel.exportSstReport(outputStream)
-                        if (result.isSuccess) {
-                            android.widget.Toast.makeText(context, context.getString(R.string.analytics_export_success), android.widget.Toast.LENGTH_SHORT).show()
-                        } else {
-                            android.widget.Toast.makeText(context, context.getString(R.string.analytics_export_failed, result.exceptionOrNull()?.message ?: "Unknown"), android.widget.Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            }
-        }
-    )
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.analytics_title)) },
-                actions = {
-                    IconButton(onClick = {
-                        val fileName = "Tax_Report_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.startDate))}_${SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date(uiState.endDate))}.csv"
-                        exportLauncher.launch(fileName)
-                    }) {
-                        Icon(Icons.Default.Download, contentDescription = stringResource(R.string.analytics_export_tax))
-                    }
-                }
-            )
-        }
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        // Filter Bar Simulation
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+            color = StitchColor.SurfaceContainerLowest,
+            shape = MaterialTheme.shapes.medium,
+            border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant)
         ) {
-            // Date Range Header
-            item {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column {
-                            Text(stringResource(R.string.analytics_report_period), style = MaterialTheme.typography.labelMedium)
-                            Text(
-                                "${dateFormat.format(Date(uiState.startDate))} - ${dateFormat.format(Date(uiState.endDate))}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        IconButton(onClick = { /* Date Picker Logic */ }) {
-                            Icon(Icons.Default.DateRange, contentDescription = stringResource(R.string.analytics_select_date))
-                        }
-                    }
-                }
-            }
-
-            // Summary Cards
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    SummaryCard(
-                        title = stringResource(R.string.analytics_gross_sales),
-                        value = CurrencyUtils.format(uiState.totalSales),
-                        modifier = Modifier.weight(1f),
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
-                    SummaryCard(
-                        title = stringResource(R.string.analytics_tax_collected),
-                        value = CurrencyUtils.format(uiState.totalTax),
-                        modifier = Modifier.weight(1f),
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    )
-                }
-            }
-
-            // Per-Rate Tax Breakdown
-            if (uiState.taxReports.isNotEmpty()) {
-                item {
-                    Text(
-                        stringResource(R.string.analytics_tax_breakdown),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
-                }
+            Row(
+                modifier = Modifier.padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "REPORTS & ANALYTICS",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Black)
+                )
                 
-                items(uiState.taxReports.size) { index ->
-                    val report = uiState.taxReports[index]
-                    TaxBreakdownRow(report)
-                }
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    SummaryCard(
-                        title = stringResource(R.string.analytics_discounts),
-                        value = "-${CurrencyUtils.format(uiState.totalDiscount)}",
-                        modifier = Modifier.weight(1f),
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
-                    SummaryCard(
-                        title = stringResource(R.string.analytics_rounding),
-                        value = (if (uiState.totalRounding >= java.math.BigDecimal.ZERO) "+" else "") + CurrencyUtils.format(uiState.totalRounding),
-                        modifier = Modifier.weight(1f),
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                    )
-                }
-            }
-
-            item {
-                SummaryCard(
-                    title = stringResource(R.string.analytics_transaction_count),
-                    value = uiState.salesCount.toString(),
-                    modifier = Modifier.fillMaxWidth(),
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
-                )
-            }
-
-            // Sales Trend Chart
-            item {
-                Text(
-                    stringResource(R.string.analytics_sales_trend_today),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(200.dp)
-                        .padding(top = 8.dp)
-                ) {
-                    SimpleBarChart(
-                        data = uiState.salesTrend,
-                        modifier = Modifier.padding(16.dp),
-                        barColor = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            // Top Products / Categories
-            item {
-                Text(
-                    stringResource(R.string.analytics_top_products),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        uiState.categorySplit.forEach { point ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(point.label, style = MaterialTheme.typography.bodyMedium)
-                                Text(
-                                    CurrencyUtils.format(point.displayValue),
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            LinearProgressIndicator(
-                                progress = { if (uiState.totalSales.toFloat() > 0) point.value / uiState.totalSales.toFloat() else 0f },
-                                modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.small)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Industry Specific Reports
-            item {
-                Text(
-                    stringResource(R.string.analytics_industry_reports),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    ElevatedCard(
-                        onClick = onNavigateToLowStock,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                            Text(stringResource(R.string.analytics_inv_alerts), fontWeight = FontWeight.Bold)
-                            Text(stringResource(R.string.analytics_low_stock_desc), style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                    ElevatedCard(
-                        onClick = onNavigateToStaffEarnings,
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            Text(stringResource(R.string.analytics_staff_earnings), fontWeight = FontWeight.Bold)
-                            Text(stringResource(R.string.analytics_commission_report), style = MaterialTheme.typography.bodySmall)
-                        }
-                    }
-                }
-            }
-
-            item {
-                Button(
-                    onClick = onNavigateToReporting,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.Summarize, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.analytics_view_detailed))
-                }
-            }
-
-            // Tax Compliance Section
-            item {
-                Text(
-                    stringResource(R.string.analytics_tax_compliance),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)) // Light Green
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            stringResource(R.string.analytics_ready_filing),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Color(0xFF2E7D32)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            stringResource(R.string.analytics_total_tax_collected, CurrencyUtils.format(uiState.totalTax)),
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                        Text(
-                            stringResource(R.string.analytics_net_sales_excl_tax, CurrencyUtils.format(uiState.totalSales.subtract(uiState.totalTax))),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StitchButton(text = "TODAY", onClick = {}, containerColor = StitchColor.Primary)
+                    StitchButton(text = "WEEK", onClick = {}, containerColor = StitchColor.SurfaceContainerLow, contentColor = StitchColor.OnSurfaceVariant)
+                    StitchButton(text = "MONTH", onClick = {}, containerColor = StitchColor.SurfaceContainerLow, contentColor = StitchColor.OnSurfaceVariant)
                 }
             }
         }
-    }
-}
 
-@Composable
-fun TaxBreakdownRow(report: com.extrotarget.extroposv2.ui.analytics.viewmodel.TaxReportItem) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
+        // Performance Overview Cards
         Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(report.categoryName, fontWeight = FontWeight.Bold)
-                Text("Net Sales: ${CurrencyUtils.format(report.netSales)}", style = MaterialTheme.typography.bodySmall)
-            }
-            Text(
-                CurrencyUtils.format(report.taxAmount),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.ExtraBold
+            StitchKpiCard(
+                label = "Gross Sales",
+                value = "RM ${uiState.totalSales}",
+                trend = "+12%",
+                modifier = Modifier.weight(1f)
             )
+            StitchKpiCard(
+                label = "Total Orders",
+                value = uiState.salesCount.toString(),
+                trend = "+5%",
+                modifier = Modifier.weight(1f)
+            )
+            StitchKpiCard(
+                label = "Avg Transaction",
+                value = "RM 41.66", // TODO: Logic
+                trend = "-2%",
+                isTrendUp = false,
+                modifier = Modifier.weight(1f)
+            )
+            StitchKpiCard(
+                label = "New Members",
+                value = "28", // TODO: Logic
+                trend = "+18%",
+                icon = Icons.Default.Group,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        Spacer(Modifier.height(24.dp))
+
+        // Chart & Insights Area
+        Row(
+            modifier = Modifier.fillMaxWidth().weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Trend Chart Simulation
+            Surface(
+                modifier = Modifier.weight(2f).fillMaxHeight(),
+                color = StitchColor.SurfaceContainerLowest,
+                shape = MaterialTheme.shapes.medium,
+                border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("SALES TRENDS (THIS WEEK)", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                        Text("Export CSV", color = StitchColor.Primary, style = MaterialTheme.typography.labelCaps)
+                    }
+                    
+                    Box(modifier = Modifier.fillMaxSize().padding(top = 24.dp), contentAlignment = Alignment.Center) {
+                        Text("Chart Component Integration Ready", color = StitchColor.Outline)
+                    }
+                }
+            }
+
+            // Top Categories Simulation
+            Surface(
+                modifier = Modifier.weight(1f).fillMaxHeight(),
+                color = StitchColor.SurfaceContainerLowest,
+                shape = MaterialTheme.shapes.medium,
+                border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant)
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text("TOP CATEGORIES", style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    
+                    Spacer(Modifier.height(24.dp))
+                    
+                    CategoryProgressRow("Beverages", 0.45f, StitchColor.Primary)
+                    CategoryProgressRow("Hot Meals", 0.30f, StitchColor.Tertiary)
+                    CategoryProgressRow("Pastries", 0.15f, StitchColor.Secondary)
+                    CategoryProgressRow("Merchandise", 0.10f, StitchColor.OutlineVariant)
+                }
+            }
         }
     }
 }
 
 @Composable
-fun SummaryCard(
-    title: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant
-) {
-    Card(
-        modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = containerColor)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = title, style = MaterialTheme.typography.labelLarge)
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.ExtraBold
-            )
+private fun CategoryProgressRow(label: String, progress: Float, color: Color) {
+    Column(modifier = Modifier.padding(bottom = 16.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(label, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
+            Text("${(progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall.copy(color = color, fontWeight = FontWeight.Bold))
         }
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxWidth().height(8.dp).padding(top = 4.dp),
+            color = color,
+            trackColor = StitchColor.SurfaceContainerLow,
+            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
+        )
     }
 }

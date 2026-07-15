@@ -1,15 +1,11 @@
 package com.extrotarget.extroposv2.ui.carwash
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,156 +13,112 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.res.stringResource
-import com.extrotarget.extroposv2.R
+import androidx.compose.ui.unit.sp
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashJob
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashStatus
 import com.extrotarget.extroposv2.ui.carwash.viewmodel.CarWashViewModel
-import java.text.SimpleDateFormat
-import java.util.*
+import com.extrotarget.extroposv2.ui.components.stitch.StitchKanbanColumn
+import com.extrotarget.extroposv2.ui.theme.StitchColor
+import com.extrotarget.extroposv2.ui.theme.labelCaps
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarWashJobQueueScreen(
-    viewModel: CarWashViewModel = hiltViewModel()
+    viewModel: CarWashViewModel
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    var selectedJobForStaff by remember { mutableStateOf<CarWashJob?>(null) }
+    val jobs by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.carwash_queue_title)) })
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface)
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Row(
+            modifier = Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Column 1: QUEUED
-                QueueColumn(
-                    title = stringResource(R.string.carwash_status_queued),
-                    jobs = uiState.queuedJobs,
-                    modifier = Modifier.weight(1f),
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ) { job ->
-                    JobCard(job, onAction = { 
-                        selectedJobForStaff = job
-                    }, actionLabel = stringResource(R.string.carwash_action_start))
-                }
+            // Kanban Columns
+            StitchKanbanColumn(
+                title = "QUEUED",
+                items = jobs.queuedJobs,
+                statusColor = StitchColor.Outline,
+                itemContent = { job -> CarWashJobStitchCard(job) },
+                modifier = Modifier.weight(1f)
+            )
 
-                // Column 2: IN PROGRESS
-                QueueColumn(
-                    title = stringResource(R.string.carwash_status_in_progress),
-                    jobs = uiState.inProgressJobs,
-                    modifier = Modifier.weight(1f),
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                ) { job ->
-                    JobCard(job, onAction = { 
-                        viewModel.updateJobStatus(job.id, CarWashStatus.COMPLETED) 
-                    }, actionLabel = stringResource(R.string.carwash_action_complete), isProcessing = true)
-                }
+            StitchKanbanColumn(
+                title = "IN PROGRESS",
+                items = jobs.inProgressJobs,
+                statusColor = StitchColor.Primary,
+                itemContent = { job -> CarWashJobStitchCard(job, isActive = true) },
+                modifier = Modifier.weight(1f)
+            )
 
-                // Column 3: READY / COMPLETED
-                QueueColumn(
-                    title = stringResource(R.string.carwash_status_ready),
-                    jobs = uiState.completedJobs,
-                    modifier = Modifier.weight(1f),
-                    containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.3f)
-                ) { job ->
-                    JobCard(job, onAction = { /* Archive or deliver */ }, actionLabel = stringResource(R.string.carwash_action_delivered), isDone = true)
-                }
-            }
+            StitchKanbanColumn(
+                title = "READY / SIAP",
+                items = jobs.completedJobs,
+                statusColor = StitchColor.Tertiary,
+                itemContent = { job -> CarWashJobStitchCard(job) },
+                modifier = Modifier.weight(1f)
+            )
         }
-    }
 
-    if (selectedJobForStaff != null) {
-        AlertDialog(
-            onDismissRequest = { selectedJobForStaff = null },
-            title = { Text(stringResource(R.string.carwash_assign_staff_title, selectedJobForStaff!!.plateNumber)) },
-            text = {
-                Column {
-                    if (uiState.staffList.isEmpty()) {
-                        Text(stringResource(R.string.carwash_no_staff_available))
-                    } else {
-                        uiState.staffList.forEach { staff ->
-                            ListItem(
-                                headlineContent = { Text(staff.name) },
-                                supportingContent = { Text(staff.role) },
-                                modifier = Modifier.clickable {
-                                    viewModel.assignStaff(selectedJobForStaff!!.id, staff.id, staff.name)
-                                    selectedJobForStaff = null
-                                }
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { selectedJobForStaff = null }) {
-                    Text(stringResource(R.string.btn_cancel))
-                }
-            }
-        )
-    }
-}
-
-@Composable
-fun QueueColumn(
-    title: String,
-    jobs: List<CarWashJob>,
-    modifier: Modifier = Modifier,
-    containerColor: Color,
-    content: @Composable (CarWashJob) -> Unit
-) {
-    Column(
-        modifier = modifier
-            .fillMaxHeight()
-            .background(containerColor, RoundedCornerShape(12.dp))
-            .padding(8.dp)
-    ) {
-        Text(
-            text = "$title (${jobs.size})",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(8.dp)
-        )
+        // Bottom Dashboard: Staff Tracking
+        Spacer(Modifier.height(16.dp))
         
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.fillMaxSize()
+        Surface(
+            modifier = Modifier.fillMaxWidth().height(140.dp),
+            color = StitchColor.SurfaceContainerLowest,
+            shape = RoundedCornerShape(12.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant)
         ) {
-            jobs.forEach { job ->
-                content(job)
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    "STAFF COMMISSION TRACKER (TODAY)",
+                    style = MaterialTheme.typography.labelCaps.copy(color = StitchColor.OnSurfaceVariant)
+                )
+                
+                Spacer(Modifier.height(16.dp))
+                
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    StaffMiniCard("Ali", "12 Jobs", "RM 48.50", StitchColor.Primary)
+                    StaffMiniCard("Abu", "8 Jobs", "RM 32.00", StitchColor.Tertiary)
+                    StaffMiniCard("Chong", "5 Jobs", "RM 25.00", StitchColor.Secondary)
+                }
             }
         }
     }
 }
 
 @Composable
-fun JobCard(
-    job: CarWashJob,
-    onAction: () -> Unit,
-    actionLabel: String,
-    isProcessing: Boolean = false,
-    isDone: Boolean = false
-) {
-    val timeFormatString = stringResource(R.string.carwash_time_format)
-    val timeFormat = remember(timeFormatString) { SimpleDateFormat(timeFormatString, Locale.getDefault()) }
+private fun StaffMiniCard(name: String, count: String, earned: String, color: Color) {
+    Surface(
+        color = StitchColor.SurfaceContainerLow,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.width(180.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(modifier = Modifier.size(24.dp).background(color, CircleShape))
+                Text(name, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("Jobs", style = MaterialTheme.typography.labelCaps.copy(fontSize = 9.sp, color = StitchColor.Outline))
+                    Text(count, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Earned", style = MaterialTheme.typography.labelCaps.copy(fontSize = 9.sp, color = StitchColor.Outline))
+                    Text(earned, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = StitchColor.Primary))
+                }
+            }
+        }
+    }
+}
 
-    Card(
+@Composable
+private fun CarWashJobStitchCard(job: CarWashJob, isActive: Boolean = false) {
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(8.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isActive) StitchColor.Primary else StitchColor.OutlineVariant),
+        color = StitchColor.Surface
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(
@@ -174,57 +126,46 @@ fun JobCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = job.plateNumber,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary
+                    job.plateNumber.uppercase(),
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Black)
                 )
                 Text(
-                    text = timeFormat.format(Date(job.startTime)),
-                    style = MaterialTheme.typography.labelMedium
+                    "10:15 AM",
+                    style = MaterialTheme.typography.labelCaps.copy(fontSize = 9.sp, color = StitchColor.Outline)
                 )
             }
             
             Text(
-                text = job.serviceName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                job.carModel ?: "Standard Vehicle",
+                style = MaterialTheme.typography.bodySmall.copy(color = StitchColor.OnSurfaceVariant),
+                modifier = Modifier.padding(top = 4.dp)
             )
-
-            if (job.assignedStaffName != null) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(text = job.assignedStaffName, style = MaterialTheme.typography.bodySmall)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (!isDone) {
-                Button(
-                    onClick = onAction,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isProcessing) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-                    )
+            
+            Spacer(Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = StitchColor.SurfaceContainerHigh,
+                    shape = RoundedCornerShape(4.dp)
                 ) {
-                    Icon(
-                        if (isProcessing) Icons.Default.CheckCircle else Icons.Default.ArrowForward,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
+                    Text(
+                        job.serviceName.uppercase(),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelCaps.copy(fontSize = 9.sp)
                     )
-                    Spacer(Modifier.width(8.dp))
-                    Text(actionLabel)
                 }
-            } else {
-                Text(
-                    stringResource(R.string.carwash_completed_at, job.completionTime?.let { timeFormat.format(Date(it)) } ?: ""),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onTertiaryContainer,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                
+                if (isActive) {
+                    Text(
+                        "00:14:22",
+                        style = MaterialTheme.typography.labelCaps.copy(color = StitchColor.Primary),
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
             }
         }
     }

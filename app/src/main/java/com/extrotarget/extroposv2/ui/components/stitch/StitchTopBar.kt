@@ -101,7 +101,7 @@ fun StitchTopBar(
                     if (isSstActive) {
                         Surface(
                             color = StitchColor.TertiaryContainer.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(full = 999.dp),
+                            shape = CircleShape,
                             border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.Tertiary)
                         ) {
                             Text(

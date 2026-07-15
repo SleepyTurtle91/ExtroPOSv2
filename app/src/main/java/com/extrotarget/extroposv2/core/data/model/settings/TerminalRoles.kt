@@ -3,7 +3,7 @@ package com.extrotarget.extroposv2.core.data.model.settings
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
-import androidx.compose.material.icons.filled.Dvr
+import androidx.compose.material.icons.automirrored.filled.Dvr
 import androidx.compose.material.icons.filled.PointOfSale
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.extrotarget.extroposv2.R
@@ -34,7 +34,7 @@ enum class OperationMode(
     HYBRID(
         id = "hybrid",
         displayName = R.string.op_mode_hybrid_name,
-        icon = Icons.Default.Dvr,
+        icon = Icons.AutoMirrored.Filled.Dvr,
         description = R.string.op_mode_hybrid_desc
     )
 }

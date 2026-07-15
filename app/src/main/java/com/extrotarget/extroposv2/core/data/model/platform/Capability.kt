@@ -1,4 +1,4 @@
-package com.extrotarget.extroposv2.core.model.platform
+package com.extrotarget.extroposv2.core.data.model.platform
 
 enum class Capability(
     val id: String,
