@@ -15,6 +15,9 @@ import com.extrotarget.extroposv2.ui.components.stitch.StitchTopBar
 import com.extrotarget.extroposv2.ui.onboarding.OnboardingWizardScreen
 import com.extrotarget.extroposv2.ui.theme.StitchColor
 
+import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
+import com.extrotarget.extroposv2.ui.sales.PosAction
+
 @Composable
 fun MainScreen(
     viewModel: MainViewModel = hiltViewModel()
@@ -24,6 +27,9 @@ fun MainScreen(
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination?.route
+    
+    // Shared Sales ViewModel for TopBar and Global Actions
+    val salesViewModel: SalesViewModel = hiltViewModel()
 
     if (!isOnboardingCompleted) {
         OnboardingWizardScreen(
@@ -66,7 +72,15 @@ fun MainScreen(
                     businessName = "ExtroPOS V2",
                     stationName = "Station 01",
                     userName = currentUser?.name ?: "User",
-                    userRole = currentUser?.role ?: "Staff"
+                    userRole = currentUser?.role ?: "Staff",
+                    onOpenDrawerClick = { salesViewModel.onPosAction(PosAction.OPEN_DRAWER) },
+                    onProfileClick = { navController.navigate(Screen.ShiftManagement.route) },
+                    onSearchClick = { 
+                        if (currentDestination != Screen.Sales.route) {
+                            navController.navigate(Screen.Sales.route)
+                        }
+                        salesViewModel.onPosAction(PosAction.SEARCH)
+                    }
                 )
 
                 // Content Graph

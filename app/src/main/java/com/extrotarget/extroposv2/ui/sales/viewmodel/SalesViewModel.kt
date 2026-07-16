@@ -194,6 +194,41 @@ class SalesViewModel @Inject constructor(
         _uiState.update { it.copy(searchQuery = query) }
     }
 
+    fun onPosAction(action: com.extrotarget.extroposv2.ui.sales.PosAction) {
+        when (action) {
+            com.extrotarget.extroposv2.ui.sales.PosAction.PAY -> completeSale("OPEN_DIALOG")
+            com.extrotarget.extroposv2.ui.sales.PosAction.DISCOUNT -> showCartDiscountDialog()
+            com.extrotarget.extroposv2.ui.sales.PosAction.VOID_CART -> clearCartWithConfirm()
+            com.extrotarget.extroposv2.ui.sales.PosAction.HOLD_ORDER -> saveOrder()
+            com.extrotarget.extroposv2.ui.sales.PosAction.CUSTOMER -> setShowMemberSelection(true)
+            com.extrotarget.extroposv2.ui.sales.PosAction.KITCHEN_SEND -> sendToKitchen()
+            com.extrotarget.extroposv2.ui.sales.PosAction.REPRINT_LAST -> reprintLastReceipt()
+            com.extrotarget.extroposv2.ui.sales.PosAction.OPEN_DRAWER -> openCashDrawer()
+            com.extrotarget.extroposv2.ui.sales.PosAction.LOCK -> lock()
+            com.extrotarget.extroposv2.ui.sales.PosAction.SEARCH -> requestSearchFocus()
+            com.extrotarget.extroposv2.ui.sales.PosAction.BARCODE -> toggleCameraScanner(true)
+            com.extrotarget.extroposv2.ui.sales.PosAction.SETTINGS -> toggleSettingsModal(true)
+            com.extrotarget.extroposv2.ui.sales.PosAction.TRANSFER_TABLE -> showPlaceholderAction("Transfer Table")
+            com.extrotarget.extroposv2.ui.sales.PosAction.SPLIT_BILL -> showPlaceholderAction("Split Bill")
+            com.extrotarget.extroposv2.ui.sales.PosAction.PRINT_ORDER -> showPlaceholderAction("Print Order Slip")
+            com.extrotarget.extroposv2.ui.sales.PosAction.SHIFT -> showPlaceholderAction("Shift Management")
+        }
+    }
+
+    private fun requestSearchFocus() {
+        _uiState.update { it.copy(focusSearchRequest = System.currentTimeMillis()) }
+    }
+
+    private fun showPlaceholderAction(actionName: String) {
+        _uiState.update { it.copy(terminalStatus = "$actionName coming soon in v2.1") }
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(3000)
+            if (_uiState.value.terminalStatus?.contains(actionName) == true) {
+                _uiState.update { it.copy(terminalStatus = null) }
+            }
+        }
+    }
+
     fun selectCategory(categoryId: String?) {
         _uiState.update { it.copy(selectedCategoryId = categoryId) }
     }
@@ -465,7 +500,63 @@ class SalesViewModel @Inject constructor(
     }
 
     fun saveOrder() {
-        sendToKitchen()
+        if (_uiState.value.activeMode.hasTables) {
+            sendToKitchen()
+        } else {
+            holdRetailOrder()
+        }
+    }
+
+    private fun holdRetailOrder() {
+        val currentState = _uiState.value
+        if (currentState.cartItems.isEmpty()) return
+
+        viewModelScope.launch {
+            try {
+                _uiState.update { it.copy(isCheckingOut = true) }
+                val saleId = UUID.randomUUID().toString()
+                
+                val sale = com.extrotarget.extroposv2.core.data.model.Sale(
+                    id = saleId,
+                    subtotal = currentState.subtotal,
+                    totalAmount = currentState.totalAmount,
+                    taxAmount = currentState.totalTax,
+                    discountAmount = currentState.totalDiscount,
+                    roundingAdjustment = currentState.roundingAdjustment,
+                    paymentMethod = AppConfig.PaymentMethod.PENDING,
+                    status = AppConfig.SaleStatus.PENDING,
+                    timestamp = System.currentTimeMillis()
+                )
+
+                val saleItems = currentState.cartItems.map { cartItem ->
+                    com.extrotarget.extroposv2.core.data.model.SaleItem(
+                        id = cartItem.id,
+                        saleId = saleId,
+                        productId = cartItem.product.id,
+                        productName = cartItem.product.name,
+                        quantity = cartItem.quantity,
+                        unitPrice = cartItem.unitPrice,
+                        taxRate = cartItem.taxRate,
+                        taxAmount = cartItem.taxAmount,
+                        discountAmount = cartItem.discountAmount,
+                        totalAmount = cartItem.totalPrice.add(cartItem.taxAmount),
+                        status = AppConfig.SaleStatus.PENDING
+                    )
+                }
+
+                saleRepository.completeSale(sale, saleItems)
+                
+                _uiState.update { it.copy(
+                    cartItems = emptyList(),
+                    isCheckingOut = false,
+                    lastSaleId = saleId
+                ) }
+                
+                auditManager.logAction("HOLD_ORDER", "Order $saleId held (Retail)", "SALES")
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isCheckingOut = false, terminalStatus = "Error holding: ${e.message}") }
+            }
+        }
     }
 
     fun addWeightBasedItem(weight: BigDecimal) {
@@ -594,7 +685,7 @@ class SalesViewModel @Inject constructor(
                         _uiState.update { it.copy(itemAwaitingDiscount = action.item) }
                         executeApplyDiscount(action.discount)
                     }
-                    is AdminAuthAction.OpenDrawer -> executeOpenDrawer()
+                    is AdminAuthAction.OpenDrawer -> executeOpenCashDrawer()
                     else -> {}
                 }
             } else {
@@ -793,11 +884,11 @@ class SalesViewModel @Inject constructor(
         }
     }
 
-    fun openDrawer() {
+    fun openCashDrawer() {
         _uiState.update { it.copy(showAdminAuthDialog = true, adminAuthAction = AdminAuthAction.OpenDrawer) }
     }
 
-    private fun executeOpenDrawer() {
+    private fun executeOpenCashDrawer() {
         viewModelScope.launch {
             val currentShift = shiftRepository.getActiveShift().firstOrNull()
             val staffName = currentShift?.staffName ?: "Unknown Staff"

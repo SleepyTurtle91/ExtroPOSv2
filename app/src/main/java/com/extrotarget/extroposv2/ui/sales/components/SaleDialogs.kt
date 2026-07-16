@@ -20,6 +20,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.extrotarget.extroposv2.core.data.model.loyalty.Member
+import com.extrotarget.extroposv2.ui.loyalty.MemberViewModel
 import com.extrotarget.extroposv2.R
 import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.ui.sales.CartItem
@@ -405,6 +410,102 @@ fun OrderSuccessDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MemberSelectionDialog(
+    onDismiss: () -> Unit,
+    onMemberSelected: (Member?) -> Unit,
+    viewModel: MemberViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        modifier = Modifier.fillMaxWidth(0.9f).fillMaxHeight(0.8f).padding(16.dp),
+        content = {
+            Surface(
+                shape = RoundedCornerShape(32.dp),
+                color = Color.White,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Column(modifier = Modifier.padding(32.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Select Customer".uppercase(),
+                            fontWeight = FontWeight.Black,
+                            fontSize = 24.sp,
+                            color = Color(0xFF0F172A)
+                        )
+                        IconButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.background(Color(0xFFF1F5F9), CircleShape)
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = null)
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    OutlinedTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.onSearchQueryChange(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Search by name or phone...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    Spacer(Modifier.height(16.dp))
+
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        item {
+                            ListItem(
+                                modifier = Modifier.clickable { onMemberSelected(null) },
+                                headlineContent = { Text("No Member / Walk-in", fontWeight = FontWeight.Bold) },
+                                leadingContent = { Icon(Icons.Default.PersonOff, contentDescription = null) }
+                            )
+                            HorizontalDivider()
+                        }
+                        
+                        items(uiState.members) { member ->
+                            ListItem(
+                                modifier = Modifier.clickable { onMemberSelected(member) },
+                                headlineContent = { Text(member.name, fontWeight = FontWeight.Bold) },
+                                supportingContent = { Text(member.phoneNumber) },
+                                trailingContent = {
+                                    Text(
+                                        "${member.totalPoints.toInt()} pts",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                },
+                                leadingContent = { Icon(Icons.Default.Person, contentDescription = null) }
+                            )
+                            HorizontalDivider()
+                        }
+                    }
+
+                    Spacer(Modifier.height(24.dp))
+
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth().height(64.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                    ) {
+                        Text("Cancel".uppercase(), fontWeight = FontWeight.Black, fontSize = 16.sp)
+                    }
+                }
+            }
+        }
+    )
+}
+
 @Composable
 fun SummaryDetailRow(label: String, value: String, valueColor: Color = Color(0xFF0F172A)) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -513,6 +614,33 @@ fun PaymentMethodDialog(
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
+            }
+        }
+    )
+}
+
+@Composable
+fun ConfirmClearCartDialog(
+    itemCount: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = { Icon(Icons.Default.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+        title = { Text("Clear Cart?") },
+        text = { Text("All $itemCount items will be removed from the current order. This action cannot be undone.") },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+            ) {
+                Text("Clear Cart")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
             }
         }
     )

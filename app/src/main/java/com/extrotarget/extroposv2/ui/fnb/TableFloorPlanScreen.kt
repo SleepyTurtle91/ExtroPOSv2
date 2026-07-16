@@ -33,6 +33,8 @@ fun TableFloorPlanScreen(
     onTableClick: (Table) -> Unit
 ) {
     val tables by viewModel.tables.collectAsState()
+    val selectedZone by viewModel.selectedZone.collectAsState()
+    val zones by viewModel.zones.collectAsState()
 
     Column(
         modifier = Modifier
@@ -44,27 +46,22 @@ fun TableFloorPlanScreen(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item {
-                StitchButton(
-                    text = "MAIN HALL",
-                    onClick = { /* TODO */ },
-                    containerColor = StitchColor.Primary,
-                    contentColor = Color.White
-                )
-            }
-            item {
-                StitchOutlinedButton(
-                    text = "TERRACE",
-                    onClick = { /* TODO */ },
-                    contentColor = StitchColor.OnSurfaceVariant
-                )
-            }
-            item {
-                StitchOutlinedButton(
-                    text = "VIP ROOM",
-                    onClick = { /* TODO */ },
-                    contentColor = StitchColor.OnSurfaceVariant
-                )
+            items(zones) { zone ->
+                val isSelected = zone == selectedZone
+                if (isSelected) {
+                    StitchButton(
+                        text = zone.uppercase(),
+                        onClick = { viewModel.selectZone(zone) },
+                        containerColor = StitchColor.Primary,
+                        contentColor = Color.White
+                    )
+                } else {
+                    StitchOutlinedButton(
+                        text = zone.uppercase(),
+                        onClick = { viewModel.selectZone(zone) },
+                        contentColor = StitchColor.OnSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -87,13 +84,17 @@ fun TableFloorPlanScreen(
                 StitchOutlinedButton(
                     text = "Transfer",
                     icon = Icons.Default.SwapHoriz,
-                    onClick = { /* TODO */ },
+                    onClick = { 
+                        /* Logic to start moveTable workflow */
+                    },
                     contentColor = StitchColor.OnSurface
                 )
                 StitchOutlinedButton(
                     text = "Merge",
                     icon = Icons.AutoMirrored.Filled.CallMerge,
-                    onClick = { /* TODO */ },
+                    onClick = { 
+                        /* Logic to start joinTable workflow */
+                    },
                     contentColor = StitchColor.OnSurface
                 )
             }

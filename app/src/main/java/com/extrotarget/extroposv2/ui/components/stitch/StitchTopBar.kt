@@ -2,6 +2,7 @@ package com.extrotarget.extroposv2.ui.components.stitch
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ fun StitchTopBar(
     isSstActive: Boolean = true,
     onSearchClick: () -> Unit = {},
     onOpenDrawerClick: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -88,6 +90,7 @@ fun StitchTopBar(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     // Quick Action Icons
+                    TopBarIcon(Icons.Default.Search, onClick = onSearchClick)
                     TopBarIcon(Icons.Default.Wifi)
                     TopBarIcon(Icons.Default.Sync)
                     TopBarIcon(Icons.Default.Notifications, hasBadge = true)
@@ -127,14 +130,14 @@ fun StitchTopBar(
                         modifier = Modifier.height(40.dp)
                     ) {
                         Text(
-                            "OPEN DRAWER",
+                            "OPEN CASH DRAWER",
                             style = MaterialTheme.typography.labelCaps.copy(fontWeight = FontWeight.Bold)
                         )
                     }
 
                     // Profile
                     Surface(
-                        modifier = Modifier.size(40.dp),
+                        modifier = Modifier.size(40.dp).clickable { onProfileClick() },
                         shape = CircleShape,
                         color = StitchColor.PrimaryContainer,
                         border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant)

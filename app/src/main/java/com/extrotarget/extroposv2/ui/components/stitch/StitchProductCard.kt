@@ -27,11 +27,12 @@ fun StitchProductCard(
     modifier: Modifier = Modifier,
     categoryColor: Color = StitchColor.Primary,
     isSelected: Boolean = false,
-    selectedQuantity: BigDecimal = BigDecimal.ZERO
+    selectedQuantity: BigDecimal = BigDecimal.ZERO,
+    compact: Boolean = false
 ) {
     Surface(
         modifier = modifier
-            .height(140.dp)
+            .height(if (compact) 110.dp else 140.dp)
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
@@ -48,7 +49,7 @@ fun StitchProductCard(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(4.dp)
+                    .height(if (compact) 2.dp else 4.dp)
                     .background(categoryColor)
                     .align(Alignment.TopCenter)
             )
@@ -56,8 +57,8 @@ fun StitchProductCard(
             if (isSelected && selectedQuantity > BigDecimal.ZERO) {
                 Surface(
                     modifier = Modifier
-                        .padding(8.dp)
-                        .size(24.dp)
+                        .padding(if (compact) 4.dp else 8.dp)
+                        .size(if (compact) 20.dp else 24.dp)
                         .align(Alignment.TopEnd),
                     shape = CircleShape,
                     color = StitchColor.Primary
@@ -66,7 +67,7 @@ fun StitchProductCard(
                         Text(
                             text = selectedQuantity.stripTrailingZeros().toPlainString(),
                             color = Color.White,
-                            style = MaterialTheme.typography.labelCaps.copy(fontSize = 10.sp)
+                            style = MaterialTheme.typography.labelCaps.copy(fontSize = if (compact) 8.sp else 10.sp)
                         )
                     }
                 }
@@ -75,8 +76,8 @@ fun StitchProductCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp)
-                    .padding(top = 8.dp),
+                    .padding(if (compact) 8.dp else 12.dp)
+                    .padding(top = if (compact) 4.dp else 8.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
@@ -84,18 +85,20 @@ fun StitchProductCard(
                         text = product.name.uppercase(),
                         style = MaterialTheme.typography.labelCaps.copy(
                             color = StitchColor.OnSurface,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp
+                            fontSize = if (compact) 11.sp else 12.sp,
+                            lineHeight = if (compact) 14.sp else 16.sp
                         ),
                         maxLines = 2
                     )
-                    Text(
-                        text = "SKU: ${product.sku}",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = StitchColor.Outline,
-                            fontSize = 10.sp
+                    if (!compact) {
+                        Text(
+                            text = "SKU: ${product.sku}",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = StitchColor.Outline,
+                                fontSize = 10.sp
+                            )
                         )
-                    )
+                    }
                 }
 
                 Row(
@@ -103,34 +106,21 @@ fun StitchProductCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
-                    if (product.stockQuantity <= BigDecimal("5")) {
-                        Surface(
-                            color = StitchColor.ErrorContainer.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = "STK: ${product.stockQuantity.toInt()}",
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelCaps.copy(
-                                    fontSize = 9.sp,
-                                    color = StitchColor.Error
-                                )
+                    val stockColor = if (product.stockQuantity <= BigDecimal("5")) StitchColor.Error else StitchColor.Tertiary
+                    val stockBg = if (product.stockQuantity <= BigDecimal("5")) StitchColor.ErrorContainer.copy(alpha = 0.5f) else StitchColor.TertiaryContainer.copy(alpha = 0.1f)
+                    
+                    Surface(
+                        color = stockBg,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = "STK: ${product.stockQuantity.toInt()}",
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                            style = MaterialTheme.typography.labelCaps.copy(
+                                fontSize = if (compact) 8.sp else 9.sp,
+                                color = stockColor
                             )
-                        }
-                    } else {
-                        Surface(
-                            color = StitchColor.TertiaryContainer.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = "STK: ${product.stockQuantity.toInt()}",
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelCaps.copy(
-                                    fontSize = 9.sp,
-                                    color = StitchColor.Tertiary
-                                )
-                            )
-                        }
+                        )
                     }
 
                     Text(
@@ -138,7 +128,7 @@ fun StitchProductCard(
                         style = MaterialTheme.typography.headlineSmall.copy(
                             color = StitchColor.Primary,
                             fontWeight = FontWeight.Black,
-                            fontSize = 16.sp
+                            fontSize = if (compact) 14.sp else 16.sp
                         )
                     )
                 }

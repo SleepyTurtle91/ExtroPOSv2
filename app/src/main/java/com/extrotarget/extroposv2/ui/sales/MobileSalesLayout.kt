@@ -51,7 +51,7 @@ fun MobileSalesLayout(
                     syncStatus = uiState.syncStatus,
                     sessionManager = sessionManager,
                     onOpenShift = onNavigateToShift,
-                    onOpenDrawer = { viewModel.openDrawer() },
+                    onOpenDrawer = { viewModel.openCashDrawer() },
                     onSearchQueryChange = { viewModel.updateSearchQuery(it) },
                     onScanBarcode = { viewModel.toggleCameraScanner(true) }
                 )

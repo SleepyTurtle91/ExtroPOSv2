@@ -33,6 +33,11 @@ fun LaundryOrderScreen(
     viewModel: LaundryViewModel
 ) {
     val orders by viewModel.orders.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    
+    var customerName by remember { mutableStateOf("") }
+    var customerPhone by remember { mutableStateOf("") }
+    var note by remember { mutableStateOf("") }
 
     Row(
         modifier = Modifier
@@ -86,11 +91,21 @@ fun LaundryOrderScreen(
                 Spacer(Modifier.height(24.dp))
 
                 StitchTextField(
-                    value = "",
-                    onValueChange = {},
-                    label = "CUSTOMER (OPTIONAL)",
-                    placeholder = "Phone or Name...",
-                    leadingIcon = Icons.Default.PersonAdd
+                    value = customerName,
+                    onValueChange = { customerName = it },
+                    label = "CUSTOMER NAME",
+                    placeholder = "Enter name...",
+                    leadingIcon = Icons.Default.Person
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                StitchTextField(
+                    value = customerPhone,
+                    onValueChange = { customerPhone = it },
+                    label = "PHONE NUMBER",
+                    placeholder = "01x-xxxxxxx",
+                    leadingIcon = Icons.Default.Phone
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -99,7 +114,7 @@ fun LaundryOrderScreen(
                 Surface(
                     color = StitchColor.SurfaceContainerLow,
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clickable { viewModel.tareScale() }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -113,7 +128,7 @@ fun LaundryOrderScreen(
                                 shape = RoundedCornerShape(4.dp)
                             ) {
                                 Text(
-                                    "Scale Connected",
+                                    "Tap to Tare",
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                     style = MaterialTheme.typography.labelCaps.copy(fontSize = 10.sp, color = StitchColor.Primary)
                                 )
@@ -123,7 +138,7 @@ fun LaundryOrderScreen(
                         Spacer(Modifier.height(16.dp))
                         
                         Text(
-                            "0.0",
+                            uiState.liveWeight.toPlainString(),
                             modifier = Modifier.fillMaxWidth(),
                             style = MaterialTheme.typography.displayLarge.copy(
                                 fontWeight = FontWeight.Black,
@@ -137,8 +152,20 @@ fun LaundryOrderScreen(
 
                 StitchButton(
                     text = "CREATE ORDER",
-                    onClick = { /* TODO */ },
+                    onClick = { 
+                        viewModel.createOrder(
+                            name = customerName,
+                            phone = customerPhone,
+                            weight = uiState.liveWeight,
+                            note = note.ifBlank { null },
+                            selectedItems = emptyList() // Needs UI to select laundry products
+                        )
+                        customerName = ""
+                        customerPhone = ""
+                        note = ""
+                    },
                     size = com.extrotarget.extroposv2.ui.components.stitch.common.StitchButtonSize.LARGE,
+                    enabled = customerPhone.isNotBlank() && uiState.liveWeight > java.math.BigDecimal.ZERO,
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Default.ReceiptLong
                 )
