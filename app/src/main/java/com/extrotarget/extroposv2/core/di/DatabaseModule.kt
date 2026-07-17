@@ -2,6 +2,8 @@ package com.extrotarget.extroposv2.core.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.local.dao.CategoryDao
 import com.extrotarget.extroposv2.core.data.local.dao.PrinterDao
@@ -39,11 +41,206 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Add code and displayOrder columns to fnb_tables
+                db.execSQL("ALTER TABLE fnb_tables ADD COLUMN code TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE fnb_tables ADD COLUMN displayOrder INTEGER NOT NULL DEFAULT 0")
+                
+                // Initialize code with name for existing tables
+                db.execSQL("UPDATE fnb_tables SET code = name WHERE code = ''")
+            }
+        }
+
+        val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create retail_products table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `retail_products` (
+                        `id` TEXT NOT NULL, 
+                        `name` TEXT NOT NULL, 
+                        `basePrice` TEXT NOT NULL, 
+                        `sku` TEXT NOT NULL, 
+                        `barcode` TEXT, 
+                        `taxRate` TEXT NOT NULL, 
+                        `stockQuantity` TEXT NOT NULL, 
+                        `minStockLevel` TEXT NOT NULL, 
+                        `categoryId` TEXT, 
+                        `supplierId` TEXT, 
+                        `imageUrl` TEXT, 
+                        `isAvailable` INTEGER NOT NULL, 
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+
+                // Create fnb_menu_items table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `fnb_menu_items` (
+                        `id` TEXT NOT NULL, 
+                        `name` TEXT NOT NULL, 
+                        `basePrice` TEXT NOT NULL, 
+                        `taxRate` TEXT NOT NULL, 
+                        `categoryId` TEXT, 
+                        `kitchenStation` TEXT, 
+                        `imageUrl` TEXT, 
+                        `isAvailable` INTEGER NOT NULL, 
+                        `hasModifiers` INTEGER NOT NULL, 
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+            }
+        }
+
+        val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `fnb_modifier_groups` (
+                        `id` TEXT NOT NULL, 
+                        `name` TEXT NOT NULL, 
+                        `minSelect` INTEGER NOT NULL, 
+                        `maxSelect` INTEGER NOT NULL, 
+                        `isRequired` INTEGER NOT NULL, 
+                        `menuItemId` TEXT NOT NULL, 
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `fnb_modifier_options` (
+                        `id` TEXT NOT NULL, 
+                        `groupId` TEXT NOT NULL, 
+                        `name` TEXT NOT NULL, 
+                        `priceAdjustment` TEXT NOT NULL, 
+                        `isAvailable` INTEGER NOT NULL, 
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`groupId`) REFERENCES `fnb_modifier_groups`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_fnb_modifier_options_groupId` ON `fnb_modifier_options` (`groupId`)")
+            }
+        }
+
+        val MIGRATION_30_31 = object : Migration(30, 31) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Drop old stock_movements if exists or rename it
+                db.execSQL("DROP TABLE IF EXISTS `stock_movements` ")
+                
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `stock_movements` (
+                        `id` TEXT NOT NULL, 
+                        `productId` TEXT NOT NULL, 
+                        `type` TEXT NOT NULL, 
+                        `quantity` TEXT NOT NULL, 
+                        `timestamp` INTEGER NOT NULL, 
+                        `reason` TEXT, 
+                        `createdBy` TEXT NOT NULL, 
+                        `referenceId` TEXT, 
+                        PRIMARY KEY(`id`), 
+                        FOREIGN KEY(`productId`) REFERENCES `products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_stock_movements_productId` ON `stock_movements` (`productId`)")
+            }
+        }
+
+        val MIGRATION_31_32 = object : Migration(31, 32) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create suppliers table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `suppliers` (
+                        `id` TEXT NOT NULL, 
+                        `name` TEXT NOT NULL, 
+                        `contactPerson` TEXT, 
+                        `phone` TEXT, 
+                        `email` TEXT, 
+                        `address` TEXT, 
+                        `sstId` TEXT, 
+                        `isActive` INTEGER NOT NULL, 
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+
+                // Create purchase_orders table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `purchase_orders` (
+                        `id` TEXT NOT NULL, 
+                        `poNumber` TEXT NOT NULL, 
+                        `supplierId` TEXT NOT NULL, 
+                        `status` TEXT NOT NULL, 
+                        `totalAmount` TEXT NOT NULL, 
+                        `createdAt` INTEGER NOT NULL, 
+                        `receivedAt` INTEGER, 
+                        `createdBy` TEXT NOT NULL, 
+                        `receivedBy` TEXT, 
+                        `note` TEXT, 
+                        PRIMARY KEY(`id`), 
+                        FOREIGN KEY(`supplierId`) REFERENCES `suppliers`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT 
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_purchase_orders_supplierId` ON `purchase_orders` (`supplierId`)")
+
+                // Create purchase_order_items table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `purchase_order_items` (
+                        `id` TEXT NOT NULL, 
+                        `poId` TEXT NOT NULL, 
+                        `productId` TEXT NOT NULL, 
+                        `quantity` TEXT NOT NULL, 
+                        `unitCost` TEXT NOT NULL, 
+                        `receivedQuantity` TEXT NOT NULL, 
+                        PRIMARY KEY(`id`), 
+                        FOREIGN KEY(`poId`) REFERENCES `purchase_orders`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_purchase_order_items_poId` ON `purchase_order_items` (`poId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_purchase_order_items_productId` ON `purchase_order_items` (`productId`)")
+            }
+        }
+
+        val MIGRATION_32_33 = object : Migration(32, 33) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Create fnb_orders table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `fnb_orders` (
+                        `id` TEXT NOT NULL, 
+                        `tableId` TEXT, 
+                        `status` TEXT NOT NULL, 
+                        `guestCount` INTEGER NOT NULL, 
+                        `orderType` TEXT NOT NULL, 
+                        `createdAt` INTEGER NOT NULL, 
+                        `subtotal` TEXT NOT NULL, 
+                        `totalAmount` TEXT NOT NULL, 
+                        `staffId` TEXT NOT NULL, 
+                        `note` TEXT, 
+                        PRIMARY KEY(`id`)
+                    )
+                """.trimIndent())
+
+                // Create fnb_order_items table
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `fnb_order_items` (
+                        `id` TEXT NOT NULL, 
+                        `orderId` TEXT NOT NULL, 
+                        `menuItemId` TEXT NOT NULL, 
+                        `quantity` TEXT NOT NULL, 
+                        `unitPrice` TEXT NOT NULL, 
+                        `status` TEXT NOT NULL, 
+                        `kitchenStation` TEXT, 
+                        `notes` TEXT, 
+                        PRIMARY KEY(`id`), 
+                        FOREIGN KEY(`orderId`) REFERENCES `fnb_orders`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE 
+                    )
+                """.trimIndent())
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_fnb_order_items_orderId` ON `fnb_order_items` (`orderId`)")
+            }
+        }
+
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
         )
+        .addMigrations(MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30, MIGRATION_30_31, MIGRATION_31_32, MIGRATION_32_33)
         .fallbackToDestructiveMigration()
         .build()
     }

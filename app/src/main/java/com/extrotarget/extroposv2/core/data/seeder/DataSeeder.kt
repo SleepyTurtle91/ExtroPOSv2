@@ -1,12 +1,19 @@
 package com.extrotarget.extroposv2.core.data.seeder
 
+import androidx.room.withTransaction
+import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.model.Category
 import com.extrotarget.extroposv2.core.data.model.Product
+import com.extrotarget.extroposv2.core.data.model.fnb.Table
+import com.extrotarget.extroposv2.core.data.model.fnb.TableStatus
+import com.extrotarget.extroposv2.core.data.model.loyalty.Member
 import com.extrotarget.extroposv2.core.data.repository.CategoryRepository
 import com.extrotarget.extroposv2.core.data.repository.ProductRepository
 import com.extrotarget.extroposv2.core.data.repository.inventory.InventoryRepository
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import java.math.BigDecimal
 import java.util.UUID
 import javax.inject.Inject
@@ -14,23 +21,14 @@ import javax.inject.Singleton
 
 @Singleton
 class DataSeeder @Inject constructor(
+    private val database: AppDatabase,
     private val productRepository: ProductRepository,
     private val categoryRepository: CategoryRepository,
     private val inventoryRepository: InventoryRepository,
     private val staffRepository: com.extrotarget.extroposv2.core.data.repository.carwash.StaffRepository,
     private val taxRepository: com.extrotarget.extroposv2.core.data.repository.settings.TaxRepository
 ) {
-    suspend fun seedForMode(
-        mode: BusinessMode,
-        adminName: String? = null,
-        adminUsername: String? = null,
-        adminPin: String? = null
-    ) {
-        seedEssentialData(adminName, adminUsername, adminPin)
-        seedModeSpecificData(mode)
-    }
-
-    private suspend fun seedEssentialData(
+    suspend fun seedEssentialData(
         adminName: String? = null,
         adminUsername: String? = null,
         adminPin: String? = null
@@ -40,25 +38,15 @@ class DataSeeder @Inject constructor(
             val admin = com.extrotarget.extroposv2.core.data.model.carwash.Staff(
                 id = "admin-fixed-id",
                 name = adminName ?: "Administrator",
-                phone = adminUsername ?: "admin", // Using username as phone for now if needed, or update model
+                phone = adminUsername ?: "admin",
                 role = "ADMIN",
                 pin = adminPin ?: "0000",
                 isActive = true
             )
             staffRepository.saveStaff(admin)
-        } else if (adminPin != null) {
-            // If staff exists (e.g. from partial previous seed), update the admin PIN
-            val admin = staffRepository.getStaffById("admin-fixed-id")
-            if (admin != null) {
-                staffRepository.saveStaff(admin.copy(
-                    name = adminName ?: admin.name,
-                    phone = adminUsername ?: admin.phone,
-                    pin = adminPin
-                ))
-            }
         }
 
-        val taxConfig = taxRepository.getTaxConfig().first()
+        val taxConfig = taxRepository.getTaxConfig().firstOrNull()
         if (taxConfig == null) {
             taxRepository.updateTaxConfig(
                 com.extrotarget.extroposv2.core.data.model.settings.TaxConfig(
@@ -69,13 +57,26 @@ class DataSeeder @Inject constructor(
                 )
             )
         }
+        
+        // Seed default receipt if missing
+        val receiptConfig = database.receiptDao().getReceiptConfig().firstOrNull()
+        if (receiptConfig == null) {
+            database.receiptDao().saveReceiptConfig(
+                com.extrotarget.extroposv2.core.data.model.settings.ReceiptConfig(
+                    id = "default_receipt",
+                    storeName = "ExtroPOS v2",
+                    headerMessage = "Welcome",
+                    footerMessage = "Thank you for your business!",
+                    showTaxSummary = true
+                )
+            )
+        }
     }
 
-    private suspend fun seedModeSpecificData(mode: BusinessMode) {
-        val categories = categoryRepository.getAllCategories().first()
-        // If already has categories, assume seeded or user-configured
-        if (categories.isNotEmpty()) return
-
+    suspend fun seedDemoData(mode: BusinessMode) {
+        val catMap = mutableMapOf<String, Category>()
+        
+        // 1. Seed Categories
         val modeCats = when (mode) {
             BusinessMode.RETAIL -> listOf("Drinks", "Bakery", "Tech")
             BusinessMode.FNB -> listOf("Main Dishes", "Drinks", "Desserts")
@@ -85,13 +86,13 @@ class DataSeeder @Inject constructor(
             else -> emptyList()
         }
 
-        val catMap = mutableMapOf<String, Category>()
         modeCats.forEach { name ->
             val cat = Category(UUID.randomUUID().toString(), name, "Default $name")
             categoryRepository.insertCategory(cat)
             catMap[name] = cat
         }
 
+        // 2. Seed Products
         val products = when (mode) {
             BusinessMode.RETAIL -> listOf(
                 createSeedProduct("Mineral Water 500ml", "1.50", catMap["Drinks"], BusinessMode.RETAIL),
@@ -122,12 +123,55 @@ class DataSeeder @Inject constructor(
 
         products.forEach { product ->
             productRepository.insertProduct(product)
-            inventoryRepository.adjustStock(product.id, BigDecimal("100"), "IN", "Initial template seeding")
+            inventoryRepository.adjustStock(product.id, BigDecimal("100"), StockMovementType.RESTOCK, "Initial template seeding")
+        }
+
+        // 3. Seed Tables (FNB only)
+        if (mode == BusinessMode.FNB) {
+            listOf("T1", "T2", "T3", "T4", "T5").forEachIndexed { index, name ->
+                database.tableDao().insertTable(
+                    Table(
+                        id = UUID.randomUUID().toString(),
+                        code = name,
+                        name = "Table ${index + 1}",
+                        capacity = 4,
+                        status = TableStatus.AVAILABLE,
+                        zone = "Indoor",
+                        displayOrder = index
+                    )
+                )
+            }
+        }
+
+        // 4. Seed Members
+        listOf(
+            Member(UUID.randomUUID().toString(), "Ahmad Ali", "0123456789", "ahmad@example.com"),
+            Member(UUID.randomUUID().toString(), "Tan Ah Kao", "0112233445", "tan@example.com"),
+            Member(UUID.randomUUID().toString(), "Muthu", "0177889900", "muthu@example.com")
+        ).forEach { database.loyaltyDao().insertMember(it) }
+    }
+
+    suspend fun clearBusinessData() {
+        database.productDao().deleteAll()
+        database.categoryDao().deleteAll()
+        database.modifierDao().clearAllModifiers()
+        database.tableDao().deleteAll()
+        database.saleDao().clearAllBusinessData()
+        database.loyaltyDao().clearLoyaltyData()
+        database.carWashDao().deleteAll()
+        database.laundryDao().deleteAll()
+        database.hotelDao().clearAllHotelData()
+    }
+
+    suspend fun restoreDemoDatabase(mode: BusinessMode) {
+        database.withTransaction {
+            clearBusinessData()
+            seedEssentialData()
+            seedDemoData(mode)
         }
     }
 
     suspend fun seedIfNeeded() {
-        // Essential only
         seedEssentialData()
     }
 

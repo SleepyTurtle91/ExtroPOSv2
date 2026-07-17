@@ -186,6 +186,7 @@ dependencies {
     implementation("com.google.http-client:google-http-client-gson:1.42.3")
     implementation(libs.google.auth.library.oauth2.http)
     implementation(libs.generativeai)
+    implementation(libs.imin.printer)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

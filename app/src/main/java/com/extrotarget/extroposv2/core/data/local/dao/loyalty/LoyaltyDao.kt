@@ -94,4 +94,16 @@ interface LoyaltyDao {
 
     @Query("SELECT * FROM loyalty_transactions WHERE memberId = :memberId ORDER BY timestamp DESC")
     fun getTransactionsForMember(memberId: String): Flow<List<LoyaltyPointTransaction>>
+
+    @Query("DELETE FROM members")
+    suspend fun deleteAllMembers()
+
+    @Query("DELETE FROM loyalty_transactions")
+    suspend fun deleteAllTransactions()
+
+    @Transaction
+    suspend fun clearLoyaltyData() {
+        deleteAllMembers()
+        deleteAllTransactions()
+    }
 }

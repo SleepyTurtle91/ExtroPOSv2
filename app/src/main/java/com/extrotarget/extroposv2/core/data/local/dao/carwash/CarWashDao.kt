@@ -27,4 +27,7 @@ interface CarWashDao {
 
     @Delete
     suspend fun deleteJob(job: CarWashJob)
+
+    @Query("DELETE FROM car_wash_jobs")
+    suspend fun deleteAll()
 }

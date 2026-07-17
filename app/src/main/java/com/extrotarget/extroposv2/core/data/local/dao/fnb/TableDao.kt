@@ -7,11 +7,17 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TableDao {
-    @Query("SELECT * FROM fnb_tables")
+    @Query("SELECT * FROM fnb_tables ORDER BY displayOrder ASC, name ASC")
     fun getAllTables(): Flow<List<Table>>
 
     @Query("SELECT * FROM fnb_tables WHERE id = :tableId")
     suspend fun getTableById(tableId: String): Table?
+
+    @Query("SELECT EXISTS(SELECT 1 FROM fnb_tables WHERE name = :name AND zone = :zone)")
+    suspend fun existsByName(name: String, zone: String): Boolean
+
+    @Query("SELECT EXISTS(SELECT 1 FROM fnb_tables WHERE code = :code)")
+    suspend fun existsByCode(code: String): Boolean
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTable(table: Table)
@@ -46,4 +52,7 @@ interface TableDao {
 
     @Delete
     suspend fun deleteTable(table: Table)
+
+    @Query("DELETE FROM fnb_tables")
+    suspend fun deleteAll()
 }

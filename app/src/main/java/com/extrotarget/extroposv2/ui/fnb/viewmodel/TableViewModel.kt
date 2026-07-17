@@ -38,40 +38,104 @@ class TableViewModel @Inject constructor(
         _selectedZone.value = zone
     }
 
-    fun addTable(name: String, capacity: Int = 4, zone: String = "Indoor") {
+    fun addTable(name: String, code: String, capacity: Int = 4, zone: String = "Indoor") {
         viewModelScope.launch {
+            if (tableRepository.existsByName(name, zone)) {
+                // Handle duplicate name (e.g., via a UI state error)
+                return@launch
+            }
+            
             val newTable = Table(
                 id = UUID.randomUUID().toString(),
+                code = code,
                 name = name,
                 capacity = capacity,
                 status = TableStatus.AVAILABLE,
-                zone = zone
+                zone = zone,
+                displayOrder = tables.value.size
             )
             tableRepository.addTable(newTable)
         }
     }
 
-    fun updateTableStatus(table: Table, status: TableStatus) {
+    fun bulkAddTables(
+        prefix: String,
+        startNumber: Int,
+        count: Int,
+        capacity: Int = 4,
+        zone: String = "Indoor"
+    ) {
         viewModelScope.launch {
-            tableRepository.updateTable(table.copy(status = status))
+            var addedCount = 0
+            val existingNames = mutableListOf<String>()
+            
+            for (i in 0 until count) {
+                val number = startNumber + i
+                val tableName = if (prefix.endsWith(" ")) "$prefix$number" else "$prefix $number"
+                val tableCode = "${prefix.take(1).uppercase()}$number"
+                
+                if (tableRepository.existsByName(tableName, zone)) {
+                    existingNames.add(tableName)
+                    continue
+                }
+                
+                val newTable = Table(
+                    id = UUID.randomUUID().toString(),
+                    code = tableCode,
+                    name = tableName,
+                    capacity = capacity,
+                    status = TableStatus.AVAILABLE,
+                    zone = zone,
+                    displayOrder = tables.value.size + addedCount
+                )
+                tableRepository.addTable(newTable)
+                addedCount++
+            }
+            // TODO: Expose bulk add summary to UI (addedCount, existingNames)
         }
     }
 
-    fun moveTable(fromTableId: String, toTableId: String) {
+    fun duplicateTable(table: Table) {
         viewModelScope.launch {
-            tableRepository.moveTable(fromTableId, toTableId)
+            var newName = "${table.name} (Copy)"
+            var newCode = "${table.code}C"
+            var counter = 1
+            
+            while (tableRepository.existsByName(newName, table.zone)) {
+                newName = "${table.name} (Copy $counter)"
+                counter++
+            }
+            
+            val duplicatedTable = table.copy(
+                id = UUID.randomUUID().toString(),
+                name = newName,
+                code = newCode,
+                status = TableStatus.AVAILABLE,
+                currentSaleId = null,
+                currentBillAmount = null,
+                hasUnsentItems = false,
+                displayOrder = tables.value.size
+            )
+            tableRepository.addTable(duplicatedTable)
         }
     }
 
-    fun joinTable(sourceTableId: String, targetTableId: String) {
+    fun updateTableOrder(tableId: String, newOrder: Int) {
         viewModelScope.launch {
-            tableRepository.joinTable(sourceTableId, targetTableId)
+            tableRepository.getTable(tableId)?.let { table ->
+                tableRepository.updateTable(table.copy(displayOrder = newOrder))
+            }
         }
     }
 
     fun deleteTable(tableId: String) {
         viewModelScope.launch {
-            tableRepository.deleteTable(tableId)
+            val table = tableRepository.getTable(tableId)
+            if (table != null && table.status == TableStatus.AVAILABLE) {
+                tableRepository.deleteTable(tableId)
+            } else {
+                // TODO: Show error "Cannot delete occupied/reserved table"
+            }
         }
     }
 

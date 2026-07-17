@@ -2,6 +2,8 @@ package com.extrotarget.extroposv2.core.data.repository
 
 import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
 import com.extrotarget.extroposv2.core.data.model.Product
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import com.extrotarget.extroposv2.core.network.SyncMessageType
 import com.extrotarget.extroposv2.core.network.StockUpdateData
 import kotlinx.coroutines.flow.Flow
@@ -56,33 +58,35 @@ class ProductRepository @Inject constructor(
 
     fun getLowStockProducts(): Flow<List<Product>> = productDao.getLowStockProducts()
 
-    suspend fun adjustStock(productId: String, quantity: java.math.BigDecimal, type: String, note: String?) {
+    suspend fun adjustStock(productId: String, quantity: java.math.BigDecimal, type: StockMovementType, reason: String?, createdBy: String = "SYSTEM") {
         val role = settingsRepository.terminalRole.first()
         if (role == com.extrotarget.extroposv2.core.data.model.settings.TerminalRole.SLAVE && syncClient.isConnected()) {
             syncClient.sendRealtimeMessage(SyncMessageType.UPDATE_STOCK, mapOf("productId" to productId, "adjustment" to quantity))
         } else {
             productDao.updateStockQuantity(productId, quantity)
             stockMovementDao.insertMovement(
-                com.extrotarget.extroposv2.core.data.model.inventory.StockMovement(
+                StockMovement(
                     id = java.util.UUID.randomUUID().toString(),
                     productId = productId,
                     quantity = quantity,
                     type = type,
-                    note = note
+                    reason = reason,
+                    createdBy = createdBy
                 )
             )
         }
     }
 
-    suspend fun setStock(productId: String, quantity: java.math.BigDecimal, type: String, note: String?) {
+    suspend fun setStock(productId: String, quantity: java.math.BigDecimal, reason: String?, createdBy: String = "SYSTEM") {
         productDao.setStockQuantity(productId, quantity)
         stockMovementDao.insertMovement(
-            com.extrotarget.extroposv2.core.data.model.inventory.StockMovement(
+            StockMovement(
                 id = java.util.UUID.randomUUID().toString(),
                 productId = productId,
                 quantity = quantity,
-                type = "SET",
-                note = note
+                type = StockMovementType.ADJUSTMENT,
+                reason = reason,
+                createdBy = createdBy
             )
         )
     }

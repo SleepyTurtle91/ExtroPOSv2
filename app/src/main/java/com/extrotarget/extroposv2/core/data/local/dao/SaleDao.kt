@@ -5,6 +5,8 @@ import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -23,7 +25,7 @@ interface SaleDao {
     suspend fun decreaseStock(productId: String, quantity: java.math.BigDecimal)
 
     @Insert
-    suspend fun insertStockMovement(movement: com.extrotarget.extroposv2.core.data.model.inventory.StockMovement)
+    suspend fun insertStockMovement(movement: StockMovement)
 
     @Transaction
     suspend fun completeSale(sale: Sale, items: List<SaleItem>) {
@@ -36,13 +38,15 @@ interface SaleDao {
             if (sale.status == AppConfig.SaleStatus.COMPLETED) {
                 decreaseStock(item.productId, item.quantity)
                 insertStockMovement(
-                    com.extrotarget.extroposv2.core.data.model.inventory.StockMovement(
+                    StockMovement(
                         id = java.util.UUID.randomUUID().toString(),
                         productId = item.productId,
                         quantity = item.quantity.negate(),
-                        type = "SALE",
+                        type = StockMovementType.SALE,
                         timestamp = sale.timestamp,
-                        note = "Sale ${sale.id}"
+                        reason = "Sale ${sale.id}",
+                        createdBy = sale.staffId ?: "SYSTEM",
+                        referenceId = sale.id
                     )
                 )
             }
@@ -100,4 +104,20 @@ interface SaleDao {
     @Transaction
     @Query("SELECT * FROM sales WHERE id NOT IN (SELECT saleId FROM sale_einvoice_submission) AND timestamp >= :start AND timestamp <= :end AND status = :completedStatus")
     suspend fun getSalesWithItemsWithoutLhdnSubmission(start: Long, end: Long, completedStatus: String = AppConfig.SaleStatus.COMPLETED): List<SaleWithItems>
+
+    @Query("DELETE FROM sales")
+    suspend fun deleteAllSales()
+
+    @Query("DELETE FROM sale_items")
+    suspend fun deleteAllSaleItems()
+
+    @Query("DELETE FROM stock_movements")
+    suspend fun deleteAllStockMovements()
+
+    @Transaction
+    suspend fun clearAllBusinessData() {
+        deleteAllSales()
+        deleteAllSaleItems()
+        deleteAllStockMovements()
+    }
 }

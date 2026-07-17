@@ -1,13 +1,15 @@
-# Task List - POS UI & Function Keys
+# Task List - License & Table Management
 
-- `[x]` Define `PosAction` enum and update `SalesUiState`
-- `[x]` Implement `StitchFunctionGrid.kt`
-- `[x]` Update `StitchProductCard.kt` with compact mode support
-- `[x]` Refactor `StitchCartSidebar.kt` with `BoxWithConstraints` and adaptive widths
-- `[x]` Update `SalesViewModel.kt` with centralized `onPosAction` handling
-- `[x]` Integrate `StitchFunctionGrid` into `SalesScreen.kt`
-- `[x]` Wiring: Implement Reprint, Hold, and Void logic
-- `[x]` Shared UI: Wire TopBar buttons (Drawer, Search)
-- `[x]` Cart Sidebar: Implement `MoreVert` menu
-- `[x]` Dashboard: Fix scrolling and wire notifications
-- `[x]` Final layout verification for small tablets (320dp sidebar)
+## 1. License Activation System
+- `[ ]` Update `AppConfig.kt` (30-day trial)
+- `[ ]` Update `LicenseManager.kt` (Logic & HWID)
+- `[ ]` Create `LicenseActivationScreen.kt`
+- `[ ]` Wire forced lock in `MainScreen.kt`
+- `[ ]` Register screen in `NavGraph.kt`
+
+## 2. Table Management
+- `[ ]` Update `TableViewModel.kt` (Bulk Add, Edit, Delete)
+- `[ ]` Enhance `StitchTableCard.kt` with long-press support
+- `[ ]` Add Bulk Add Table Dialog to `TableFloorPlanScreen.kt`
+- `[ ]` Add Edit/Delete Table Dialog to `TableFloorPlanScreen.kt`
+- `[ ]` Final verification on device

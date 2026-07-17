@@ -7,6 +7,7 @@ import com.extrotarget.extroposv2.core.data.local.dao.PrinterDao
 import com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao
 import com.extrotarget.extroposv2.core.data.model.platform.Capability
 import com.extrotarget.extroposv2.core.data.model.platform.WorkspaceEntity
+import com.extrotarget.extroposv2.core.platform.capability.CapabilityResolver
 import com.extrotarget.extroposv2.core.platform.models.*
 import com.extrotarget.extroposv2.core.security.Permission
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
@@ -18,7 +19,8 @@ import javax.inject.Singleton
 class WorkspaceEngine @Inject constructor(
     private val workspaceDao: WorkspaceDao,
     private val printerDao: PrinterDao,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val capabilityResolver: CapabilityResolver
 ) {
     val workspaceConfig: StateFlow<WorkspaceEntity?> = workspaceDao.getWorkspaceConfig()
         .stateIn(kotlinx.coroutines.GlobalScope, SharingStarted.Eagerly, null)
@@ -62,23 +64,17 @@ class WorkspaceEngine @Inject constructor(
         val config = workspaceConfig.value ?: return false
         val businessMode = config.businessMode
         
+        val supportedCapabilities = capabilityResolver.getCapabilitiesForMode(businessMode)
+        if (!supportedCapabilities.contains(capability)) return false
+
         val isHardwareReady = when (capability) {
-            Capability.KITCHEN_DISPLAY, Capability.TABLE_MANAGEMENT -> {
+            Capability.KITCHEN_TICKET, Capability.TABLE_MANAGEMENT -> {
                 printerDao.getAllPrinters().first().isNotEmpty()
             }
             else -> true
         }
 
-        val isModeSupported = when (capability) {
-            Capability.TABLE_MANAGEMENT -> businessMode == BusinessMode.FNB
-            Capability.KITCHEN_DISPLAY -> businessMode == BusinessMode.FNB
-            Capability.STAFF_COMMISSION -> businessMode == BusinessMode.CARWASH || businessMode == BusinessMode.RETAIL
-            Capability.WEIGHT_BASED_PRICING -> businessMode == BusinessMode.LAUNDRY
-            Capability.BOOKING_MANAGEMENT, Capability.ROOM_MANAGEMENT -> businessMode == BusinessMode.HOTEL || businessMode == BusinessMode.HOMESTAY
-            else -> true
-        }
-
-        return isModeSupported && isHardwareReady && config.enabledCapabilities.contains(capability)
+        return isHardwareReady && config.enabledCapabilities.contains(capability)
     }
 
     fun getDashboardConfig(): DashboardConfig {

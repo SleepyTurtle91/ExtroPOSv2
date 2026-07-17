@@ -1,6 +1,9 @@
 package com.extrotarget.extroposv2.ui.fnb
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -8,13 +11,15 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.CallMerge
-import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +32,7 @@ import com.extrotarget.extroposv2.ui.fnb.viewmodel.TableViewModel
 import com.extrotarget.extroposv2.ui.theme.StitchColor
 import com.extrotarget.extroposv2.ui.theme.labelCaps
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TableFloorPlanScreen(
     viewModel: TableViewModel,
@@ -82,6 +88,14 @@ fun TableFloorPlanScreen(
             
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 StitchOutlinedButton(
+                    text = "Bulk Add",
+                    icon = Icons.Default.AddBusiness,
+                    onClick = { 
+                        // Logic to show Bulk Add Dialog
+                    },
+                    contentColor = StitchColor.Primary
+                )
+                StitchOutlinedButton(
                     text = "Transfer",
                     icon = Icons.Default.SwapHoriz,
                     onClick = { 
@@ -107,13 +121,55 @@ fun TableFloorPlanScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(tables) { table ->
-                StitchTableCard(
-                    table = table,
-                    onClick = { onTableClick(table) },
-                    itemCount = 0, // TODO: Fetch from ViewModel
-                    orderAmount = java.math.BigDecimal.ZERO // TODO: Fetch from ViewModel
-                )
+            items(tables, key = { it.id }) { table ->
+                var showMenu by remember { mutableStateOf(false) }
+
+                Box {
+                    StitchTableCard(
+                        table = table,
+                        onClick = { onTableClick(table) },
+                        itemCount = 0,
+                        orderAmount = java.math.BigDecimal.ZERO,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .combinedClickable(
+                                onClick = { onTableClick(table) },
+                                onLongClick = { showMenu = true }
+                            )
+                    )
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Edit") },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+                            onClick = { 
+                                showMenu = false
+                                // Edit Logic
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Duplicate") },
+                            leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null) },
+                            onClick = { 
+                                showMenu = false
+                                viewModel.duplicateTable(table)
+                            }
+                        )
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                            onClick = { 
+                                showMenu = false
+                                viewModel.deleteTable(table.id)
+                            },
+                            enabled = table.status == TableStatus.AVAILABLE
+                        )
+                    }
+                }
             }
         }
     }

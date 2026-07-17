@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
 import kotlinx.coroutines.flow.Flow
 
 @Dao

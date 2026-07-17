@@ -4,7 +4,8 @@ import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
 import com.extrotarget.extroposv2.core.data.local.dao.StockMovementDao
 import com.extrotarget.extroposv2.core.data.model.Product
-import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import androidx.room.withTransaction
 import java.io.BufferedReader
 import java.io.InputStream
@@ -90,9 +91,10 @@ class ProductImportManager @Inject constructor(
                                     id = UUID.randomUUID().toString(),
                                     productId = productId,
                                     quantity = diff,
-                                    type = "IMPORT",
+                                    type = StockMovementType.RESTOCK,
                                     timestamp = System.currentTimeMillis(),
-                                    note = "CSV Import"
+                                    reason = "CSV Import",
+                                    createdBy = "SYSTEM"
                                 )
                             )
                         }

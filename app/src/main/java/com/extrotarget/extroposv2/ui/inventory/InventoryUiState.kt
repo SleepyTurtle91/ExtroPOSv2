@@ -2,7 +2,7 @@ package com.extrotarget.extroposv2.ui.inventory
 
 import com.extrotarget.extroposv2.core.data.model.Category
 import com.extrotarget.extroposv2.core.data.model.Product
-import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
 import java.math.BigDecimal
 
 data class InventoryUiState(

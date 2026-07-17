@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.license.LicenseManager
 import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
 import com.extrotarget.extroposv2.core.data.repository.platform.WorkspaceRepository
 import com.extrotarget.extroposv2.core.data.seeder.DataSeeder
@@ -87,7 +88,8 @@ data class OnboardingUIState(
 class OnboardingViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository,
     private val workspaceRepository: WorkspaceRepository,
-    private val dataSeeder: DataSeeder
+    private val dataSeeder: DataSeeder,
+    private val licenseManager: LicenseManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(OnboardingUIState())
     val uiState: StateFlow<OnboardingUIState> = _uiState.asStateFlow()
@@ -146,12 +148,14 @@ class OnboardingViewModel @Inject constructor(
     fun activateLicense(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isActivating = true, activationError = null) }
-            delay(1000)
             
-            if (_uiState.value.activationKey == "EXTRO-PRO-2024") {
+            val key = _uiState.value.activationKey
+            // For now, we assume keys are for 1 year during onboarding
+            val expiry = java.time.LocalDateTime.now().plusYears(1)
+            
+            if (licenseManager.activate(key, expiry)) {
                 val state = _uiState.value
-                dataSeeder.seedForMode(
-                    mode = state.businessMode,
+                dataSeeder.seedEssentialData(
                     adminName = state.adminName,
                     adminUsername = state.adminUsername,
                     adminPin = state.adminPin
@@ -166,9 +170,9 @@ class OnboardingViewModel @Inject constructor(
     fun startTrial(onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isActivating = true) }
+            licenseManager.initializeTrial()
             val state = _uiState.value
-            dataSeeder.seedForMode(
-                mode = state.businessMode,
+            dataSeeder.seedEssentialData(
                 adminName = state.adminName,
                 adminUsername = state.adminUsername,
                 adminPin = state.adminPin
@@ -424,7 +428,7 @@ fun ActivationStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel, o
         Spacer(Modifier.height(16.dp))
 
         StitchOutlinedButton(
-            text = "START 14-DAY TRIAL",
+            text = "START 30-DAY TRIAL",
             onClick = { viewModel.startTrial(onSetupComplete) },
             modifier = Modifier.fillMaxWidth(),
             enabled = !uiState.isActivating

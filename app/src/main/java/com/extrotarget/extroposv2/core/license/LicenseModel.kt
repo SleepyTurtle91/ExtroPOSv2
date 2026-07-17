@@ -20,6 +20,7 @@ enum class LicenseType {
 sealed class LicenseStatus {
     object Valid : LicenseStatus()
     data class Trial(val daysRemaining: Int) : LicenseStatus()
+    data class GracePeriod(val daysRemaining: Int) : LicenseStatus()
     object Expired : LicenseStatus()
     object Invalid : LicenseStatus()
 }

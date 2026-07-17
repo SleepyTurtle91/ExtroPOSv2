@@ -1,6 +1,7 @@
 package com.extrotarget.extroposv2.core.license
 
 import android.content.Context
+import android.os.Build
 import android.provider.Settings
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -14,6 +15,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.security.MessageDigest
+import javax.crypto.Mac
+import javax.crypto.spec.SecretKeySpec
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -27,7 +30,15 @@ class LicenseManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val deviceId: String by lazy {
-        Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
+        LicenseUtils.generateHWID(
+            Build.MANUFACTURER,
+            Build.MODEL,
+            Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: "unknown_device"
+        )
+    }
+
+    fun getFormattedDeviceId(): String {
+        return LicenseUtils.formatDeviceId(deviceId)
     }
 
     companion object {
@@ -63,14 +74,14 @@ class LicenseManager @Inject constructor(
         }
     }
 
-    suspend fun activate(key: String): Boolean {
-        val expectedKey = generateKeyForDevice(deviceId)
+    suspend fun activate(key: String, expiryDate: LocalDateTime): Boolean {
+        val expectedKey = LicenseUtils.generateActivationKey(deviceId, expiryDate.format(formatter))
         if (key == expectedKey) {
             context.dataStore.edit { settings ->
                 settings[ACTIVATION_KEY] = key
                 settings[IS_ACTIVATED] = true
                 settings[LICENSE_TYPE] = LicenseType.PRO.name
-                settings[EXPIRY_DATE] = LocalDateTime.now().plusYears(1).format(formatter)
+                settings[EXPIRY_DATE] = expiryDate.format(formatter)
             }
             return true
         }
@@ -80,6 +91,13 @@ class LicenseManager @Inject constructor(
     fun getLicenseStatus(info: LicenseInfo): LicenseStatus {
         if (info.isActivated) {
             val now = LocalDateTime.now()
+            
+            // Verify HMAC integrity
+            val expectedKey = LicenseUtils.generateActivationKey(deviceId, info.expiryDate?.format(formatter) ?: "")
+            if (info.activationKey != expectedKey) {
+                return LicenseStatus.Invalid
+            }
+
             return if (info.expiryDate == null || info.expiryDate.isAfter(now)) {
                 LicenseStatus.Valid
             } else {
@@ -90,22 +108,22 @@ class LicenseManager @Inject constructor(
         val trialStart = info.trialStartDate ?: return LicenseStatus.Invalid
         val now = LocalDateTime.now()
         val daysElapsed = ChronoUnit.DAYS.between(trialStart, now).toInt()
-        val remaining = 14 - daysElapsed
-
-        return if (remaining > 0) {
-            LicenseStatus.Trial(remaining)
-        } else {
-            LicenseStatus.Expired
+        
+        val trialDays = 30
+        val graceDays = 3
+        
+        val remainingTrial = trialDays - daysElapsed
+        if (remainingTrial > 0) {
+            return LicenseStatus.Trial(remainingTrial)
         }
+        
+        val remainingGrace = (trialDays + graceDays) - daysElapsed
+        if (remainingGrace > 0) {
+            return LicenseStatus.GracePeriod(remainingGrace)
+        }
+
+        return LicenseStatus.Expired
     }
 
-    private fun generateKeyForDevice(id: String): String {
-        val salt = AppConfig.Security.CRYPTO_SALT
-        val bytes = (id + salt).toByteArray()
-        val md = MessageDigest.getInstance("SHA-256")
-        val digest = md.digest(bytes)
-        return digest.joinToString("") { "%02x".format(it) }.take(16).uppercase()
-    }
-
-    fun getDeviceIdForDisplay(): String = deviceId
+    fun getDeviceIdForDisplay(): String = getFormattedDeviceId()
 }

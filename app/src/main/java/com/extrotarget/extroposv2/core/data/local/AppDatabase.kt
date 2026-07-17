@@ -37,6 +37,15 @@ import com.extrotarget.extroposv2.core.data.local.dao.dobi.LaundryDao
 import com.extrotarget.extroposv2.core.data.local.dao.fnb.TableDao
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashJob
 import com.extrotarget.extroposv2.core.data.model.dobi.LaundryOrder
+import com.extrotarget.extroposv2.domain.fnb.model.MenuItem
+import com.extrotarget.extroposv2.domain.fnb.model.FnbOrder
+import com.extrotarget.extroposv2.domain.fnb.model.FnbOrderItem
+import com.extrotarget.extroposv2.domain.fnb.model.ModifierGroup
+import com.extrotarget.extroposv2.domain.fnb.model.ModifierOption
+import com.extrotarget.extroposv2.domain.retail.model.RetailProduct
+import com.extrotarget.extroposv2.domain.retail.model.Supplier
+import com.extrotarget.extroposv2.domain.retail.model.PurchaseOrder
+import com.extrotarget.extroposv2.domain.retail.model.PurchaseOrderItem
 import com.extrotarget.extroposv2.core.data.model.fnb.Table
 import com.extrotarget.extroposv2.core.data.model.carwash.CommissionRecord
 import com.extrotarget.extroposv2.core.data.model.carwash.Staff
@@ -46,7 +55,7 @@ import com.extrotarget.extroposv2.core.data.model.inventory.StockTransfer
 import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnConfig
 import com.extrotarget.extroposv2.core.data.model.lhdn.LhdnToken
 import com.extrotarget.extroposv2.core.data.model.lhdn.SaleEInvoiceSubmission
-import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
 import com.extrotarget.extroposv2.core.data.model.loyalty.LoyaltyConfig
 import com.extrotarget.extroposv2.core.data.model.loyalty.LoyaltyPointTransaction
 import com.extrotarget.extroposv2.core.data.model.loyalty.Member
@@ -76,9 +85,7 @@ import com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao
         Modifier::class,
         ModifierLink::class,
         Sale::class,
-        // ... rest of entities
         SaleItem::class,
-        StockMovement::class,
         Staff::class,
         CommissionRecord::class,
         PrinterConfig::class,
@@ -107,8 +114,18 @@ import com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao
         Guest::class,
         HotelAddon::class,
         WorkspaceEntity::class,
+        RetailProduct::class,
+        MenuItem::class,
+        ModifierGroup::class,
+        ModifierOption::class,
+        StockMovement::class,
+        Supplier::class,
+        PurchaseOrder::class,
+        PurchaseOrderItem::class,
+        FnbOrder::class,
+        FnbOrderItem::class,
     ],
-    version = 27,
+    version = 33,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

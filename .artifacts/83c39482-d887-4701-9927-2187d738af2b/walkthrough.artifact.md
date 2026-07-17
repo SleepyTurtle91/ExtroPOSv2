@@ -28,6 +28,17 @@ I have completed the full optimization and wiring of the ExtroPOS v2 system, ens
 - **Laundry Module**: Wired basic order check-in with live weight scale integration and customer details.
 - **Dashboard Notifications**: Wired the notifications button to show a status snackbar.
 
+### 4. Mock Data Removal & Demo Restoration
+- **Empty-by-Default Onboarding**: Refactored the `OnboardingViewModel` and `DataSeeder` to ensure new installations start with an empty catalog. Only essential system data (Admin user, Tax config, default Receipt) is seeded initially.
+- **Restore Demo Database**: Implemented a professional restoration feature in **Settings -> Restore Demo Database**.
+    - **Transaction-Safe**: Uses Room's `withTransaction` to ensure the database is never left in a partial state.
+    - **Selective Deletion**: Clears all business-related data (Products, Sales, Members, etc.) while **PRESERVING** critical configurations like License, Staff users, and Printer settings.
+    - **UI Feedback**: Added a multi-stage workflow:
+        1. **Confirmation**: Clear warning about data loss and preservation scope.
+        2. **Progress**: A non-dismissible dialog during the restoration process.
+        3. **Success**: A summary dialog showing the count of restored items.
+- **Improved Training Mode**: Updated Training Mode to use the same modular seeding logic, ensuring the temporary in-memory environment is always populated with the latest industry templates.
+
 ## Verification Results
 
 ### Responsive Design

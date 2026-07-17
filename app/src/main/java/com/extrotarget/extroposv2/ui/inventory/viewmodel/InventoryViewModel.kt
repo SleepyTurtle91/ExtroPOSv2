@@ -9,7 +9,9 @@ import com.extrotarget.extroposv2.core.data.repository.CategoryRepository
 import com.extrotarget.extroposv2.core.data.repository.ProductRepository
 import com.extrotarget.extroposv2.core.data.repository.fnb.ModifierRepository
 import com.extrotarget.extroposv2.ui.inventory.InventoryUiState
-import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
+import com.extrotarget.extroposv2.core.auth.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -21,7 +23,8 @@ import javax.inject.Inject
 class InventoryViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val categoryRepository: CategoryRepository,
-    private val modifierRepository: ModifierRepository
+    private val modifierRepository: ModifierRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     val categories = categoryRepository.getAllCategories()
@@ -83,15 +86,22 @@ class InventoryViewModel @Inject constructor(
 
     fun adjustStock(quantity: BigDecimal, type: String, note: String?) {
         val product = _selectedProduct.value ?: return
+        val staffId = sessionManager.getCurrentStaff()?.id ?: "SYSTEM"
         viewModelScope.launch {
-            productRepository.adjustStock(product.id, quantity, type, note)
+            val movementType = when (type) {
+                "IN" -> StockMovementType.RESTOCK
+                "OUT" -> StockMovementType.ADJUSTMENT
+                else -> StockMovementType.ADJUSTMENT
+            }
+            productRepository.adjustStock(product.id, quantity, movementType, note, staffId)
         }
     }
 
-    fun setStock(quantity: BigDecimal, type: String, note: String?) {
+    fun setStock(quantity: BigDecimal, note: String?) {
         val product = _selectedProduct.value ?: return
+        val staffId = sessionManager.getCurrentStaff()?.id ?: "SYSTEM"
         viewModelScope.launch {
-            productRepository.setStock(product.id, quantity, type, note)
+            productRepository.setStock(product.id, quantity, note, staffId)
         }
     }
 

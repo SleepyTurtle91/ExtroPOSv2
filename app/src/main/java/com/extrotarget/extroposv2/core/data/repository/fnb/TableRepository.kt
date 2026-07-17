@@ -15,6 +15,10 @@ class TableRepository @Inject constructor(
 
     suspend fun getTable(id: String): Table? = tableDao.getTableById(id)
 
+    suspend fun existsByName(name: String, zone: String): Boolean = tableDao.existsByName(name, zone)
+
+    suspend fun existsByCode(code: String): Boolean = tableDao.existsByCode(code)
+
     suspend fun addTable(table: Table) = tableDao.insertTable(table)
 
     suspend fun updateTable(table: Table) = tableDao.updateTable(table)

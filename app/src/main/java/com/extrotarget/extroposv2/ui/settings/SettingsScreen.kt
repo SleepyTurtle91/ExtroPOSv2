@@ -28,6 +28,8 @@ import com.extrotarget.extroposv2.core.data.repository.settings.SettingsReposito
 import com.extrotarget.extroposv2.core.util.LocaleHelper
 import com.extrotarget.extroposv2.BuildConfig
 
+import com.extrotarget.extroposv2.ui.settings.components.*
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -236,6 +238,12 @@ fun SettingsScreen(
                     onClick = { onNavigateTo(Screen.Backup.route) }
                 )
                 SettingsItem(
+                    title = "Restore Demo Database",
+                    subtitle = "Reset business data and use sample templates",
+                    icon = Icons.Default.Restore,
+                    onClick = { viewModel.confirmRestoreDemo() }
+                )
+                SettingsItem(
                     title = "Security & Audit Logs",
                     subtitle = "Monitor sensitive actions and user changes",
                     icon = Icons.Default.Security,
@@ -291,6 +299,25 @@ fun SettingsScreen(
                 viewModel.setLanguage(code)
                 showLanguageDialog = false
             }
+        )
+    }
+
+    // Restore Demo Dialogs
+    if (uiState.showConfirmRestoreDemo) {
+        ConfirmRestoreDemoDialog(
+            onConfirm = { viewModel.executeRestoreDemo() },
+            onDismiss = { viewModel.cancelRestoreDemo() }
+        )
+    }
+
+    if (uiState.isRestoringDemo) {
+        RestoreProgressDialog()
+    }
+
+    if (uiState.showRestoreSuccess != null) {
+        RestoreSuccessDialog(
+            summary = uiState.showRestoreSuccess!!,
+            onDismiss = { viewModel.dismissRestoreSuccess() }
         )
     }
 }

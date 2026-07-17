@@ -100,9 +100,9 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun activateLicense(key: String) {
+    fun activateLicense(key: String, expiryDate: java.time.LocalDateTime = java.time.LocalDateTime.now().plusYears(1)) {
         viewModelScope.launch {
-            licenseManager.activate(key)
+            licenseManager.activate(key, expiryDate)
         }
     }
 

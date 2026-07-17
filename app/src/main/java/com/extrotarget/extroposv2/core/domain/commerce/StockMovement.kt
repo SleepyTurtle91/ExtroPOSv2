@@ -1,4 +1,4 @@
-package com.extrotarget.extroposv2.core.data.model.inventory
+package com.extrotarget.extroposv2.core.domain.commerce
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -22,8 +22,18 @@ import java.math.BigDecimal
 data class StockMovement(
     @PrimaryKey val id: String,
     val productId: String,
-    val quantity: BigDecimal, // Positive for addition, negative for reduction
-    val type: String, // IN, OUT, ADJUSTMENT, SALE
+    val type: StockMovementType,
+    val quantity: BigDecimal,
     val timestamp: Long = System.currentTimeMillis(),
-    val note: String? = null
+    val reason: String? = null,
+    val createdBy: String, // Staff ID
+    val referenceId: String? = null // Sale ID, PO ID, etc.
 )
+
+enum class StockMovementType {
+    SALE,
+    RESTOCK,
+    ADJUSTMENT,
+    RETURN,
+    TRANSFER
+}

@@ -40,4 +40,16 @@ interface ModifierDao {
             insertModifierLink(ModifierLink(modifierId = modId, targetId = targetId, targetType = targetType))
         }
     }
+
+    @Query("DELETE FROM modifiers")
+    suspend fun deleteAllModifiers()
+
+    @Query("DELETE FROM modifier_links")
+    suspend fun deleteAllModifierLinks()
+
+    @Transaction
+    suspend fun clearAllModifiers() {
+        deleteAllModifiers()
+        deleteAllModifierLinks()
+    }
 }

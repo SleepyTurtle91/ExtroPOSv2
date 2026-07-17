@@ -277,7 +277,8 @@ class SalesViewModel @Inject constructor(
             if (enabled) {
                 // Seed training DB with current active mode templates
                 val activeMode = _uiState.value.activeMode
-                dataSeeder.seedForMode(activeMode)
+                dataSeeder.seedEssentialData()
+                dataSeeder.seedDemoData(activeMode)
             } else {
                 trainingDbManager.clearTrainingData()
             }
@@ -908,5 +909,38 @@ class SalesViewModel @Inject constructor(
 
     fun setShowMemberSelection(show: Boolean) {
         _uiState.update { it.copy(showMemberSelection = show) }
+    }
+
+    fun confirmRestoreDemo() {
+        _uiState.update { it.copy(showConfirmRestoreDemo = true) }
+    }
+
+    fun cancelRestoreDemo() {
+        _uiState.update { it.copy(showConfirmRestoreDemo = false) }
+    }
+
+    fun executeRestoreDemo() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRestoringDemo = true, showConfirmRestoreDemo = false) }
+            try {
+                val mode = _uiState.value.activeMode
+                dataSeeder.restoreDemoDatabase(mode)
+                
+                // Fetch counts for success message
+                val pCount = productRepository.getAllProducts().first().size
+                val cCount = categoryRepository.getAllCategories().first().size
+                val mCount = loyaltyRepository.getAllMembers().first().size
+                
+                val summary = "Successfully restored $pCount products, $cCount categories and $mCount members."
+                _uiState.update { it.copy(isRestoringDemo = false, showRestoreSuccess = summary) }
+                auditManager.logAction("DATABASE_RESTORE", "Demo database restored for mode ${mode.name}", "SYSTEM")
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isRestoringDemo = false, terminalStatus = "Restore failed: ${e.message}") }
+            }
+        }
+    }
+
+    fun dismissRestoreSuccess() {
+        _uiState.update { it.copy(showRestoreSuccess = null) }
     }
 }

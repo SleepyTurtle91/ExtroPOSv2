@@ -41,4 +41,7 @@ interface ProductDao {
 
     @Query("UPDATE products SET stockQuantity = :quantity WHERE id = :productId")
     suspend fun setStockQuantity(productId: String, quantity: java.math.BigDecimal)
+
+    @Query("DELETE FROM products")
+    suspend fun deleteAll()
 }

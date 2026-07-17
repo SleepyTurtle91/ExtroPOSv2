@@ -5,6 +5,8 @@ import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import com.extrotarget.extroposv2.core.network.SyncMessageType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -69,13 +71,15 @@ class SaleRepository @Inject constructor(
                 
                 // Record stock movement (RESTORE)
                 saleDao.insertStockMovement(
-                    com.extrotarget.extroposv2.core.data.model.inventory.StockMovement(
+                    StockMovement(
                         id = java.util.UUID.randomUUID().toString(),
                         productId = item.productId,
                         quantity = item.quantity,
-                        type = "VOID_RESTORE",
+                        type = StockMovementType.RETURN,
                         timestamp = System.currentTimeMillis(),
-                        note = "Voided Sale $saleId"
+                        reason = "Voided Sale $saleId",
+                        createdBy = "SYSTEM",
+                        referenceId = saleId
                     )
                 )
             }

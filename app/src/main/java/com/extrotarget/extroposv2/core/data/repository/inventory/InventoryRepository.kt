@@ -4,7 +4,8 @@ import androidx.room.withTransaction
 import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
 import com.extrotarget.extroposv2.core.data.local.dao.StockMovementDao
-import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import kotlinx.coroutines.flow.Flow
 import java.math.BigDecimal
 import java.util.UUID
@@ -21,21 +22,22 @@ class InventoryRepository @Inject constructor(
         return stockMovementDao.getMovementsForProduct(productId)
     }
 
-    suspend fun adjustStock(productId: String, quantity: BigDecimal, type: String, note: String? = null) {
+    suspend fun adjustStock(productId: String, quantity: BigDecimal, type: StockMovementType, reason: String? = null, createdBy: String = "SYSTEM") {
         db.withTransaction {
             val movement = StockMovement(
                 id = UUID.randomUUID().toString(),
                 productId = productId,
                 quantity = quantity,
                 type = type,
-                note = note
+                reason = reason,
+                createdBy = createdBy
             )
             stockMovementDao.insertMovement(movement)
             productDao.updateStockQuantity(productId, quantity)
         }
     }
 
-    suspend fun setStock(productId: String, quantity: BigDecimal, type: String, note: String? = null) {
+    suspend fun setStock(productId: String, quantity: BigDecimal, type: StockMovementType, reason: String? = null, createdBy: String = "SYSTEM") {
         db.withTransaction {
             val currentStock = getCurrentStock(productId)
             val diff = quantity.subtract(currentStock)
@@ -44,7 +46,8 @@ class InventoryRepository @Inject constructor(
                 productId = productId,
                 quantity = diff,
                 type = type,
-                note = note
+                reason = reason,
+                createdBy = createdBy
             )
             stockMovementDao.insertMovement(movement)
             productDao.setStockQuantity(productId, quantity)

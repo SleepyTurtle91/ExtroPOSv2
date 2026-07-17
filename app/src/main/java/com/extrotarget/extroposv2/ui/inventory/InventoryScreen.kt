@@ -24,7 +24,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.draw.clip
-import com.extrotarget.extroposv2.core.data.model.inventory.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Context
@@ -302,8 +303,8 @@ fun InventoryScreen(
                 viewModel.adjustStock(quantity, type, note)
                 viewModel.selectProduct(null)
             },
-            onSetStock = { quantity, type, note ->
-                viewModel.setStock(quantity, type, note)
+            onSetStock = { quantity, _, note ->
+                viewModel.setStock(quantity, note)
                 viewModel.selectProduct(null)
             }
         )
@@ -485,7 +486,7 @@ fun StockAdjustmentDialog(
 fun StockMovementRow(movement: StockMovement) {
     val dateFormat = remember { SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()) }
     val color = when {
-        movement.type == "SALE" || movement.quantity < java.math.BigDecimal.ZERO -> Color.Red
+        movement.type == StockMovementType.SALE || movement.quantity < java.math.BigDecimal.ZERO -> Color.Red
         movement.quantity > java.math.BigDecimal.ZERO -> Color(0xFF4CAF50)
         else -> Color.Gray
     }
@@ -506,9 +507,9 @@ fun StockMovementRow(movement: StockMovement) {
                 style = MaterialTheme.typography.bodySmall
             )
         }
-        if (!movement.note.isNullOrBlank()) {
+        if (!movement.reason.isNullOrBlank()) {
             Text(
-                text = movement.note,
+                text = movement.reason ?: "",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

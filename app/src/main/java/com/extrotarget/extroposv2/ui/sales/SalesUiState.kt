@@ -53,7 +53,10 @@ data class SalesUiState(
     val isTrainingMode: Boolean = false,
     val terminalRole: com.extrotarget.extroposv2.core.data.model.settings.TerminalRole = com.extrotarget.extroposv2.core.data.model.settings.TerminalRole.MASTER,
     val operationMode: com.extrotarget.extroposv2.core.data.model.settings.OperationMode = com.extrotarget.extroposv2.core.data.model.settings.OperationMode.HYBRID,
-    val focusSearchRequest: Long = 0L // Timestamp to trigger focus in UI
+    val focusSearchRequest: Long = 0L,
+    val isRestoringDemo: Boolean = false,
+    val showRestoreSuccess: String? = null,
+    val showConfirmRestoreDemo: Boolean = false
 ) {
     val filteredProducts: List<Product> = products.filter { product ->
         (product.businessMode == null || product.businessMode == activeMode.id) &&

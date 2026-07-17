@@ -48,6 +48,26 @@ interface HotelDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAddon(addon: HotelAddon)
 
+    @Query("DELETE FROM hotel_rooms")
+    suspend fun deleteAllRooms()
+
+    @Query("DELETE FROM hotel_bookings")
+    suspend fun deleteAllBookings()
+
+    @Query("DELETE FROM hotel_guests")
+    suspend fun deleteAllGuests()
+
+    @Query("DELETE FROM hotel_addons")
+    suspend fun deleteAllAddons()
+
+    @Transaction
+    suspend fun clearAllHotelData() {
+        deleteAllRooms()
+        deleteAllBookings()
+        deleteAllGuests()
+        deleteAllAddons()
+    }
+
     // Reporting Queries
     @Query("""
         SELECT 
