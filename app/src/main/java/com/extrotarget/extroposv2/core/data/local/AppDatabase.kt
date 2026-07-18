@@ -12,7 +12,11 @@ import com.extrotarget.extroposv2.core.data.local.dao.AutoCountDao
 import com.extrotarget.extroposv2.core.data.local.dao.CategoryDao
 import com.extrotarget.extroposv2.core.data.local.dao.PrinterDao
 import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
+import com.extrotarget.extroposv2.core.data.local.dao.SupplierDao
+import com.extrotarget.extroposv2.core.data.local.dao.PurchaseOrderDao
+import com.extrotarget.extroposv2.core.data.local.dao.RefundDao
 import com.extrotarget.extroposv2.core.data.local.dao.SaleDao
+import com.extrotarget.extroposv2.core.data.local.dao.CashMovementDao
 import com.extrotarget.extroposv2.core.data.local.dao.StockMovementDao
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.CommissionRecordDao
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.StaffDao
@@ -22,9 +26,11 @@ import com.extrotarget.extroposv2.core.data.local.dao.StockTransferDao
 import com.extrotarget.extroposv2.core.data.model.AuditLog
 import com.extrotarget.extroposv2.core.data.model.Category
 import com.extrotarget.extroposv2.core.data.model.Product
+import com.extrotarget.extroposv2.core.data.model.Refund
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.Shift
+import com.extrotarget.extroposv2.core.data.model.CashMovement
 import com.extrotarget.extroposv2.core.data.model.ShiftAdjustment
 import com.extrotarget.extroposv2.core.data.local.dao.loyalty.LoyaltyDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
@@ -35,6 +41,9 @@ import com.extrotarget.extroposv2.core.data.local.dao.lhdn.LhdnDao
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.CarWashDao
 import com.extrotarget.extroposv2.core.data.local.dao.dobi.LaundryDao
 import com.extrotarget.extroposv2.core.data.local.dao.fnb.TableDao
+import com.extrotarget.extroposv2.core.data.local.dao.fnb.FnbModifierDao
+import com.extrotarget.extroposv2.core.data.local.dao.fnb.FnbStationDao
+import com.extrotarget.extroposv2.core.data.local.dao.OfflineQueueDao
 import com.extrotarget.extroposv2.core.data.model.carwash.CarWashJob
 import com.extrotarget.extroposv2.core.data.model.dobi.LaundryOrder
 import com.extrotarget.extroposv2.domain.fnb.model.MenuItem
@@ -42,6 +51,8 @@ import com.extrotarget.extroposv2.domain.fnb.model.FnbOrder
 import com.extrotarget.extroposv2.domain.fnb.model.FnbOrderItem
 import com.extrotarget.extroposv2.domain.fnb.model.ModifierGroup
 import com.extrotarget.extroposv2.domain.fnb.model.ModifierOption
+import com.extrotarget.extroposv2.domain.fnb.model.KitchenStation
+import com.extrotarget.extroposv2.core.network.OfflineQueue
 import com.extrotarget.extroposv2.domain.retail.model.RetailProduct
 import com.extrotarget.extroposv2.domain.retail.model.Supplier
 import com.extrotarget.extroposv2.domain.retail.model.PurchaseOrder
@@ -76,6 +87,8 @@ import com.extrotarget.extroposv2.core.data.model.hotel.Guest
 import com.extrotarget.extroposv2.core.data.model.hotel.HotelAddon
 import com.extrotarget.extroposv2.core.data.model.platform.WorkspaceEntity
 import com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao
+import com.extrotarget.extroposv2.core.data.local.dao.hardware.PrintJobDao
+import com.extrotarget.extroposv2.core.data.model.hardware.PrintJob
 
 
 @Database(
@@ -89,6 +102,7 @@ import com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao
         Staff::class,
         CommissionRecord::class,
         PrinterConfig::class,
+        PrintJob::class,
         Table::class,
         LaundryOrder::class,
         CarWashJob::class,
@@ -106,9 +120,11 @@ import com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao
         LoyaltyConfig::class,
         Shift::class,
         ShiftAdjustment::class,
+        CashMovement::class,
         EndOfDay::class,
         Branch::class,
         StockTransfer::class,
+        Refund::class,
         Room::class,
         Booking::class,
         Guest::class,
@@ -124,21 +140,30 @@ import com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao
         PurchaseOrderItem::class,
         FnbOrder::class,
         FnbOrderItem::class,
+        KitchenStation::class,
+        OfflineQueue::class,
     ],
-    version = 33,
+    version = 39,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
     abstract fun categoryDao(): CategoryDao
+    abstract fun supplierDao(): SupplierDao
+    abstract fun purchaseOrderDao(): PurchaseOrderDao
+    abstract fun refundDao(): RefundDao
     abstract fun saleDao(): SaleDao
+    abstract fun cashMovementDao(): CashMovementDao
     abstract fun stockMovementDao(): StockMovementDao
     abstract fun staffDao(): StaffDao
     abstract fun commissionRecordDao(): CommissionRecordDao
     abstract fun auditDao(): AuditDao
     abstract fun printerDao(): PrinterDao
     abstract fun tableDao(): TableDao
+    abstract fun fnbModifierDao(): FnbModifierDao
+    abstract fun fnbStationDao(): FnbStationDao
+    abstract fun offlineQueueDao(): OfflineQueueDao
     abstract fun laundryDao(): LaundryDao
     abstract fun carWashDao(): CarWashDao
     abstract fun receiptDao(): ReceiptDao
@@ -156,6 +181,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun reportingDao(): ReportingDao
     abstract fun hotelDao(): HotelDao
     abstract fun workspaceDao(): WorkspaceDao
+    abstract fun printJobDao(): PrintJobDao
 
 
 

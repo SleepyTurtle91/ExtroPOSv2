@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Computer
@@ -36,6 +37,7 @@ fun PrinterSettingsScreen(
     viewModel: PrinterSettingsViewModel = hiltViewModel()
 ) {
     val printers by viewModel.allPrinters.collectAsState()
+    val activeJobs by viewModel.activePrintJobs.collectAsState()
     val bluetoothDevices by viewModel.availableBluetoothDevices.collectAsState()
     val usbDevices by viewModel.availableUsbDevices.collectAsState()
     val printStatus by viewModel.printStatus.collectAsState()
@@ -79,6 +81,26 @@ fun PrinterSettingsScreen(
                         onTestPrint = { viewModel.testPrint(config) },
                         onDelete = { viewModel.deletePrinter(config.id) }
                     )
+                }
+            }
+
+            if (activeJobs.isNotEmpty()) {
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Pending Print Jobs", style = MaterialTheme.typography.titleLarge)
+                        TextButton(onClick = { viewModel.retryFailedJobs() }) {
+                            Text("RETRY ALL")
+                        }
+                    }
+                }
+
+                items(activeJobs) { job ->
+                    PrintJobItem(job)
                 }
             }
 
@@ -225,6 +247,62 @@ fun PrinterConfigCard(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun PrintJobItem(job: com.extrotarget.extroposv2.core.data.model.hardware.PrintJob) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (job.status == com.extrotarget.extroposv2.core.data.model.hardware.PrintJobStatus.FAILED)
+                MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.Warning, contentDescription = null, tint = if (job.status == com.extrotarget.extroposv2.core.data.model.hardware.PrintJobStatus.FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSecondaryContainer)
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Job: ${job.id.take(8)}...",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "Printer: ${job.printerId}",
+                    style = MaterialTheme.typography.labelSmall
+                )
+                if (job.lastError != null) {
+                    Text(
+                        "Error: ${job.lastError}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        maxLines = 1
+                    )
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Surface(
+                    color = if (job.status == com.extrotarget.extroposv2.core.data.model.hardware.PrintJobStatus.FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.secondary,
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        job.status.name,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                }
+                Text(
+                    "Retries: ${job.retryCount}/3",
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
     }

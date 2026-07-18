@@ -15,6 +15,9 @@ interface PrinterDao {
     @Query("SELECT * FROM printer_configs")
     fun getAllPrinters(): Flow<List<PrinterConfig>>
 
+    @Query("SELECT * FROM printer_configs WHERE id = :id")
+    suspend fun getConfigById(id: String): PrinterConfig?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertConfig(config: PrinterConfig)
 

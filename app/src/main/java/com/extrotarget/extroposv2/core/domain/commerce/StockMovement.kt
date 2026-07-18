@@ -17,7 +17,7 @@ import java.math.BigDecimal
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("productId")]
+    indices = [Index("productId"), Index("timestamp")]
 )
 data class StockMovement(
     @PrimaryKey val id: String,
@@ -27,7 +27,8 @@ data class StockMovement(
     val timestamp: Long = System.currentTimeMillis(),
     val reason: String? = null,
     val createdBy: String, // Staff ID
-    val referenceId: String? = null // Sale ID, PO ID, etc.
+    val referenceId: String? = null, // Sale ID, PO ID, etc.
+    val deviceId: String? = "TERM-01"
 )
 
 enum class StockMovementType {

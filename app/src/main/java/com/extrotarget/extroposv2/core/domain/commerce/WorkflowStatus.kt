@@ -9,6 +9,16 @@ enum class WorkflowStatus {
     PAID,
     CANCELLED,
     VOIDED,
+    COMPLETED,
+
+    // Retail / Purchase Order
+    DRAFT,
+    SUBMITTED,
+    APPROVED,
+    ORDERED,
+    PARTIALLY_RECEIVED,
+    RECEIVED,
+    CLOSED,
 
     // F&B Specific
     OPEN,
@@ -20,7 +30,6 @@ enum class WorkflowStatus {
     // Service / Carwash Specific
     WAITING,
     IN_PROGRESS,
-    COMPLETED,
 
     // Hospitality Specific
     BOOKED,

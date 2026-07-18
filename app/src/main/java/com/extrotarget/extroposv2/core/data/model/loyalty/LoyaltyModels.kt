@@ -15,31 +15,32 @@ data class Member(
     val joinDate: Long = System.currentTimeMillis(),
     val tier: String = "BRONZE", // BRONZE, SILVER, GOLD
     val status: String = "ACTIVE",
-    val lastSyncTimestamp: Long = 0L
+    val updatedAt: Long = System.currentTimeMillis(),
+    val serverUpdatedAt: Long? = null
 )
 
 @Entity(tableName = "loyalty_transactions")
 data class LoyaltyPointTransaction(
     @PrimaryKey val id: String,
     val memberId: String,
-    val saleId: String?,
     val points: BigDecimal,
     val type: String, // EARNED, REDEEMED, ADJUSTED
-    val timestamp: Long = System.currentTimeMillis(),
-    val note: String? = null
+    val referenceId: String? = null, // Sale ID or similar
+    val note: String? = null,
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 @Entity(tableName = "loyalty_config")
 data class LoyaltyConfig(
     @PrimaryKey val id: Int = 1,
     val isEnabled: Boolean = true,
-    val pointsPerCurrencyUnit: BigDecimal = BigDecimal.ONE, // RM 1 = 1 Point
-    val redemptionValuePerPoint: BigDecimal = BigDecimal("0.01"), // 100 points = RM 1
+    val pointsPerCurrencyUnit: BigDecimal = BigDecimal.ONE, // e.g. 1 point per RM1
+    val redemptionValuePerPoint: BigDecimal = BigDecimal("0.01"), // e.g. RM0.01 per point
     val minPointsToRedeem: BigDecimal = BigDecimal("100"),
-    val silverThreshold: BigDecimal = BigDecimal("1000"), // Total points earned to reach Silver
-    val goldThreshold: BigDecimal = BigDecimal("5000"),   // Total points earned to reach Gold
-    val silverMultiplier: BigDecimal = BigDecimal("1.2"), // 20% bonus points
-    val goldMultiplier: BigDecimal = BigDecimal("1.5")    // 50% bonus points
+    val silverThreshold: BigDecimal = BigDecimal("1000"),
+    val goldThreshold: BigDecimal = BigDecimal("5000"),
+    val silverMultiplier: BigDecimal = BigDecimal("1.1"),
+    val goldMultiplier: BigDecimal = BigDecimal("1.2")
 )
 
 data class MemberWithHistory(

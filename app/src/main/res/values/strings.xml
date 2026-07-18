@@ -55,6 +55,11 @@
     <string name="inv_barcode">Barcode</string>
     <string name="inv_low_stock">Low Stock</string>
     <string name="inv_add_product">Add Product</string>
+    <string name="inv_adjust_stock">Adjust Stock</string>
+    <string name="inv_stock_reason">Adjustment Reason</string>
+    <string name="inv_stock_type">Adjustment Type</string>
+    <string name="inv_stock_reason_hint">e.g., Expired, Damaged, Restock...</string>
+    <string name="inv_large_adj_warning">Large stock adjustment detected. This action requires approval.</string>
 
     <!-- Staff -->
     <string name="staff_management">Staff Management</string>

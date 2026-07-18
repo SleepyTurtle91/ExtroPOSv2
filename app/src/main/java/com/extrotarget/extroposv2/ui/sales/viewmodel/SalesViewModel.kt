@@ -26,6 +26,7 @@ import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.ui.sales.AdminAuthAction
 import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import com.extrotarget.extroposv2.ui.sales.CartItem
+import com.extrotarget.extroposv2.ui.sales.DiscountType
 import com.extrotarget.extroposv2.ui.sales.SalesUiState
 import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
 import com.extrotarget.extroposv2.core.network.SyncClient
@@ -604,14 +605,23 @@ class SalesViewModel @Inject constructor(
 
     fun showModifierSelection(item: CartItem) {
         viewModelScope.launch {
-            val availableModifiers = modifierRepository.getModifiersForProduct(
-                item.product.id, 
-                item.product.categoryId
-            )
-            _uiState.update { it.copy(
-                itemAwaitingModifiers = item,
-                availableModifiers = availableModifiers // We'll need to add this to SalesUiState
-            ) }
+            if (_uiState.value.activeMode == BusinessMode.FNB) {
+                modifierRepository.getModifierGroupsForMenuItem(item.product.id).collect { groups ->
+                    _uiState.update { it.copy(
+                        itemAwaitingModifiers = item,
+                        availableModifierGroups = groups
+                    ) }
+                }
+            } else {
+                val availableModifiers = modifierRepository.getModifiersForProduct(
+                    item.product.id,
+                    item.product.categoryId
+                )
+                _uiState.update { it.copy(
+                    itemAwaitingModifiers = item,
+                    availableModifiers = availableModifiers
+                ) }
+            }
         }
     }
 
@@ -623,6 +633,31 @@ class SalesViewModel @Inject constructor(
         val item = _uiState.value.itemAwaitingModifiers ?: return
         _uiState.update { state ->
             val updatedItems = cartUseCase.toggleModifier(state.cartItems, item, modifier)
+            val updatedItem = updatedItems.find { it.id == item.id }
+            state.copy(cartItems = updatedItems, itemAwaitingModifiers = updatedItem)
+        }
+    }
+
+    fun toggleFnbModifier(option: com.extrotarget.extroposv2.domain.fnb.model.ModifierOption) {
+        val item = _uiState.value.itemAwaitingModifiers ?: return
+        _uiState.update { state ->
+            val updatedItems = state.cartItems.map { cartItem ->
+                if (cartItem.id == item.id) {
+                    val currentModifiers = cartItem.fnbModifiers.toMutableList()
+                    if (currentModifiers.any { it.id == option.id }) {
+                        currentModifiers.removeAll { it.id == option.id }
+                    } else {
+                        // Check maxSelect for the group
+                        val group = state.availableModifierGroups.find { it.group.id == option.groupId }
+                        if (group != null && group.group.maxSelect == 1) {
+                            // Radio button behavior for single-select groups
+                            currentModifiers.removeAll { it.groupId == option.groupId }
+                        }
+                        currentModifiers.add(option)
+                    }
+                    cartItem.copy(fnbModifiers = currentModifiers)
+                } else cartItem
+            }
             val updatedItem = updatedItems.find { it.id == item.id }
             state.copy(cartItems = updatedItems, itemAwaitingModifiers = updatedItem)
         }
@@ -658,17 +693,33 @@ class SalesViewModel @Inject constructor(
     private fun executeApplyDiscount(discount: com.extrotarget.extroposv2.ui.sales.Discount?) {
         val itemToDiscount = _uiState.value.itemAwaitingDiscount
         if (itemToDiscount != null) {
+            val oldDiscount = itemToDiscount.discount
             _uiState.update { state ->
                 val updatedItems = cartUseCase.applyItemDiscount(state.cartItems, itemToDiscount, discount)
                 state.copy(cartItems = updatedItems, showDiscountDialog = false, itemAwaitingDiscount = null)
             }
             viewModelScope.launch {
-                auditManager.logAction("ITEM_DISCOUNT", "Applied ${discount?.label ?: "None"} to ${itemToDiscount.product.name}", "SALES")
+                auditManager.logAction(
+                    action = "ITEM_DISCOUNT",
+                    details = "Applied ${discount?.label ?: "None"} to ${itemToDiscount.product.name}",
+                    module = "SALES",
+                    oldValue = oldDiscount?.let { "${it.value}${if (it.type == DiscountType.PERCENTAGE) "%" else ""}" } ?: "None",
+                    newValue = discount?.let { "${it.value}${if (it.type == DiscountType.PERCENTAGE) "%" else ""}" } ?: "None",
+                    entityType = "CART_ITEM",
+                    entityId = itemToDiscount.id
+                )
             }
         } else {
+            val oldDiscount = _uiState.value.cartDiscount
             _uiState.update { it.copy(cartDiscount = discount, showDiscountDialog = false) }
             viewModelScope.launch {
-                auditManager.logAction("CART_DISCOUNT", "Applied ${discount?.label ?: "None"} to entire cart", "SALES")
+                auditManager.logAction(
+                    action = "CART_DISCOUNT",
+                    details = "Applied ${discount?.label ?: "None"} to entire cart",
+                    module = "SALES",
+                    oldValue = oldDiscount?.let { "${it.value}${if (it.type == DiscountType.PERCENTAGE) "%" else ""}" } ?: "None",
+                    newValue = discount?.let { "${it.value}${if (it.type == DiscountType.PERCENTAGE) "%" else ""}" } ?: "None"
+                )
             }
         }
     }

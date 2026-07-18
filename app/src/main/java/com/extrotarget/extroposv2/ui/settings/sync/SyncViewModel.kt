@@ -2,19 +2,17 @@ package com.extrotarget.extroposv2.ui.settings.sync
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.extrotarget.extroposv2.core.data.repository.SyncRepository
 import com.extrotarget.extroposv2.core.network.SyncClient
 import com.extrotarget.extroposv2.core.network.SyncServer
 import com.extrotarget.extroposv2.core.network.SyncMessageType
+import com.extrotarget.extroposv2.core.network.OfflineQueue
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.net.InetAddress
 import java.net.NetworkInterface
 import javax.inject.Inject
-
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.first
 
 @HiltViewModel
 class SyncViewModel @Inject constructor(
@@ -22,8 +20,13 @@ class SyncViewModel @Inject constructor(
     private val syncClient: SyncClient,
     private val nsdHelper: com.extrotarget.extroposv2.core.network.NsdHelper,
     private val saleRepository: com.extrotarget.extroposv2.core.data.repository.SaleRepository,
-    private val branchRepository: com.extrotarget.extroposv2.core.data.repository.inventory.BranchRepository
+    private val branchRepository: com.extrotarget.extroposv2.core.data.repository.inventory.BranchRepository,
+    private val syncRepository: SyncRepository,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context
 ) : ViewModel() {
+
+    val offlineQueue = syncRepository.getPendingQueue()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isServerRunning = MutableStateFlow(syncServer.isRunning())
     val isServerRunning = _isServerRunning.asStateFlow()
@@ -123,6 +126,10 @@ class SyncViewModel @Inject constructor(
     fun dismissConflict() {
         _showConflictDialog.value = false
         pendingMasterIp = null
+    }
+
+    fun forceSyncQueue() {
+        com.extrotarget.extroposv2.core.work.BranchSyncWorker.enqueue(context)
     }
 
     private fun getLocalIpAddress(): String {

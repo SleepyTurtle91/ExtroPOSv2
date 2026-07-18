@@ -3,6 +3,7 @@ package com.extrotarget.extroposv2.ui.inventory
 import com.extrotarget.extroposv2.core.data.model.Category
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
+import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import java.math.BigDecimal
 
 data class InventoryUiState(
@@ -13,7 +14,10 @@ data class InventoryUiState(
     val searchQuery: String = "",
     val selectedCategoryId: String? = null,
     val isLoading: Boolean = false,
-    val isAdjustingStock: Boolean = false
+    val isAdjustingStock: Boolean = false,
+    val showAdminAuthDialog: Boolean = false,
+    val adminAuthError: String? = null,
+    val pendingAdjustment: PendingAdjustment? = null
 ) {
     val filteredProducts: List<Product> = products.filter { product ->
         val matchesSearch = product.name.contains(searchQuery, ignoreCase = true) ||
@@ -23,3 +27,9 @@ data class InventoryUiState(
         matchesSearch && matchesCategory
     }
 }
+
+data class PendingAdjustment(
+    val quantity: BigDecimal,
+    val type: StockMovementType,
+    val reason: String
+)

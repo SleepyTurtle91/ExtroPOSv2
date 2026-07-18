@@ -33,8 +33,11 @@ class DataSeeder @Inject constructor(
         adminUsername: String? = null,
         adminPin: String? = null
     ) {
-        val activeStaff = staffRepository.getAllActiveStaff().first()
-        if (activeStaff.isEmpty()) {
+        val allStaff = staffRepository.getAllStaff()
+        val existingAdmin = allStaff.find { it.role == "ADMIN" }
+
+        if (existingAdmin == null) {
+            // No admin at all, create one
             val admin = com.extrotarget.extroposv2.core.data.model.carwash.Staff(
                 id = "admin-fixed-id",
                 name = adminName ?: "Administrator",
@@ -44,6 +47,14 @@ class DataSeeder @Inject constructor(
                 isActive = true
             )
             staffRepository.saveStaff(admin)
+        } else if (adminPin != null && existingAdmin.id == "admin-fixed-id") {
+            // Admin exists but we are in onboarding/setup and provided a NEW pin
+            // Let's update the existing fixed admin with the new credentials
+            staffRepository.saveStaff(existingAdmin.copy(
+                name = adminName ?: existingAdmin.name,
+                phone = adminUsername ?: existingAdmin.phone,
+                pin = adminPin
+            ))
         }
 
         val taxConfig = taxRepository.getTaxConfig().firstOrNull()
@@ -172,7 +183,7 @@ class DataSeeder @Inject constructor(
     }
 
     suspend fun seedIfNeeded() {
-        seedEssentialData()
+        // seedEssentialData() // Handled by onboarding
     }
 
     private fun createSeedProduct(

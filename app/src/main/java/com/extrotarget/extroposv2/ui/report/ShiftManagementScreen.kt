@@ -29,6 +29,8 @@ import com.extrotarget.extroposv2.core.auth.SessionManager
 import com.extrotarget.extroposv2.core.data.model.AdjustmentType
 import com.extrotarget.extroposv2.core.data.model.Shift
 import com.extrotarget.extroposv2.core.data.model.ShiftAdjustment
+import com.extrotarget.extroposv2.core.data.model.CashMovement
+import com.extrotarget.extroposv2.core.data.model.CashMovementType
 import com.extrotarget.extroposv2.core.data.repository.ShiftRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -57,6 +59,13 @@ class ShiftManagementViewModel @Inject constructor(
     val uiState: StateFlow<ShiftUiState> = _uiState.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
+    val movements: StateFlow<List<CashMovement>> = _uiState
+        .flatMapLatest { state ->
+            state.activeShift?.let { shiftRepository.getMovementsForShift(it.id) } ?: flowOf(emptyList())
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     val adjustments: StateFlow<List<ShiftAdjustment>> = _uiState
         .flatMapLatest { state ->
             state.activeShift?.let { shiftRepository.getAdjustmentsForShift(it.id) } ?: flowOf(emptyList())
@@ -81,6 +90,22 @@ class ShiftManagementViewModel @Inject constructor(
                 startFloat = amount
             )
             shiftRepository.openShift(newShift)
+        }
+    }
+
+    fun addCashMovement(amount: String, reason: String, type: CashMovementType) {
+        viewModelScope.launch {
+            val shiftId = _uiState.value.activeShift?.id ?: return@launch
+            val staff = sessionManager.getCurrentStaff()
+            val movement = CashMovement(
+                id = java.util.UUID.randomUUID().toString(),
+                shiftId = shiftId,
+                amount = try { BigDecimal(amount) } catch (e: Exception) { BigDecimal.ZERO },
+                reason = reason,
+                type = type,
+                staffId = staff?.id?.toString() ?: "0"
+            )
+            shiftRepository.addCashMovement(movement)
         }
     }
 
@@ -112,7 +137,7 @@ fun ShiftManagementScreen(
     onViewActiveShift: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val adjustments by viewModel.adjustments.collectAsState()
+    val movements by viewModel.movements.collectAsState()
 
     if (uiState.isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -127,8 +152,8 @@ fun ShiftManagementScreen(
         } else {
             ActiveShiftManagementView(
                 shift = uiState.activeShift!!,
-                adjustments = adjustments,
-                onAddAdjustment = viewModel::addAdjustment,
+                movements = movements,
+                onAddMovement = viewModel::addCashMovement,
                 onViewZReport = onViewActiveShift
             )
         }
@@ -138,11 +163,11 @@ fun ShiftManagementScreen(
 @Composable
 fun ActiveShiftManagementView(
     shift: Shift,
-    adjustments: List<ShiftAdjustment>,
-    onAddAdjustment: (String, String, AdjustmentType) -> Unit,
+    movements: List<CashMovement>,
+    onAddMovement: (String, String, CashMovementType) -> Unit,
     onViewZReport: () -> Unit
 ) {
-    var showAdjustmentDialog by remember { mutableStateOf<AdjustmentType?>(null) }
+    var showMovementDialog by remember { mutableStateOf<CashMovementType?>(null) }
 
     Column(
         modifier = Modifier
@@ -189,7 +214,7 @@ fun ActiveShiftManagementView(
                 color = Color(0xFF10B981),
                 icon = Icons.Default.Add,
                 modifier = Modifier.weight(1f),
-                onClick = { showAdjustmentDialog = AdjustmentType.CASH_IN }
+                onClick = { showMovementDialog = CashMovementType.FLOAT }
             )
             AdjustmentCard(
                 title = stringResource(R.string.cash_out),
@@ -197,7 +222,7 @@ fun ActiveShiftManagementView(
                 color = Color(0xFFF59E0B),
                 icon = Icons.Default.Remove,
                 modifier = Modifier.weight(1f),
-                onClick = { showAdjustmentDialog = AdjustmentType.CASH_OUT }
+                onClick = { showMovementDialog = CashMovementType.CASH_DROP }
             )
         }
 
@@ -220,14 +245,14 @@ fun ActiveShiftManagementView(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(16.dp)
             ) {
-                items(adjustments) { adj ->
-                    AdjustmentRow(adj)
+                items(movements) { movement ->
+                    MovementRow(movement)
                     HorizontalDivider(color = Color.White.copy(alpha = 0.1f))
                 }
-                if (adjustments.isEmpty()) {
+                if (movements.isEmpty()) {
                     item {
                         Box(Modifier.fillParentMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No adjustments recorded yet", color = Color.White.copy(alpha = 0.4f))
+                            Text("No cash movements recorded yet", color = Color.White.copy(alpha = 0.4f))
                         }
                     }
                 }
@@ -235,14 +260,14 @@ fun ActiveShiftManagementView(
         }
     }
 
-    if (showAdjustmentDialog != null) {
-        val currentType = showAdjustmentDialog!!
-        AdjustmentDialog(
+    if (showMovementDialog != null) {
+        val currentType = showMovementDialog!!
+        CashMovementDialog(
             type = currentType,
-            onDismiss = { showAdjustmentDialog = null },
+            onDismiss = { showMovementDialog = null },
             onConfirm = { amount, reason ->
-                onAddAdjustment(amount, reason, currentType)
-                showAdjustmentDialog = null
+                onAddMovement(amount, reason, currentType)
+                showMovementDialog = null
             }
         )
     }
@@ -293,23 +318,23 @@ fun AdjustmentCard(
 }
 
 @Composable
-fun AdjustmentRow(adjustment: ShiftAdjustment) {
+fun MovementRow(movement: CashMovement) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text(adjustment.reason, color = Color.White, fontWeight = FontWeight.Medium)
+            Text(movement.reason, color = Color.White, fontWeight = FontWeight.Medium)
             Text(
-                "${adjustment.staffName} • ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(adjustment.timestamp))}",
+                "${movement.type} • ${SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(movement.timestamp))}",
                 color = Color.White.copy(alpha = 0.5f),
                 style = MaterialTheme.typography.bodySmall
             )
         }
         Text(
-            text = "${if (adjustment.type == AdjustmentType.CASH_IN) "+" else "-"} RM ${String.format(Locale.getDefault(), "%.2f", adjustment.amount)}",
-            color = if (adjustment.type == AdjustmentType.CASH_IN) Color(0xFF10B981) else Color(0xFFF59E0B),
+            text = "${if (movement.type == CashMovementType.FLOAT) "+" else "-"} RM ${String.format(Locale.getDefault(), "%.2f", movement.amount)}",
+            color = if (movement.type == CashMovementType.FLOAT) Color(0xFF10B981) else Color(0xFFF59E0B),
             fontWeight = FontWeight.Bold
         )
     }
@@ -317,19 +342,30 @@ fun AdjustmentRow(adjustment: ShiftAdjustment) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AdjustmentDialog(
-    type: AdjustmentType,
+fun CashMovementDialog(
+    type: CashMovementType,
     onDismiss: () -> Unit,
     onConfirm: (String, String) -> Unit
 ) {
     var amount by remember { mutableStateOf("") }
     var reason by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf(type) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (type == AdjustmentType.CASH_IN) "Cash In (Add to Drawer)" else "Cash Out (Remove from Drawer)") },
+        title = { Text("Record Cash Movement") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CashMovementType.values().take(3).forEach { t ->
+                        FilterChip(
+                            selected = selectedType == t,
+                            onClick = { selectedType = t },
+                            label = { Text(t.name) }
+                        )
+                    }
+                }
+
                 OutlinedTextField(
                     value = amount,
                     onValueChange = { if (it.matches(Regex("^\\d*\\.?\\d{0,2}$"))) amount = it },

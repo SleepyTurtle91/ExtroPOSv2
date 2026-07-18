@@ -17,9 +17,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.extrotarget.extroposv2.R
+import com.extrotarget.extroposv2.core.security.Permission
 
 @Composable
-fun AdminAuthDialog(
+fun PinAuthorizationDialog(
+    permission: Permission,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     errorMessage: String? = null
@@ -55,6 +57,13 @@ fun AdminAuthDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 Text(
+                    text = permission.displayName.uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
                     text = stringResource(R.string.auth_admin_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
@@ -73,7 +82,7 @@ fun AdminAuthDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.padding(vertical = 16.dp)
                 ) {
-                    repeat(6) { index ->
+                    repeat(4) { index ->
                         val isFilled = index < pin.length
                         Box(
                             modifier = Modifier
@@ -123,13 +132,8 @@ fun AdminAuthDialog(
                                             }
                                             "CANCEL" -> onDismiss()
                                             else -> {
-                                                if (pin.length < 6) {
+                                                if (pin.length < 4) {
                                                     pin += key
-                                                    if (pin.length >= 4) {
-                                                        // Optionally auto-confirm if length is known, 
-                                                        // but POS pins can be 4-6 digits.
-                                                        // We'll use a confirm button or just wait for entry.
-                                                    }
                                                 }
                                             }
                                         }

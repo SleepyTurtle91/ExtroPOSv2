@@ -19,6 +19,8 @@ import com.extrotarget.extroposv2.core.data.repository.lhdn.LhdnRepository
 import com.extrotarget.extroposv2.core.data.repository.settings.AutoCountRepository
 import com.extrotarget.extroposv2.core.data.repository.loyalty.LoyaltyRepository
 import com.extrotarget.extroposv2.core.data.model.lhdn.BuyerInfo
+import com.extrotarget.extroposv2.core.data.model.SaleWithItems
+import com.extrotarget.extroposv2.core.data.repository.SyncRepository
 import com.extrotarget.extroposv2.core.work.AutoCountSyncWorker
 import com.extrotarget.extroposv2.core.work.BranchSyncWorker
 import com.extrotarget.extroposv2.core.work.EInvoiceSubmissionWorker
@@ -37,6 +39,7 @@ class ProcessSaleUseCase @Inject constructor(
     private val autoCountRepository: AutoCountRepository,
     private val loyaltyRepository: LoyaltyRepository,
     private val shiftRepository: ShiftRepository,
+    private val syncRepository: SyncRepository,
     @param:ApplicationContext private val context: Context,
 ) {
     suspend operator fun invoke(
@@ -94,8 +97,9 @@ class ProcessSaleUseCase @Inject constructor(
             enqueueAutoCountSync(sale.id, autoCountConfig.syncToken)
         }
 
-        // 6.5 Branch Sync: Reliably push sale to HQ
-        enqueueBranchSync(sale.id)
+        // 6.5 Branch Sync: Reliably push sale to HQ via Offline Queue
+        syncRepository.enqueueAction("SALE", SaleWithItems(sale, saleItems))
+        BranchSyncWorker.enqueue(context)
 
         // 7. Loyalty Points: If a member is associated and loyalty is enabled
         sale.memberId?.let { memberId ->
@@ -129,17 +133,6 @@ class ProcessSaleUseCase @Inject constructor(
                 )
             }
         }
-    }
-
-    private fun enqueueBranchSync(saleId: String) {
-        val workRequest = OneTimeWorkRequestBuilder<BranchSyncWorker>()
-            .setInputData(
-                workDataOf(
-                    BranchSyncWorker.KEY_SALE_ID to saleId,
-                )
-            )
-            .build()
-        WorkManager.getInstance(context).enqueue(workRequest)
     }
 
     private fun enqueueAutoCountSync(saleId: String, token: String) {

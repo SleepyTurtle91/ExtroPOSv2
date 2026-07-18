@@ -3,6 +3,8 @@ package com.extrotarget.extroposv2.core.data.local.converter
 import androidx.room.TypeConverter
 import com.extrotarget.extroposv2.core.data.model.platform.Capability
 import com.extrotarget.extroposv2.core.data.model.dobi.LaundryItem
+import com.extrotarget.extroposv2.core.data.model.hardware.PrintJobStatus
+import com.extrotarget.extroposv2.core.hardware.printer.PrintCommand
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.math.BigDecimal
@@ -40,5 +42,26 @@ class Converters {
     fun toCapabilitySet(value: String): Set<Capability> {
         val type = object : TypeToken<Set<Capability>>() {}.type
         return gson.fromJson(value, type)
+    }
+
+    @TypeConverter
+    fun fromPrintJobStatus(value: PrintJobStatus): String {
+        return value.name
+    }
+
+    @TypeConverter
+    fun toPrintJobStatus(value: String): PrintJobStatus {
+        return PrintJobStatus.valueOf(value)
+    }
+
+    @TypeConverter
+    fun fromPrintCommandList(value: List<PrintCommand>): String {
+        return gson.toJson(value)
+    }
+
+    @TypeConverter
+    fun toPrintCommandList(value: String): List<PrintCommand> {
+        val listType = object : TypeToken<List<PrintCommand>>() {}.type
+        return gson.fromJson(value, listType)
     }
 }

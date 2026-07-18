@@ -1,12 +1,16 @@
 package com.extrotarget.extroposv2.core.data.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.extrotarget.extroposv2.core.config.AppConfig
 import java.math.BigDecimal
 import java.util.Date
 
-@Entity(tableName = "sales")
+@Entity(
+    tableName = "sales",
+    indices = [Index("timestamp")]
+)
 data class Sale(
     @PrimaryKey val id: String,
     val timestamp: Long = System.currentTimeMillis(),

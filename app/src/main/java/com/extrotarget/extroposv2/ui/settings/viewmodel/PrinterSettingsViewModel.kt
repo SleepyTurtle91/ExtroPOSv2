@@ -24,6 +24,8 @@ class PrinterSettingsViewModel @Inject constructor(
     private val printerDao: PrinterDao,
     private val receiptDao: com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao,
     private val printerFactory: PrinterFactory,
+    private val printBuffer: PrintBuffer,
+    private val printerManager: PrinterManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -37,6 +39,9 @@ class PrinterSettingsViewModel @Inject constructor(
     val printStatus: StateFlow<String?> = _printStatus.asStateFlow()
 
     val allPrinters: StateFlow<List<PrinterConfig>> = printerDao.getAllPrinters()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val activePrintJobs: StateFlow<List<com.extrotarget.extroposv2.core.data.model.hardware.PrintJob>> = printBuffer.getActiveJobs()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @SuppressLint("MissingPermission")
@@ -115,5 +120,12 @@ class PrinterSettingsViewModel @Inject constructor(
 
     fun clearStatus() {
         _printStatus.value = null
+    }
+
+    fun retryFailedJobs() {
+        viewModelScope.launch {
+            printBuffer.retryAllFailed()
+            printerManager.processPendingJobs()
+        }
     }
 }

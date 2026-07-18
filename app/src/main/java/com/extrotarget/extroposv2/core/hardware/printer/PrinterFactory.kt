@@ -9,10 +9,11 @@ import javax.inject.Singleton
 
 @Singleton
 class PrinterFactory @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val printBuffer: PrintBuffer
 ) {
     fun create(config: PrinterConfig): PrinterInterface? {
-        return when (config.connectionType) {
+        val basePrinter = when (config.connectionType) {
             "INTERNAL" -> {
                 try {
                     val clazz = Class.forName("com.extrotarget.extroposv2.core.hardware.printer.IminPrinter")
@@ -31,5 +32,7 @@ class PrinterFactory @Inject constructor(
             }
             else -> null
         }
+
+        return basePrinter?.let { ResilientPrinter(it, printBuffer, config.id) }
     }
 }

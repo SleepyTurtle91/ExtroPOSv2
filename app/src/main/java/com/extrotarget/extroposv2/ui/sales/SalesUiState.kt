@@ -28,6 +28,7 @@ data class SalesUiState(
     val selectedTable: com.extrotarget.extroposv2.core.data.model.fnb.Table? = null,
     val itemAwaitingModifiers: CartItem? = null,
     val availableModifiers: List<com.extrotarget.extroposv2.core.data.model.Modifier> = emptyList(),
+    val availableModifierGroups: List<com.extrotarget.extroposv2.core.data.local.dao.fnb.ModifierGroupWithOptions> = emptyList(),
     val cartDiscount: Discount? = null,
     val taxConfig: com.extrotarget.extroposv2.core.data.model.settings.TaxConfig? = null,
     val showDiscountDialog: Boolean = false,
@@ -155,12 +156,15 @@ data class CartItem(
     val assignedStaffId: String? = null,
     val assignedStaffName: String? = null,
     val selectedModifiers: List<com.extrotarget.extroposv2.core.data.model.Modifier> = emptyList(),
+    val fnbModifiers: List<com.extrotarget.extroposv2.domain.fnb.model.ModifierOption> = emptyList(),
     val discount: Discount? = null,
     val isSentToKitchen: Boolean = false
 ) {
     val modifiersTotal: BigDecimal = selectedModifiers.fold(BigDecimal.ZERO) { acc, mod ->
         acc.add(mod.priceAdjustment)
-    }
+    }.add(fnbModifiers.fold(BigDecimal.ZERO) { acc, mod ->
+        acc.add(mod.priceAdjustment)
+    })
 
     val unitPriceWithModifiers: BigDecimal = unitPrice.add(modifiersTotal)
 

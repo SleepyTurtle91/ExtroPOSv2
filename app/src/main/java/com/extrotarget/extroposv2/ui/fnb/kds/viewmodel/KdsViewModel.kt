@@ -7,6 +7,8 @@ import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
 import com.extrotarget.extroposv2.core.data.repository.SaleRepository
+import com.extrotarget.extroposv2.core.data.local.dao.fnb.FnbStationDao
+import com.extrotarget.extroposv2.domain.fnb.model.KitchenStation
 import com.extrotarget.extroposv2.core.network.SyncClient
 import com.extrotarget.extroposv2.core.network.SyncMessageType
 import com.google.gson.Gson
@@ -17,8 +19,9 @@ import javax.inject.Inject
 
 data class KdsUiState(
     val orders: List<KdsOrder> = emptyList(),
-    val selectedTag: String = "KITCHEN",
-    val availableTags: List<String> = listOf("KITCHEN", "BAR", "GENERAL")
+    val selectedStation: KitchenStation? = null,
+    val stations: List<KitchenStation> = emptyList(),
+    val stationItemCounts: Map<String, Int> = emptyMap()
 )
 
 data class KdsOrder(
@@ -29,10 +32,11 @@ data class KdsOrder(
 @HiltViewModel
 class KdsViewModel @Inject constructor(
     private val saleRepository: SaleRepository,
+    private val stationDao: FnbStationDao,
     private val syncClient: SyncClient
 ) : ViewModel() {
 
-    private val _selectedTag = MutableStateFlow("KITCHEN")
+    private val _selectedStationId = MutableStateFlow<String?>(null)
     private val _realtimeOrders = MutableStateFlow<List<KdsOrder>>(emptyList())
 
     init {
@@ -59,34 +63,44 @@ class KdsViewModel @Inject constructor(
     
     val uiState: StateFlow<KdsUiState> = combine(
         saleRepository.getAllSalesWithItems(),
-        _selectedTag
-    ) { salesWithItems, tag ->
-        val filteredOrders = salesWithItems.mapNotNull { saleWithItems ->
-            val sale = saleWithItems.sale
-            val items = saleWithItems.items
-            // Filter items that match the current station tag and are not yet ready
-            val stationItems = items.filter { 
-                it.printerTag.equals(tag, ignoreCase = true) && it.status != "READY" 
+        stationDao.getAllStations(),
+        _selectedStationId
+    ) { salesWithItems, stations, selectedId ->
+        val currentStation = stations.find { it.id == selectedId } ?: stations.firstOrNull()
+        
+        val stationItemCounts = stations.associate { station ->
+            station.id to salesWithItems.sumOf { sale ->
+                sale.items.count { it.printerTag.equals(station.name, ignoreCase = true) && it.status != "READY" }
             }
-            
-            if (stationItems.isNotEmpty() && (sale.status == AppConfig.SaleStatus.COMPLETED || sale.status == AppConfig.SaleStatus.PENDING)) {
-                KdsOrder(sale, stationItems)
-            } else null
-        }.sortedBy { it.sale.timestamp }
+        }
+
+        val filteredOrders = currentStation?.let { station ->
+            salesWithItems.mapNotNull { saleWithItems ->
+                val stationItems = saleWithItems.items.filter {
+                    it.printerTag.equals(station.name, ignoreCase = true) && it.status != "READY"
+                }
+                if (stationItems.isNotEmpty() && (saleWithItems.sale.status == AppConfig.SaleStatus.COMPLETED || saleWithItems.sale.status == AppConfig.SaleStatus.PENDING)) {
+                    KdsOrder(saleWithItems.sale, stationItems)
+                } else null
+            }.sortedBy { it.sale.timestamp }
+        } ?: emptyList()
 
         KdsUiState(
             orders = filteredOrders,
-            selectedTag = tag
+            selectedStation = currentStation,
+            stations = stations,
+            stationItemCounts = stationItemCounts
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), KdsUiState())
 
-    fun selectTag(tag: String) {
-        _selectedTag.value = tag
+    fun selectStation(stationId: String) {
+        _selectedStationId.value = stationId
     }
 
     fun markOrderDone(orderId: String) {
+        val currentStation = uiState.value.selectedStation ?: return
         viewModelScope.launch {
-            saleRepository.updateItemsStatusByTag(orderId, _selectedTag.value, "READY")
+            saleRepository.updateItemsStatusByTag(orderId, currentStation.name, "READY")
         }
     }
 }

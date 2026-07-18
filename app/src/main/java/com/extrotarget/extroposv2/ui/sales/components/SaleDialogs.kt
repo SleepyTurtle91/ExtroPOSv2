@@ -30,6 +30,10 @@ import com.extrotarget.extroposv2.core.config.AppConfig
 import com.extrotarget.extroposv2.ui.sales.CartItem
 import com.extrotarget.extroposv2.ui.sales.SalesUiState
 import com.extrotarget.extroposv2.core.util.CurrencyUtils
+import com.extrotarget.extroposv2.domain.fnb.validation.ModifierValidator
+import com.extrotarget.extroposv2.domain.fnb.validation.ValidationResult
+import com.extrotarget.extroposv2.domain.fnb.validation.ValidationErrorCode
+import com.extrotarget.extroposv2.ui.sales.BusinessMode
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -37,10 +41,22 @@ import java.math.RoundingMode
 @Composable
 fun ModifierDialog(
     item: CartItem,
-    availableModifiers: List<com.extrotarget.extroposv2.core.data.model.Modifier>,
+    uiState: SalesUiState,
     onToggleModifier: (com.extrotarget.extroposv2.core.data.model.Modifier) -> Unit,
+    onToggleFnbModifier: (com.extrotarget.extroposv2.domain.fnb.model.ModifierOption) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val validator = remember { ModifierValidator() }
+    val isFnb = uiState.activeMode == BusinessMode.FNB
+
+    // Calculate if overall selection is valid
+    val isValid = if (isFnb) {
+        uiState.availableModifierGroups.all { group ->
+            val selectedInGroup = item.fnbModifiers.filter { it.groupId == group.group.id }
+            validator.validate(group.group, selectedInGroup) is ValidationResult.Success
+        }
+    } else true
+
     AlertDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -79,56 +95,89 @@ fun ModifierDialog(
                         }
                     }
 
-                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(24.dp))
 
-                    @OptIn(ExperimentalLayoutApi::class)
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        availableModifiers.forEach { modifier ->
-                            val isSelected = item.selectedModifiers.any { it.id == modifier.id }
-                            val isAvailable = modifier.isAvailable
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { onToggleModifier(modifier) },
-                                enabled = isAvailable,
-                                label = { 
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    if (isFnb) {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                            modifier = Modifier.weight(1f, fill = false)
+                        ) {
+                            items(uiState.availableModifierGroups) { group ->
+                                val selectedInGroup = item.fnbModifiers.filter { it.groupId == group.group.id }
+                                val validation = validator.validate(group.group, selectedInGroup)
+
+                                Column {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
                                         Text(
-                                            modifier.name, 
+                                            text = group.group.name.uppercase() + if (group.group.isRequired) " *" else "",
                                             fontWeight = FontWeight.Black,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                            fontSize = 14.sp,
+                                            color = Color(0xFF1E293B)
                                         )
-                                        if (modifier.priceAdjustment > BigDecimal.ZERO) {
+
+                                        if (validation is ValidationResult.Error) {
+                                            val errorText = when (validation.code) {
+                                                ValidationErrorCode.MIN_SELECTION_NOT_MET -> "Choose ${validation.required - validation.selected} more"
+                                                ValidationErrorCode.MAX_SELECTION_EXCEEDED -> "Max ${validation.required} allowed"
+                                            }
                                             Text(
-                                                stringResource(R.string.sales_modifier_price, modifier.priceAdjustment.toString()),
-                                                fontSize = 10.sp,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (isSelected) Color.White else if (isAvailable) Color(0xFFF59E0B) else Color(0xFFCBD5E1)
+                                                text = errorText,
+                                                color = Color.Red,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        } else if (group.group.maxSelect > 1) {
+                                            Text(
+                                                text = "Selected ${selectedInGroup.size}/${group.group.maxSelect}",
+                                                color = Color(0xFF64748B),
+                                                fontSize = 12.sp
                                             )
                                         }
                                     }
-                                },
-                                shape = RoundedCornerShape(16.dp),
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Color(0xFF3B82F6),
-                                    selectedLabelColor = Color.White,
-                                    containerColor = Color(0xFFF8FAFC),
-                                    labelColor = Color(0xFF64748B),
-                                    disabledContainerColor = Color(0xFFF1F5F9),
-                                    disabledLabelColor = Color(0xFF94A3B8)
-                                ),
-                                border = FilterChipDefaults.filterChipBorder(
-                                    borderColor = Color(0xFFE2E8F0),
-                                    selectedBorderColor = Color(0xFF3B82F6),
-                                    borderWidth = 1.dp,
-                                    selectedBorderWidth = 1.dp,
-                                    enabled = true,
-                                    selected = isSelected
+                                    
+                                    Spacer(Modifier.height(8.dp))
+                                    
+                                    @OptIn(ExperimentalLayoutApi::class)
+                                    FlowRow(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        group.options.forEach { option ->
+                                            val isSelected = item.fnbModifiers.any { it.id == option.id }
+                                            ModifierChip(
+                                                name = option.name,
+                                                priceAdjustment = option.priceAdjustment,
+                                                isSelected = isSelected,
+                                                isAvailable = option.isAvailable,
+                                                onClick = { onToggleFnbModifier(option) }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Retail / Simple Modifiers
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            uiState.availableModifiers.forEach { modifier ->
+                                val isSelected = item.selectedModifiers.any { it.id == modifier.id }
+                                ModifierChip(
+                                    name = modifier.name,
+                                    priceAdjustment = modifier.priceAdjustment,
+                                    isSelected = isSelected,
+                                    isAvailable = modifier.isAvailable,
+                                    onClick = { onToggleModifier(modifier) }
                                 )
-                            )
+                            }
                         }
                     }
 
@@ -138,13 +187,64 @@ fun ModifierDialog(
                         onClick = onDismiss,
                         modifier = Modifier.fillMaxWidth().height(64.dp),
                         shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0F172A))
+                        colors = ButtonDefaults.buttonColors(containerColor = if (isValid) Color(0xFF0F172A) else Color(0xFF94A3B8)),
+                        enabled = isValid
                     ) {
                         Text(stringResource(R.string.sales_save_selection).uppercase(), fontWeight = FontWeight.Black, fontSize = 16.sp)
                     }
                 }
             }
         }
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ModifierChip(
+    name: String,
+    priceAdjustment: BigDecimal,
+    isSelected: Boolean,
+    isAvailable: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        enabled = isAvailable,
+        label = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    name,
+                    fontWeight = FontWeight.Black,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+                if (priceAdjustment > BigDecimal.ZERO) {
+                    Text(
+                        stringResource(R.string.sales_modifier_price, priceAdjustment.toString()),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected) Color.White else if (isAvailable) Color(0xFFF59E0B) else Color(0xFFCBD5E1)
+                    )
+                }
+            }
+        },
+        shape = RoundedCornerShape(16.dp),
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = Color(0xFF3B82F6),
+            selectedLabelColor = Color.White,
+            containerColor = Color(0xFFF8FAFC),
+            labelColor = Color(0xFF64748B),
+            disabledContainerColor = Color(0xFFF1F5F9),
+            disabledLabelColor = Color(0xFF94A3B8)
+        ),
+        border = FilterChipDefaults.filterChipBorder(
+            borderColor = Color(0xFFE2E8F0),
+            selectedBorderColor = Color(0xFF3B82F6),
+            borderWidth = 1.dp,
+            selectedBorderWidth = 1.dp,
+            enabled = true,
+            selected = isSelected
+        )
     )
 }
 

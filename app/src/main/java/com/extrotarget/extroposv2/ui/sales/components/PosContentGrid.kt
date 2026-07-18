@@ -70,7 +70,11 @@ fun PosContentGrid(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(uiState.filteredProducts) { product ->
+                items(
+                    items = uiState.filteredProducts,
+                    key = { it.id },
+                    contentType = { "product" }
+                ) { product ->
                     ProductCard(
                         product = product,
                         onProductClick = { onProductClick(product) }

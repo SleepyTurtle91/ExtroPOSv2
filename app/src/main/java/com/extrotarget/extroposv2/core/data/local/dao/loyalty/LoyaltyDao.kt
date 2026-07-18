@@ -44,7 +44,7 @@ interface LoyaltyDao {
             LoyaltyPointTransaction(
                 id = java.util.UUID.randomUUID().toString(),
                 memberId = memberId,
-                saleId = saleId,
+                referenceId = saleId,
                 points = points,
                 type = "EARNED",
                 note = note
@@ -59,7 +59,7 @@ interface LoyaltyDao {
             LoyaltyPointTransaction(
                 id = java.util.UUID.randomUUID().toString(),
                 memberId = memberId,
-                saleId = saleId,
+                referenceId = saleId,
                 points = points.negate(),
                 type = "REDEEMED",
                 note = note

@@ -1,6 +1,13 @@
 package com.extrotarget.extroposv2.ui.sales
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.AltRoute
 import androidx.compose.material.icons.filled.*
@@ -9,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.extrotarget.extroposv2.core.auth.SessionManager
 import com.extrotarget.extroposv2.ui.components.stitch.FunctionKeyData
@@ -17,11 +25,6 @@ import com.extrotarget.extroposv2.ui.components.stitch.StitchFunctionGrid
 import com.extrotarget.extroposv2.ui.components.stitch.StitchProductCard
 import com.extrotarget.extroposv2.ui.sales.viewmodel.SalesViewModel
 import com.extrotarget.extroposv2.ui.theme.StitchColor
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import com.extrotarget.extroposv2.ui.components.stitch.common.StitchButton
 
 import androidx.compose.ui.focus.FocusRequester
@@ -76,85 +79,135 @@ fun SalesScreen(
     }
 
     Row(modifier = Modifier.fillMaxSize()) {
-        // Main Product Area
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .padding(16.dp)
-        ) {
-            // Quick Search
-            StitchTextField(
-                value = uiState.searchQuery,
-                onValueChange = { viewModel.updateSearchQuery(it) },
-                label = "Quick Search",
-                placeholder = "SEARCH PRODUCTS...",
-                leadingIcon = Icons.Default.Search,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-                    .focusRequester(searchFocusRequester),
-                trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
-                    {
-                        IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear")
+        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            val isTablet = maxWidth > 900.dp
+            
+            Row(modifier = Modifier.fillMaxSize()) {
+                if (isTablet) {
+                    // Left Column: Categories
+                    Surface(
+                        modifier = Modifier.width(180.dp).fillMaxHeight(),
+                        color = StitchColor.SurfaceContainerLowest,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, StitchColor.OutlineVariant)
+                    ) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize().padding(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                Text(
+                                    "CATEGORIES",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.padding(8.dp),
+                                    color = StitchColor.OnSurfaceVariant
+                                )
+                            }
+                            item {
+                                CategoryItem(
+                                    name = "ALL ITEMS",
+                                    isSelected = uiState.selectedCategoryId == null,
+                                    onClick = { viewModel.selectCategory(null) }
+                                )
+                            }
+                            items(uiState.categories) { category ->
+                                CategoryItem(
+                                    name = category.name,
+                                    isSelected = uiState.selectedCategoryId == category.id,
+                                    onClick = { viewModel.selectCategory(category.id) }
+                                )
+                            }
                         }
                     }
-                } else null
-            )
-
-            // Category Filters
-            LazyRow(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item {
-                    StitchButton(
-                        text = "ALL ITEMS",
-                        onClick = { viewModel.selectCategory(null) },
-                        containerColor = if (uiState.selectedCategoryId == null) StitchColor.Primary else StitchColor.SurfaceContainerLow,
-                        contentColor = if (uiState.selectedCategoryId == null) StitchColor.OnPrimary else StitchColor.OnSurfaceVariant
-                    )
                 }
-                items(uiState.categories) { category ->
-                    val isSelected = uiState.selectedCategoryId == category.id
-                    StitchButton(
-                        text = category.name,
-                        onClick = { viewModel.selectCategory(category.id) },
-                        containerColor = if (isSelected) StitchColor.Primary else StitchColor.SurfaceContainerLow,
-                        contentColor = if (isSelected) StitchColor.OnPrimary else StitchColor.OnSurfaceVariant
-                    )
-                }
-            }
 
-            // Product Grid
-            BoxWithConstraints(modifier = Modifier.weight(1f)) {
-                val isCompact = this.maxWidth < 800.dp
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = if (isCompact) 140.dp else 160.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxSize()
+                // Middle Column: Products
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(16.dp)
                 ) {
-                    items(uiState.filteredProducts) { product ->
-                        val cartItem = uiState.cartItems.find { it.product.id == product.id }
-                        StitchProductCard(
-                            product = product,
-                            isSelected = cartItem != null,
-                            selectedQuantity = cartItem?.quantity ?: java.math.BigDecimal.ZERO,
-                            compact = isCompact,
-                            onClick = { viewModel.addToCart(product) }
-                        )
+                    // Quick Search
+                    StitchTextField(
+                        value = uiState.searchQuery,
+                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        label = "Quick Search",
+                        placeholder = "SEARCH PRODUCTS...",
+                        leadingIcon = Icons.Default.Search,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                            .focusRequester(searchFocusRequester),
+                        trailingIcon = if (uiState.searchQuery.isNotEmpty()) {
+                            {
+                                IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Clear")
+                                }
+                            }
+                        } else null
+                    )
+
+                    if (!isTablet) {
+                        // Category Filters (Horizontal Row for mobile/small screens)
+                        LazyRow(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            item {
+                                StitchButton(
+                                    text = "ALL ITEMS",
+                                    onClick = { viewModel.selectCategory(null) },
+                                    containerColor = if (uiState.selectedCategoryId == null) StitchColor.Primary else StitchColor.SurfaceContainerLow,
+                                    contentColor = if (uiState.selectedCategoryId == null) StitchColor.OnPrimary else StitchColor.OnSurfaceVariant
+                                )
+                            }
+                            items(
+                                uiState.categories,
+                                key = { it.id }
+                            ) { category ->
+                                val isSelected = uiState.selectedCategoryId == category.id
+                                StitchButton(
+                                    text = category.name,
+                                    onClick = { viewModel.selectCategory(category.id) },
+                                    containerColor = if (isSelected) StitchColor.Primary else StitchColor.SurfaceContainerLow,
+                                    contentColor = if (isSelected) StitchColor.OnPrimary else StitchColor.OnSurfaceVariant
+                                )
+                            }
+                        }
                     }
+
+                    // Product Grid
+                    val isCompact = this@BoxWithConstraints.maxWidth < 800.dp
+                    LazyVerticalGrid(
+                        columns = GridCells.Adaptive(minSize = if (isCompact) 140.dp else 160.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(
+                            uiState.filteredProducts,
+                            key = { it.id }
+                        ) { product ->
+                            val cartItem = uiState.cartItems.find { it.product.id == product.id }
+                            StitchProductCard(
+                                product = product,
+                                isSelected = cartItem != null,
+                                selectedQuantity = cartItem?.quantity ?: java.math.BigDecimal.ZERO,
+                                compact = isCompact,
+                                onClick = { viewModel.addToCart(product) }
+                            )
+                        }
+                    }
+
+                    // Function Keys Grid at bottom
+                    Spacer(Modifier.height(16.dp))
+                    StitchFunctionGrid(
+                        actions = functionKeys,
+                        onActionClick = { viewModel.onPosAction(it) }
+                    )
                 }
             }
-
-            // Function Keys Grid at bottom
-            Spacer(Modifier.height(16.dp))
-            StitchFunctionGrid(
-                actions = functionKeys,
-                onActionClick = { viewModel.onPosAction(it) }
-            )
         }
 
         // Checkout Sidebar
@@ -227,8 +280,9 @@ fun SalesScreen(
     if (uiState.itemAwaitingModifiers != null) {
         ModifierDialog(
             item = uiState.itemAwaitingModifiers!!,
-            availableModifiers = uiState.availableModifiers,
+            uiState = uiState,
             onToggleModifier = { viewModel.toggleModifier(it) },
+            onToggleFnbModifier = { viewModel.toggleFnbModifier(it) },
             onDismiss = { viewModel.dismissModifierSelection() }
         )
     }
@@ -240,6 +294,42 @@ fun SalesScreen(
                 viewModel.selectMember(member)
                 viewModel.setShowMemberSelection(false)
             }
+        )
+    }
+
+    if (uiState.showAdminAuthDialog) {
+        PinAuthorizationDialog(
+            permission = when (uiState.adminAuthAction) {
+                is AdminAuthAction.RemoveItem -> com.extrotarget.extroposv2.core.security.Permission.VOID_SALE
+                is AdminAuthAction.ApplyDiscount -> com.extrotarget.extroposv2.core.security.Permission.APPLY_DISCOUNT
+                is AdminAuthAction.OpenDrawer -> com.extrotarget.extroposv2.core.security.Permission.CASH_DRAWER_OPEN
+                else -> com.extrotarget.extroposv2.core.security.Permission.ACCESS_MAINTENANCE
+            },
+            errorMessage = uiState.adminAuthError,
+            onConfirm = { viewModel.authenticateAdmin(it) },
+            onDismiss = { viewModel.dismissAdminAuth() }
+        )
+    }
+}
+
+@Composable
+fun CategoryItem(
+    name: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        color = if (isSelected) StitchColor.Primary else Color.Transparent,
+        contentColor = if (isSelected) StitchColor.OnPrimary else StitchColor.OnSurface,
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = name.uppercase(),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Black,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         )
     }
 }

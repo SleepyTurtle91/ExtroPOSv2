@@ -9,6 +9,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import android.util.Log
 import com.extrotarget.extroposv2.core.data.seeder.DataSeeder
+import com.extrotarget.extroposv2.core.hardware.printer.PrinterManager
 import com.extrotarget.extroposv2.core.work.AutoBackupWorker
 import com.extrotarget.extroposv2.core.work.LhdnConsolidationWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -22,6 +23,9 @@ import javax.inject.Inject
 class ExtroPosApp : Application(), Configuration.Provider {
     @Inject
     lateinit var dataSeeder: DataSeeder
+
+    @Inject
+    lateinit var printerManager: PrinterManager
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
@@ -39,6 +43,8 @@ class ExtroPosApp : Application(), Configuration.Provider {
         } else {
             Timber.plant(ReleaseTree())
         }
+
+        printerManager.startBufferProcessor()
 
         MainScope().launch {
             dataSeeder.seedIfNeeded()

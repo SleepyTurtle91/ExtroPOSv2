@@ -8,6 +8,9 @@ import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.local.dao.CategoryDao
 import com.extrotarget.extroposv2.core.data.local.dao.PrinterDao
 import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
+import com.extrotarget.extroposv2.core.data.local.dao.SupplierDao
+import com.extrotarget.extroposv2.core.data.local.dao.PurchaseOrderDao
+import com.extrotarget.extroposv2.core.data.local.dao.RefundDao
 import com.extrotarget.extroposv2.core.data.local.dao.SaleDao
 import com.extrotarget.extroposv2.core.data.local.dao.StockMovementDao
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.CarWashDao
@@ -15,6 +18,9 @@ import com.extrotarget.extroposv2.core.data.local.dao.carwash.CommissionRecordDa
 import com.extrotarget.extroposv2.core.data.local.dao.carwash.StaffDao
 import com.extrotarget.extroposv2.core.data.local.dao.dobi.LaundryDao
 import com.extrotarget.extroposv2.core.data.local.dao.fnb.TableDao
+import com.extrotarget.extroposv2.core.data.local.dao.fnb.FnbModifierDao
+import com.extrotarget.extroposv2.core.data.local.dao.fnb.FnbStationDao
+import com.extrotarget.extroposv2.core.data.local.dao.OfflineQueueDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.PaymentMethodDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.TaxDao
 import com.extrotarget.extroposv2.core.data.local.dao.settings.ReceiptDao
@@ -22,10 +28,12 @@ import com.extrotarget.extroposv2.core.data.local.dao.settings.DuitNowDao
 import com.extrotarget.extroposv2.core.data.local.dao.lhdn.LhdnDao
 import com.extrotarget.extroposv2.core.data.local.dao.AutoCountDao
 import com.extrotarget.extroposv2.core.data.local.dao.ShiftDao
+import com.extrotarget.extroposv2.core.data.local.dao.CashMovementDao
 import com.extrotarget.extroposv2.core.data.local.dao.BranchDao
 import com.extrotarget.extroposv2.core.data.local.dao.StockTransferDao
 import com.extrotarget.extroposv2.core.data.local.dao.reporting.ReportingDao
 import com.extrotarget.extroposv2.core.data.local.dao.hotel.HotelDao
+import com.extrotarget.extroposv2.core.data.local.dao.hardware.PrintJobDao
 import com.extrotarget.extroposv2.core.data.local.training.TrainingDbManager
 import dagger.Module
 import dagger.Provides
@@ -258,6 +266,15 @@ object DatabaseModule {
     }
 
     @Provides
+    fun provideSupplierDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): SupplierDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().supplierDao() else mainDb.supplierDao()
+
+    @Provides
+    fun providePurchaseOrderDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): PurchaseOrderDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().purchaseOrderDao() else mainDb.purchaseOrderDao()
+
+    @Provides
+    fun provideRefundDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): RefundDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().refundDao() else mainDb.refundDao()
+
+    @Provides
     fun provideCategoryDao(
         mainDb: AppDatabase,
         trainingDbManager: TrainingDbManager
@@ -351,6 +368,18 @@ object DatabaseModule {
     fun provideEndOfDayDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): com.extrotarget.extroposv2.core.data.local.dao.EndOfDayDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().endOfDayDao() else mainDb.endOfDayDao()
 
     @Provides
+    fun provideFnbModifierDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): FnbModifierDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().fnbModifierDao() else mainDb.fnbModifierDao()
+
+    @Provides
+    fun provideFnbStationDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): FnbStationDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().fnbStationDao() else mainDb.fnbStationDao()
+
+    @Provides
+    fun provideOfflineQueueDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): OfflineQueueDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().offlineQueueDao() else mainDb.offlineQueueDao()
+
+    @Provides
+    fun provideCashMovementDao(mainDb: AppDatabase, trainingDbManager: TrainingDbManager): CashMovementDao = if (trainingDbManager.isTrainingMode.value) trainingDbManager.getTrainingDatabase().cashMovementDao() else mainDb.cashMovementDao()
+
+    @Provides
     fun provideReportingDao(mainDb: AppDatabase): ReportingDao = mainDb.reportingDao()
 
     @Provides
@@ -358,4 +387,7 @@ object DatabaseModule {
 
     @Provides
     fun provideWorkspaceDao(mainDb: AppDatabase): com.extrotarget.extroposv2.core.data.local.dao.platform.WorkspaceDao = mainDb.workspaceDao()
+
+    @Provides
+    fun providePrintJobDao(mainDb: AppDatabase): PrintJobDao = mainDb.printJobDao()
 }

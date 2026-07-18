@@ -16,7 +16,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
@@ -28,8 +27,6 @@ import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
 import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import android.content.Context
-import android.net.Uri
 import android.widget.Toast
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -37,6 +34,9 @@ import com.extrotarget.extroposv2.ui.components.barcode.BarcodeScannerView
 import com.extrotarget.extroposv2.ui.inventory.components.AddEditProductDialog
 import com.extrotarget.extroposv2.ui.inventory.components.ImportCsvDialog
 import com.extrotarget.extroposv2.ui.inventory.components.InventoryProductItem
+import com.extrotarget.extroposv2.ui.inventory.components.StockAdjustmentDialog as NewStockAdjustmentDialog
+import com.extrotarget.extroposv2.ui.sales.components.PinAuthorizationDialog
+import com.extrotarget.extroposv2.core.security.Permission
 import com.extrotarget.extroposv2.ui.inventory.viewmodel.InventoryViewModel
 import com.extrotarget.extroposv2.ui.util.CameraPermissionWrapper
 import java.text.SimpleDateFormat
@@ -226,7 +226,10 @@ fun InventoryScreen(
                 contentPadding = PaddingValues(vertical = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(uiState.filteredProducts) { product ->
+                items(
+                    uiState.filteredProducts,
+                    key = { it.id }
+                ) { product ->
                     InventoryProductItem(
                         product = product,
                         onProductClick = { viewModel.selectProduct(it) }
@@ -295,18 +298,22 @@ fun InventoryScreen(
     }
 
     if (uiState.selectedProduct != null) {
-        StockAdjustmentDialog(
-            product = uiState.selectedProduct!!,
-            movements = uiState.stockMovements,
+        NewStockAdjustmentDialog(
+            productName = uiState.selectedProduct!!.name,
+            currentStock = uiState.selectedProduct!!.stockQuantity,
             onDismiss = { viewModel.selectProduct(null) },
-            onConfirm = { quantity, type, note ->
-                viewModel.adjustStock(quantity, type, note)
-                viewModel.selectProduct(null)
-            },
-            onSetStock = { quantity, _, note ->
-                viewModel.setStock(quantity, note)
-                viewModel.selectProduct(null)
+            onConfirm = { quantity, type, reason ->
+                viewModel.adjustStock(quantity, type, reason)
             }
+        )
+    }
+
+    if (uiState.showAdminAuthDialog) {
+        PinAuthorizationDialog(
+            permission = Permission.LARGE_STOCK_ADJUSTMENT,
+            onDismiss = { viewModel.dismissAdminAuth() },
+            onConfirm = { viewModel.authenticateAdmin(it) },
+            errorMessage = uiState.adminAuthError
         )
     }
 }
@@ -384,136 +391,5 @@ fun InventoryStatCard(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun StockAdjustmentDialog(
-    product: com.extrotarget.extroposv2.core.data.model.Product,
-    movements: List<StockMovement>,
-    onDismiss: () -> Unit,
-    onConfirm: (java.math.BigDecimal, String, String?) -> Unit,
-    onSetStock: (java.math.BigDecimal, String, String?) -> Unit
-) {
-    var quantityStr by remember { mutableStateOf("") }
-    var adjustmentType by remember { mutableStateOf("IN") } // IN, OUT, SET
-    var note by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        modifier = Modifier.fillMaxWidth(0.9f),
-        title = { Text("Stock Management: ${product.name}") },
-        text = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Current Stock: ${product.stockQuantity}", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = quantityStr,
-                    onValueChange = { quantityStr = it },
-                    label = { Text(if (adjustmentType == "SET") "New Stock Level" else "Adjustment Quantity") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal
-                    )
-                )
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = adjustmentType == "IN", onClick = { adjustmentType = "IN" })
-                        Text("Add", modifier = Modifier.padding(start = 4.dp))
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = adjustmentType == "OUT", onClick = { adjustmentType = "OUT" })
-                        Text("Reduce", modifier = Modifier.padding(start = 4.dp))
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(selected = adjustmentType == "SET", onClick = { adjustmentType = "SET" })
-                        Text("Set Total", modifier = Modifier.padding(start = 4.dp))
-                    }
-                }
-
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text("Reason / Reference (Optional)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(Modifier.height(16.dp))
-                Text("Recent Audit Logs", style = MaterialTheme.typography.titleSmall)
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                
-                Box(modifier = Modifier.height(200.dp)) {
-                    LazyColumn {
-                        items(movements) { movement ->
-                            StockMovementRow(movement)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val qty = quantityStr.toBigDecimalOrNull() ?: java.math.BigDecimal.ZERO
-                    if (adjustmentType == "SET") {
-                        onSetStock(qty, "ADJUSTMENT", note)
-                    } else {
-                        val finalQty = if (adjustmentType == "OUT") qty.negate() else qty
-                        onConfirm(finalQty, adjustmentType, note)
-                    }
-                }
-            ) {
-                Text("Update Stock")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
-}
-
-@Composable
-fun StockMovementRow(movement: StockMovement) {
-    val dateFormat = remember { SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()) }
-    val color = when {
-        movement.type == StockMovementType.SALE || movement.quantity < java.math.BigDecimal.ZERO -> Color.Red
-        movement.quantity > java.math.BigDecimal.ZERO -> Color(0xFF4CAF50)
-        else -> Color.Gray
-    }
-
-    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "${movement.type}: ${if (movement.quantity > java.math.BigDecimal.ZERO) "+" else ""}${movement.quantity}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = color,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = dateFormat.format(Date(movement.timestamp)),
-                style = MaterialTheme.typography.bodySmall
-            )
-        }
-        if (!movement.reason.isNullOrBlank()) {
-            Text(
-                text = movement.reason ?: "",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        HorizontalDivider(modifier = Modifier.padding(top = 4.dp), thickness = 0.5.dp)
     }
 }

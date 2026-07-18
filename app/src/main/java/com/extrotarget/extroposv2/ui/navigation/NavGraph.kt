@@ -33,6 +33,7 @@ import com.extrotarget.extroposv2.ui.settings.lhdn.LhdnSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.autocount.AutoCountSettingsScreen
 import com.extrotarget.extroposv2.ui.settings.audit.AuditScreen
 import com.extrotarget.extroposv2.ui.settings.audit.AiAuditorSettingsScreen
+import com.extrotarget.extroposv2.ui.settings.diagnostics.DiagnosticsScreen
 import com.extrotarget.extroposv2.ui.settings.sync.SyncScreen
 import com.extrotarget.extroposv2.ui.loyalty.MemberManagementScreen
 import com.extrotarget.extroposv2.ui.loyalty.LoyaltySettingsScreen
@@ -53,6 +54,8 @@ import com.extrotarget.extroposv2.ui.settings.ModeSelectionScreen
 import com.extrotarget.extroposv2.ui.inventory.transfer.StockTransferScreen
 import com.extrotarget.extroposv2.ui.settings.branch.BranchSettingsScreen
 import com.extrotarget.extroposv2.ui.inventory.InventoryManagementScreen
+import com.extrotarget.extroposv2.ui.retail.purchase.SupplierScreen
+import com.extrotarget.extroposv2.ui.retail.purchase.PurchaseOrderScreen
 import com.extrotarget.extroposv2.ui.kiosk.KioskScreen
 
 @Composable
@@ -111,6 +114,14 @@ fun NavGraph(
 
         composable(Screen.ProductManagement.route) {
             InventoryManagementScreen(viewModel = hiltViewModel())
+        }
+
+        composable(Screen.SupplierManagement.route) {
+            SupplierScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.PurchaseOrders.route) {
+            PurchaseOrderScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Screen.BranchSettings.route) {
@@ -246,6 +257,10 @@ fun NavGraph(
                 onNavigateBack = { navController.popBackStack() },
                 viewModel = hiltViewModel()
             )
+        }
+
+        composable(Screen.Diagnostics.route) {
+            DiagnosticsScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Screen.TerminalSync.route) {

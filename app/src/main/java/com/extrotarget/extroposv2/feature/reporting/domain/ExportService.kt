@@ -1,6 +1,6 @@
 package com.extrotarget.extroposv2.feature.reporting.domain
 
-import com.extrotarget.extroposv2.core.domain.model.reporting.TaxBreakdownItem
+import com.extrotarget.extroposv2.core.domain.model.reporting.finance.TaxBreakdownItem
 import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import java.io.OutputStream
 import javax.inject.Inject

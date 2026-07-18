@@ -8,9 +8,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.extrotarget.extroposv2.core.network.P2PManager
+import com.extrotarget.extroposv2.core.platform.DeviceIdentityManager
+import com.extrotarget.extroposv2.core.platform.DiagnosticsManager
 import com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
 import com.extrotarget.extroposv2.core.util.LocaleHelper
 import com.extrotarget.extroposv2.core.work.LhdnPollingWorker
+import com.extrotarget.extroposv2.core.work.MaintenanceWorker
 import com.extrotarget.extroposv2.ui.navigation.MainScreen
 import com.extrotarget.extroposv2.ui.theme.ExtroPOSV2Theme
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,6 +27,12 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var p2pManager: P2PManager
+
+    @Inject
+    lateinit var diagnosticsManager: DiagnosticsManager
+
+    @Inject
+    lateinit var deviceIdentityManager: DeviceIdentityManager
 
     @Inject
     lateinit var settingsRepository: SettingsRepository
@@ -45,8 +54,30 @@ class MainActivity : ComponentActivity() {
         // Initialize P2P Services
         p2pManager.initialize()
         
-        // Enqueue periodic LHDN polling
-        LhdnPollingWorker.enqueue(this)
+        // Enqueue background tasks safely
+        lifecycleScope.launch {
+            try {
+                // Enqueue periodic LHDN polling
+                LhdnPollingWorker.enqueue(this@MainActivity)
+
+                // Enqueue database maintenance
+                MaintenanceWorker.enqueue(this@MainActivity)
+            } catch (e: Exception) {
+                android.util.Log.e("ExtroPOS", "Failed to enqueue background workers", e)
+            }
+        }
+
+        // Run startup hardening checks
+        lifecycleScope.launch {
+            val isDbHealthy = diagnosticsManager.checkDatabaseIntegrity()
+            if (!isDbHealthy) {
+                // TODO: Trigger emergency recovery flow or alert user
+                android.util.Log.e("ExtroPOS", "DATABASE INTEGRITY CHECK FAILED!")
+            }
+            
+            // Ensure identity is initialized
+            deviceIdentityManager.getDeviceIdentity()
+        }
 
         setContent {
             ExtroPOSV2Theme {

@@ -4,7 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.extrotarget.extroposv2.core.util.backup.DatabaseBackupManager
+import com.extrotarget.extroposv2.core.util.backup.BackupManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,7 +22,7 @@ data class BackupUiState(
 @HiltViewModel
 class BackupViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val backupManager: DatabaseBackupManager
+    private val backupManager: BackupManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BackupUiState())
@@ -32,11 +32,11 @@ class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, message = "Exporting...") }
             context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                val result = backupManager.exportDatabase(outputStream)
+                val result = backupManager.createBackupPackage(outputStream)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        message = if (result.isSuccess) "Backup exported successfully" else "Export failed: ${result.exceptionOrNull()?.message}",
+                        message = if (result.isSuccess) "Backup package exported successfully" else "Export failed: ${result.exceptionOrNull()?.message}",
                         isError = result.isFailure
                     )
                 }
@@ -48,11 +48,11 @@ class BackupViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, message = "Importing...") }
             context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                val result = backupManager.importDatabase(inputStream)
+                val result = backupManager.restoreFromPackage(inputStream)
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        message = if (result.isSuccess) "Backup restored. Please restart the app." else "Restore failed: ${result.exceptionOrNull()?.message}",
+                        message = if (result.isSuccess) "Backup package restored. Please restart the app." else "Restore failed: ${result.exceptionOrNull()?.message}",
                         isError = result.isFailure
                     )
                 }

@@ -169,9 +169,9 @@ class BackupViewModel @Inject constructor(
         _uiState.update { it.copy(isLoading = true, message = "Restoring from local backup...", isRestoreSuccessful = false) }
         val file = File(backup.path)
         val result = if (file.exists()) {
-            backupManager.restoreDatabase(file.inputStream())
+            backupManager.restoreFromPackage(file.inputStream())
         } else {
-            Result.failure(Exception("File not found"))
+            kotlin.Result.failure(Exception("File not found"))
         }
         
         _uiState.update {
@@ -186,7 +186,7 @@ class BackupViewModel @Inject constructor(
 
     suspend fun backup(outputStream: OutputStream) {
         _uiState.update { it.copy(isLoading = true, message = "Creating backup...", isRestoreSuccessful = false) }
-        val result = backupManager.backupDatabase(outputStream)
+        val result = backupManager.createBackupPackage(outputStream)
         _uiState.update {
             it.copy(
                 isLoading = false,
@@ -198,7 +198,7 @@ class BackupViewModel @Inject constructor(
 
     suspend fun restore(inputStream: InputStream) {
         _uiState.update { it.copy(isLoading = true, message = "Restoring backup...", isRestoreSuccessful = false) }
-        val result = backupManager.restoreDatabase(inputStream)
+        val result = backupManager.restoreFromPackage(inputStream)
         _uiState.update {
             it.copy(
                 isLoading = false,

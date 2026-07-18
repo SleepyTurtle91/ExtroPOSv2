@@ -3,9 +3,12 @@ package com.extrotarget.extroposv2.core.data.repository
 import androidx.room.withTransaction
 import com.extrotarget.extroposv2.core.data.local.AppDatabase
 import com.extrotarget.extroposv2.core.data.local.dao.ShiftDao
+import com.extrotarget.extroposv2.core.data.local.dao.CashMovementDao
 import com.extrotarget.extroposv2.core.data.model.AdjustmentType
 import com.extrotarget.extroposv2.core.data.model.Shift
 import com.extrotarget.extroposv2.core.data.model.ShiftAdjustment
+import com.extrotarget.extroposv2.core.data.model.CashMovement
+import com.extrotarget.extroposv2.core.data.model.CashMovementType
 import kotlinx.coroutines.flow.Flow
 import java.math.BigDecimal
 import javax.inject.Inject
@@ -14,6 +17,7 @@ import javax.inject.Singleton
 @Singleton
 class ShiftRepository @Inject constructor(
     private val shiftDao: ShiftDao,
+    private val cashMovementDao: CashMovementDao,
     private val database: AppDatabase
 ) {
     fun getActiveShift(): Flow<Shift?> = shiftDao.getActiveShift()
@@ -29,6 +33,25 @@ class ShiftRepository @Inject constructor(
     suspend fun updateShift(shift: Shift) = shiftDao.updateShift(shift)
 
     fun getAdjustmentsForShift(shiftId: Long) = shiftDao.getAdjustmentsForShift(shiftId)
+
+    fun getMovementsForShift(shiftId: Long): Flow<List<CashMovement>> = cashMovementDao.getMovementsForShift(shiftId)
+
+    suspend fun addCashMovement(movement: CashMovement) {
+        database.withTransaction {
+            cashMovementDao.insertMovement(movement)
+            when (movement.type) {
+                CashMovementType.FLOAT, CashMovementType.PAYMENT_CORRECTION -> {
+                    // Update appropriate counters if needed
+                }
+                CashMovementType.CASH_DROP, CashMovementType.SAFE_DROP, CashMovementType.EXPENSE -> {
+                    shiftDao.updateCashOut(movement.shiftId, movement.amount)
+                }
+                CashMovementType.REFUND -> {
+                     shiftDao.updateCashOut(movement.shiftId, movement.amount)
+                }
+            }
+        }
+    }
 
     suspend fun addAdjustment(adjustment: ShiftAdjustment) {
         database.withTransaction {

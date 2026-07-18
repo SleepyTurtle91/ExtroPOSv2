@@ -108,3 +108,11 @@ This file tracks the implementation status of features defined in the developmen
 
 ---
 *Last Updated: Project is 100% Production Ready. Initiating first customer deployment.*
+
+## Phase 14: Resilience & Multi-Branch Architecture
+- [x] **Device Identity**: Unique terminal fingerprinting for cross-branch audit trails.
+- [x] **Production Hardening**: In-app diagnostics dashboard and automated database integrity checks.
+- [x] **Resilient Offline Queue**: Persistent sync queue with idempotency tracking (`eventId`).
+- [x] **Secure Backup Packaging**: Versioned ZIP/Encrypted backups with JSON metadata and SHA-256 validation.
+- [x] **Strategy Conflict Resolver**: Domain-specific synchronization rules (LWW for Catalog, Immutable for Sales).
+- [x] **Multi-Tier Retention**: Automated local/cloud backup cleanup (7d/4w/12m policy).

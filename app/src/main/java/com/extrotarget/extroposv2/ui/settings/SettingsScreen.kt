@@ -176,6 +176,18 @@ fun SettingsScreen(
                     icon = Icons.Default.Sync,
                     onClick = { onNavigateTo(Screen.BranchSettings.route) }
                 )
+                SettingsItem(
+                    title = "Suppliers",
+                    subtitle = "Manage vendor profiles and contact info",
+                    icon = Icons.Default.Business,
+                    onClick = { onNavigateTo(Screen.SupplierManagement.route) }
+                )
+                SettingsItem(
+                    title = "Purchase Orders",
+                    subtitle = "Issue and receive inventory from suppliers",
+                    icon = Icons.Default.RequestQuote,
+                    onClick = { onNavigateTo(Screen.PurchaseOrders.route) }
+                )
 
                 if (activeMode.hasRoomManagement || activeMode.hasBookings) {
                     SettingsItem(
@@ -254,6 +266,12 @@ fun SettingsScreen(
                     subtitle = "Configure Gemini 3.1 BYOK settings",
                     icon = Icons.Default.SmartToy,
                     onClick = { onNavigateTo(Screen.AiAuditorSettings.route) }
+                )
+                SettingsItem(
+                    title = "System Diagnostics",
+                    subtitle = "Health check, identity and storage info",
+                    icon = Icons.Default.HealthAndSafety,
+                    onClick = { onNavigateTo(Screen.Diagnostics.route) }
                 )
                 SettingsItem(
                     title = "Multi-Terminal Sync",

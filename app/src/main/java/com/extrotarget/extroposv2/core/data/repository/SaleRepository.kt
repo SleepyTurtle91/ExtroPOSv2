@@ -1,10 +1,14 @@
 package com.extrotarget.extroposv2.core.data.repository
 
+import androidx.room.withTransaction
 import com.extrotarget.extroposv2.core.data.local.dao.SaleDao
 import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
 import com.extrotarget.extroposv2.core.data.model.Sale
 import com.extrotarget.extroposv2.core.data.model.SaleItem
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
+import com.extrotarget.extroposv2.core.data.local.dao.RefundDao
+import com.extrotarget.extroposv2.core.data.model.Refund
+import com.extrotarget.extroposv2.core.domain.commerce.WorkflowStatus
 import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
 import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import com.extrotarget.extroposv2.core.network.SyncMessageType
@@ -19,9 +23,11 @@ import javax.inject.Singleton
 class SaleRepository @Inject constructor(
     private val saleDao: com.extrotarget.extroposv2.core.data.local.dao.SaleDao,
     private val productDao: com.extrotarget.extroposv2.core.data.local.dao.ProductDao,
+    private val refundDao: com.extrotarget.extroposv2.core.data.local.dao.RefundDao,
     private val syncServer: com.extrotarget.extroposv2.core.network.SyncServer,
     private val syncClient: com.extrotarget.extroposv2.core.network.SyncClient,
-    private val settingsRepository: com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
+    private val settingsRepository: com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository,
+    private val database: com.extrotarget.extroposv2.core.data.local.AppDatabase
 ) {
     fun getAllSalesWithItems(): Flow<List<SaleWithItems>> =
         saleDao.getAllSalesWithItems()
@@ -104,6 +110,58 @@ class SaleRepository @Inject constructor(
 
     suspend fun getSalesInRangeNow(start: Long, end: Long): List<Sale> =
         saleDao.getSalesInRangeNow(start, end)
+
+    suspend fun requestRefund(saleId: String, amount: java.math.BigDecimal, reason: String, requestedBy: String) {
+        val refund = Refund(
+            id = java.util.UUID.randomUUID().toString(),
+            saleId = saleId,
+            amount = amount,
+            status = WorkflowStatus.PENDING,
+            reason = reason,
+            requestedBy = requestedBy
+        )
+        refundDao.insertRefund(refund)
+    }
+
+    suspend fun approveRefund(refundId: String, approvedBy: String, restock: Boolean) {
+        database.withTransaction {
+            val refund = refundDao.getRefundById(refundId) ?: return@withTransaction
+            if (refund.status != WorkflowStatus.PENDING) return@withTransaction
+
+            // 1. Mark Refund as COMPLETED
+            refundDao.approveRefund(refundId, WorkflowStatus.COMPLETED, approvedBy)
+
+            // 2. Restore Stock if requested
+            if (restock) {
+                val items = saleDao.getItemsBySaleId(refund.saleId)
+                items.forEach { item ->
+                    val product = productDao.getProductById(item.productId)
+                    if (product != null) {
+                        val newStock = product.stockQuantity.add(item.quantity)
+                        productDao.setStockQuantity(item.productId, newStock)
+                        
+                        saleDao.insertStockMovement(
+                            StockMovement(
+                                id = java.util.UUID.randomUUID().toString(),
+                                productId = item.productId,
+                                quantity = item.quantity,
+                                type = StockMovementType.RETURN,
+                                reason = "Refund Approved: ${refund.reason}",
+                                createdBy = approvedBy,
+                                referenceId = refund.id
+                            )
+                        )
+                    }
+                }
+            }
+
+            // 3. Update Original Sale Status
+            val sale = saleDao.getSaleById(refund.saleId)
+            if (sale != null) {
+                saleDao.updateSale(sale.copy(status = com.extrotarget.extroposv2.core.config.AppConfig.SaleStatus.VOID))
+            }
+        }
+    }
 
     suspend fun updateLocalStock(productId: String, quantity: java.math.BigDecimal, isAvailable: Boolean? = null) {
         val product = productDao.getProductById(productId)

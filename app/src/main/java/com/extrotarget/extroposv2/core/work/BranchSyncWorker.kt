@@ -2,52 +2,79 @@ package com.extrotarget.extroposv2.core.work
 
 import android.content.Context
 import androidx.hilt.work.HiltWorker
-import androidx.work.CoroutineWorker
-import androidx.work.WorkerParameters
+import androidx.work.*
 import com.extrotarget.extroposv2.core.data.model.SaleWithItems
-import com.extrotarget.extroposv2.core.data.repository.SaleRepository
+import com.extrotarget.extroposv2.core.data.repository.SyncRepository
 import com.extrotarget.extroposv2.core.network.BranchSyncManager
+import com.google.gson.Gson
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 
-/**
- * Worker to reliably push local sales to the HQ branch in the background.
- */
 @HiltWorker
 class BranchSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val saleRepository: SaleRepository,
+    private val syncRepository: SyncRepository,
     private val branchSyncManager: BranchSyncManager
 ) : CoroutineWorker(context, params) {
 
+    private val gson = Gson()
+
     override suspend fun doWork(): Result {
-        val saleId = inputData.getString(KEY_SALE_ID) ?: return Result.failure()
+        val pendingItems = syncRepository.getPendingItems()
+        if (pendingItems.isEmpty()) return Result.success()
 
-        return try {
-            val sale = saleRepository.getSaleById(saleId) ?: return Result.failure()
-            val items = saleRepository.getItemsBySaleId(saleId)
-            
-            // Check if already synced to HQ (assuming localSyncStatus is used for HQ sync)
-            if (sale.localSyncStatus == "SYNCED") return Result.success()
+        var hasFailures = false
 
-            val result = branchSyncManager.pushSaleToHQ(SaleWithItems(sale, items))
-            
-            if (result.isSuccess) {
-                saleRepository.markSaleAsSynced(saleId)
-                Result.success()
-            } else {
-                Timber.e("Branch Sync Failed for sale $saleId: ${result.exceptionOrNull()?.message}")
-                if (runAttemptCount < 5) Result.retry() else Result.failure()
+        for (item in pendingItems) {
+            try {
+                val syncResult: kotlin.Result<Unit> = when (item.actionType) {
+                    "SALE" -> {
+                        val saleWithItems = gson.fromJson(item.payloadJson, SaleWithItems::class.java)
+                        branchSyncManager.pushSaleToHQ(saleWithItems)
+                    }
+                    else -> kotlin.Result.failure(Exception("Unknown action type: ${item.actionType}"))
+                }
+
+                if (syncResult.isSuccess) {
+                    syncRepository.markCompleted(item.id)
+                } else {
+                    val error = syncResult.exceptionOrNull()?.message
+                    Timber.e("Sync failed for item ${item.id}: $error")
+                    syncRepository.markFailed(item.id, error)
+                    hasFailures = true
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Exception processing sync item ${item.id}")
+                syncRepository.markFailed(item.id, e.message)
+                hasFailures = true
             }
-        } catch (e: Exception) {
-            Timber.e(e, "Exception during Branch Sync for sale $saleId")
-            if (runAttemptCount < 3) Result.retry() else Result.failure()
+        }
+
+        return if (hasFailures) {
+            Result.retry()
+        } else {
+            Result.success()
         }
     }
 
     companion object {
-        const val KEY_SALE_ID = "sale_id"
+        private const val WORK_NAME = "branch_sync_worker"
+
+        fun enqueue(context: Context) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val request = OneTimeWorkRequestBuilder<BranchSyncWorker>()
+                .setConstraints(constraints)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.MINUTES)
+                .build()
+
+            WorkManager.getInstance(context)
+                .enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.KEEP, request)
+        }
     }
 }

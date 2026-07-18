@@ -8,7 +8,11 @@ import com.extrotarget.extroposv2.core.data.model.Modifier
 import com.extrotarget.extroposv2.core.data.repository.CategoryRepository
 import com.extrotarget.extroposv2.core.data.repository.ProductRepository
 import com.extrotarget.extroposv2.core.data.repository.fnb.ModifierRepository
+import com.extrotarget.extroposv2.core.util.audit.AuditManager
 import com.extrotarget.extroposv2.ui.inventory.InventoryUiState
+import com.extrotarget.extroposv2.ui.inventory.PendingAdjustment
+import com.extrotarget.extroposv2.core.security.Permission
+import com.extrotarget.extroposv2.core.data.repository.carwash.StaffRepository
 import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
 import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
 import com.extrotarget.extroposv2.core.auth.SessionManager
@@ -24,7 +28,9 @@ class InventoryViewModel @Inject constructor(
     private val productRepository: ProductRepository,
     private val categoryRepository: CategoryRepository,
     private val modifierRepository: ModifierRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val auditManager: AuditManager,
+    private val staffRepository: StaffRepository
 ) : ViewModel() {
 
     val categories = categoryRepository.getAllCategories()
@@ -40,6 +46,9 @@ class InventoryViewModel @Inject constructor(
     private val _selectedProduct = MutableStateFlow<Product?>(null)
     private val _stockMovements = MutableStateFlow<List<StockMovement>>(emptyList())
     private val _isLoading = MutableStateFlow(false)
+    private val _showAdminAuthDialog = MutableStateFlow(false)
+    private val _adminAuthError = MutableStateFlow<String?>(null)
+    private val _pendingAdjustment = MutableStateFlow<PendingAdjustment?>(null)
 
     val uiState: StateFlow<InventoryUiState> = combine(
         products,
@@ -48,7 +57,10 @@ class InventoryViewModel @Inject constructor(
         _selectedCategoryId,
         _selectedProduct,
         _stockMovements,
-        _isLoading
+        _isLoading,
+        _showAdminAuthDialog,
+        _adminAuthError,
+        _pendingAdjustment
     ) { params: Array<Any?> ->
         InventoryUiState(
             products = params[0] as List<Product>,
@@ -57,7 +69,10 @@ class InventoryViewModel @Inject constructor(
             selectedCategoryId = params[3] as String?,
             selectedProduct = params[4] as Product?,
             stockMovements = params[5] as List<StockMovement>,
-            isLoading = params[6] as Boolean
+            isLoading = params[6] as Boolean,
+            showAdminAuthDialog = params[7] as Boolean,
+            adminAuthError = params[8] as String?,
+            pendingAdjustment = params[9] as PendingAdjustment?
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), InventoryUiState())
 
@@ -84,16 +99,65 @@ class InventoryViewModel @Inject constructor(
         }
     }
 
-    fun adjustStock(quantity: BigDecimal, type: String, note: String?) {
+    fun adjustStock(quantity: BigDecimal, type: StockMovementType, reason: String) {
         val product = _selectedProduct.value ?: return
+        
+        // Threshold check for Manager approval
+        if (quantity.abs() > BigDecimal("50") && !staffRepository.isCurrentUserAdmin()) {
+            _isLoading.value = false // Ensure we're not stuck in loading if we were
+            _selectedProduct.value = product // Re-select to keep dialog context if needed
+            // Instead of immediate execution, we trigger auth
+            updateUiStateWithPendingAdjustment(quantity, type, reason)
+            return
+        }
+        
+        executeAdjustStock(product, quantity, type, reason)
+    }
+
+    private fun updateUiStateWithPendingAdjustment(quantity: BigDecimal, type: StockMovementType, reason: String) {
+        _pendingAdjustment.value = PendingAdjustment(quantity, type, reason)
+        _showAdminAuthDialog.value = true
+    }
+
+    fun authenticateAdmin(pin: String) {
+        viewModelScope.launch {
+            val admin = staffRepository.getStaffByPin(pin)
+            if (admin != null && (admin.role == "ADMIN" || admin.role == "SUPERVISOR")) {
+                val pending = _pendingAdjustment.value
+                val product = _selectedProduct.value
+                if (pending != null && product != null) {
+                    executeAdjustStock(product, pending.quantity, pending.type, pending.reason)
+                }
+                _showAdminAuthDialog.value = false
+                _pendingAdjustment.value = null
+                _adminAuthError.value = null
+            } else {
+                _adminAuthError.value = "Invalid Admin PIN"
+            }
+        }
+    }
+
+    fun dismissAdminAuth() {
+        _showAdminAuthDialog.value = false
+        _pendingAdjustment.value = null
+        _adminAuthError.value = null
+    }
+
+    private fun executeAdjustStock(product: Product, quantity: BigDecimal, type: StockMovementType, reason: String) {
         val staffId = sessionManager.getCurrentStaff()?.id ?: "SYSTEM"
         viewModelScope.launch {
-            val movementType = when (type) {
-                "IN" -> StockMovementType.RESTOCK
-                "OUT" -> StockMovementType.ADJUSTMENT
-                else -> StockMovementType.ADJUSTMENT
-            }
-            productRepository.adjustStock(product.id, quantity, movementType, note, staffId)
+            productRepository.adjustStock(product.id, quantity, type, reason, staffId)
+            
+            auditManager.logAction(
+                action = "STOCK_ADJUSTMENT",
+                details = "Adjusted ${product.name} by $quantity ($type)",
+                module = "INVENTORY",
+                oldValue = product.stockQuantity.toString(),
+                newValue = product.stockQuantity.add(quantity).toString(),
+                entityType = "PRODUCT",
+                entityId = product.id
+            )
+            _selectedProduct.value = null // Close dialog
         }
     }
 

@@ -17,7 +17,7 @@ import java.math.BigDecimal
 fun LoyaltySettingsScreen(
     viewModel: LoyaltySettingsViewModel = hiltViewModel()
 ) {
-    val configState by viewModel.config.collectAsState()
+    val configState by viewModel.config.collectAsState(initial = null)
     val config = configState ?: LoyaltyConfig()
 
     var isEnabled by remember(config) { mutableStateOf(config.isEnabled) }

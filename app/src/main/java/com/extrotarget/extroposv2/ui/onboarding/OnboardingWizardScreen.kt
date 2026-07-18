@@ -360,15 +360,25 @@ fun StoreDetailsStep(uiState: OnboardingUIState, viewModel: OnboardingViewModel)
 
         Spacer(Modifier.height(16.dp))
 
-        StitchTextField(
-            value = uiState.address,
-            onValueChange = viewModel::updateAddress,
-            label = "Full Address",
-            placeholder = "Business location",
-            singleLine = false,
-            minLines = 3,
-            modifier = Modifier.fillMaxWidth()
-        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            StitchTextField(
+                value = uiState.address,
+                onValueChange = viewModel::updateAddress,
+                label = "Full Address",
+                placeholder = "Business location",
+                singleLine = false,
+                minLines = 3,
+                modifier = Modifier.weight(1f)
+            )
+            StitchTextField(
+                value = uiState.contactNo,
+                onValueChange = viewModel::updateContactNo,
+                label = "Contact Number",
+                placeholder = "e.g. 0123456789",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 

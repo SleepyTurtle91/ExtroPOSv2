@@ -2,7 +2,10 @@ package com.extrotarget.extroposv2.core.data.local.dao.reporting
 
 import androidx.room.Dao
 import androidx.room.Query
-import com.extrotarget.extroposv2.core.domain.model.reporting.*
+import com.extrotarget.extroposv2.core.domain.model.reporting.sales.*
+import com.extrotarget.extroposv2.core.domain.model.reporting.inventory.*
+import com.extrotarget.extroposv2.core.domain.model.reporting.finance.*
+import com.extrotarget.extroposv2.core.domain.model.reporting.staff.*
 import kotlinx.coroutines.flow.Flow
 import java.math.BigDecimal
 

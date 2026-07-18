@@ -76,6 +76,13 @@ interface SaleDao {
     @Query("SELECT * FROM sales WHERE id = :saleId")
     suspend fun getSaleById(saleId: String): Sale?
 
+    @Transaction
+    @Query("SELECT * FROM sales WHERE id = :saleId")
+    suspend fun getSaleWithItemsNow(saleId: String): SaleWithItems?
+
+    @Query("UPDATE sales SET status = :status WHERE id = :saleId")
+    suspend fun updateSaleStatus(saleId: String, status: String)
+
     @Query("SELECT * FROM sales WHERE tableId = :tableId AND status = :pendingStatus")
     suspend fun getPendingSaleForTable(tableId: String, pendingStatus: String = AppConfig.SaleStatus.PENDING): Sale?
 

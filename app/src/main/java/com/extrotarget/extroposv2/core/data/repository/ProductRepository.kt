@@ -4,6 +4,7 @@ import com.extrotarget.extroposv2.core.data.local.dao.ProductDao
 import com.extrotarget.extroposv2.core.data.model.Product
 import com.extrotarget.extroposv2.core.domain.commerce.StockMovement
 import com.extrotarget.extroposv2.core.domain.commerce.StockMovementType
+import com.extrotarget.extroposv2.core.platform.DeviceIdentityManager
 import com.extrotarget.extroposv2.core.network.SyncMessageType
 import com.extrotarget.extroposv2.core.network.StockUpdateData
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +18,8 @@ class ProductRepository @Inject constructor(
     private val stockMovementDao: com.extrotarget.extroposv2.core.data.local.dao.StockMovementDao,
     private val syncServer: com.extrotarget.extroposv2.core.network.SyncServer,
     private val syncClient: com.extrotarget.extroposv2.core.network.SyncClient,
-    private val settingsRepository: com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository
+    private val settingsRepository: com.extrotarget.extroposv2.core.data.repository.settings.SettingsRepository,
+    private val deviceIdentityManager: DeviceIdentityManager
 ) {
     fun getAllProducts(): Flow<List<Product>> = productDao.getAllProducts()
     
@@ -64,6 +66,7 @@ class ProductRepository @Inject constructor(
             syncClient.sendRealtimeMessage(SyncMessageType.UPDATE_STOCK, mapOf("productId" to productId, "adjustment" to quantity))
         } else {
             productDao.updateStockQuantity(productId, quantity)
+            val identity = deviceIdentityManager.getDeviceIdentity()
             stockMovementDao.insertMovement(
                 StockMovement(
                     id = java.util.UUID.randomUUID().toString(),
@@ -71,7 +74,8 @@ class ProductRepository @Inject constructor(
                     quantity = quantity,
                     type = type,
                     reason = reason,
-                    createdBy = createdBy
+                    createdBy = createdBy,
+                    deviceId = identity.terminalName
                 )
             )
         }
@@ -79,6 +83,7 @@ class ProductRepository @Inject constructor(
 
     suspend fun setStock(productId: String, quantity: java.math.BigDecimal, reason: String?, createdBy: String = "SYSTEM") {
         productDao.setStockQuantity(productId, quantity)
+        val identity = deviceIdentityManager.getDeviceIdentity()
         stockMovementDao.insertMovement(
             StockMovement(
                 id = java.util.UUID.randomUUID().toString(),
@@ -86,7 +91,8 @@ class ProductRepository @Inject constructor(
                 quantity = quantity,
                 type = StockMovementType.ADJUSTMENT,
                 reason = reason,
-                createdBy = createdBy
+                createdBy = createdBy,
+                deviceId = identity.terminalName
             )
         )
     }

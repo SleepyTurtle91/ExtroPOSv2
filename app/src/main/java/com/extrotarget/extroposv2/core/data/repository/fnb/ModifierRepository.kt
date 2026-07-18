@@ -1,6 +1,8 @@
 package com.extrotarget.extroposv2.core.data.repository.fnb
 
 import com.extrotarget.extroposv2.core.data.local.dao.ModifierDao
+import com.extrotarget.extroposv2.core.data.local.dao.fnb.FnbModifierDao
+import com.extrotarget.extroposv2.core.data.local.dao.fnb.ModifierGroupWithOptions
 import com.extrotarget.extroposv2.core.data.model.Modifier
 import com.extrotarget.extroposv2.core.data.model.ModifierTargetType
 import kotlinx.coroutines.flow.Flow
@@ -9,7 +11,8 @@ import javax.inject.Singleton
 
 @Singleton
 class ModifierRepository @Inject constructor(
-    private val modifierDao: ModifierDao
+    private val modifierDao: ModifierDao,
+    private val fnbModifierDao: FnbModifierDao
 ) {
     val allModifiers: Flow<List<Modifier>> = modifierDao.getAllModifiers()
 
@@ -53,5 +56,9 @@ class ModifierRepository @Inject constructor(
 
     suspend fun getModifierIdsForTarget(targetId: String, targetType: ModifierTargetType): List<String> {
         return modifierDao.getModifiersForTarget(targetId, targetType).map { it.id }
+    }
+
+    fun getModifierGroupsForMenuItem(menuItemId: String): Flow<List<ModifierGroupWithOptions>> {
+        return fnbModifierDao.getGroupsWithOptionsForMenuItem(menuItemId)
     }
 }

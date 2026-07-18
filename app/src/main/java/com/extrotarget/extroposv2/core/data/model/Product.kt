@@ -1,10 +1,14 @@
 package com.extrotarget.extroposv2.core.data.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.math.BigDecimal
 
-@Entity(tableName = "products")
+@Entity(
+    tableName = "products",
+    indices = [Index("sku"), Index("barcode")]
+)
 data class Product(
     @PrimaryKey val id: String,
     val name: String,
@@ -22,5 +26,7 @@ data class Product(
     val isAvailable: Boolean = true,
     val printerTag: String? = null, // e.g., "KITCHEN", "BAR", "GENERAL"
     val isWeightBased: Boolean = false, // If true, price is per KG, else per piece
-    val businessMode: String? = null // "retail", "fnb", "carwash", "laundry"
+    val businessMode: String? = null, // "retail", "fnb", "carwash", "laundry"
+    val updatedAt: Long = System.currentTimeMillis(),
+    val serverUpdatedAt: Long? = null
 )

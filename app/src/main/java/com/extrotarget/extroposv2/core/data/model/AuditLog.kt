@@ -2,7 +2,6 @@ package com.extrotarget.extroposv2.core.data.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.util.Date
 
 @Entity(tableName = "audit_logs")
 data class AuditLog(
@@ -13,5 +12,10 @@ data class AuditLog(
     val action: String, // e.g., VOID_ITEM, APPLY_DISCOUNT, OPEN_DRAWER, LOGIN
     val details: String, // JSON or descriptive string
     val module: String, // e.g., SALES, INVENTORY, SETTINGS
-    val severity: String = "INFO" // INFO, WARNING, CRITICAL
+    val severity: String = "INFO", // INFO, WARNING, CRITICAL
+    val oldValue: String? = null,
+    val newValue: String? = null,
+    val entityType: String? = null,
+    val entityId: String? = null,
+    val deviceId: String? = "TERM-01"
 )
