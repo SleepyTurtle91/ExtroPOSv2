@@ -1,23 +1,14 @@
-# task.artifact.md
+# Task List - License & Table Management Finalization
 
-- [x] Phase 3 & 4 Completion
-- [x] Phase 4.5: Production Hardening
-    - [x] Implement `DeviceIdentity` system
-    - [x] Create `DiagnosticsManager` and Database Integrity Checker
-    - [x] Integrate Diagnostics UI into Settings
-- [x] Phase 5: Resilience & Multi-Branch
-    - [x] 5A: Resilient Offline Queue (Foundation)
-        - [x] Create `OfflineQueue` entity and DAO
-        - [x] Refactor `BranchSyncWorker` for queue processing
-    - [x] 5B: Automated Backup System (Encrypted)
-        - [x] Package backups with metadata and checksums
-        - [x] Refactor `BackupViewModel` to use new packages
-    - [x] 5C: Multi-Branch Sync Engine (Ledger-based)
-        - [x] Add synchronization timestamps to `Product` and `Member`
-    - [x] 5D: Strategy-Based Conflict Resolver
-        - [x] Implement LWW and Immutable strategies
-    - [x] 5E: Multi-Branch UI/UX
-        - [x] Create Sync & Offline Queue Dashboard
-- [/] Verification and Polishing
-    - [ ] Run build to ensure Hilt and Room are satisfied
-    - [ ] Final architecture documentation check
+## 1. License System
+- `[ ]` Create `LicenseActivationScreen.kt`
+- `[ ]` Implement activation block in `MainScreen.kt`
+- `[ ]` Register `LicenseActivation` screen in `NavGraph.kt`
+- `[ ]` Add license info link to `SettingsScreen.kt`
+
+## 2. Table Management
+- `[ ]` Update `TableViewModel.kt` to expose error states
+- `[ ]` Create `BulkAddTableDialog` in `TableFloorPlanScreen.kt`
+- `[ ]` Create `EditTableDialog` in `TableFloorPlanScreen.kt`
+- `[ ]` Implement "Duplicate" action in table long-press menu
+- `[ ]` Verification on Redmi Pad SE 8.7 (layout check)
