@@ -1,7 +1,7 @@
 # ExtroPOS v2 AI Context
 
 **Version**: v2.2  
-**Last Updated**: 2026-07-20  
+**Last Updated**: 2026-07-21  
 **Governance Status**: Frozen Foundation (Mandatory Rules)
 
 This document is the primary onboarding entry point for AI agents. It provides a compressed overview of ExtroPOS v2's identity, technology stack, and mandatory rules to ensure architectural consistency.
@@ -40,15 +40,19 @@ ExtroPOS v2 is a modular, high-performance, offline-first Android POS platform b
 | Reports | ✅ | ✅ | ✅ |
 
 ## Governance & Execution Gates
-1. **[AI_CONTEXT.md](file:///C:/Users/HP/StudioProjects/ExtroPOSv2/Docs/AI_CONTEXT.md)**: Project orientation.
-2. **[DEVELOPMENT_CONTRACT.md](file:///C:/Users/HP/StudioProjects/ExtroPOSv2/Docs/DEVELOPMENT_CONTRACT.md)**: Supreme authority and iron rules.
-3. **[DEFINITION_OF_DONE.md](file:///C:/Users/HP/StudioProjects/ExtroPOSv2/Docs/DEFINITION_OF_DONE.md)**: Mandatory completion gate.
-4. **[RELEASE_CHECKLIST.md](file:///C:/Users/HP/StudioProjects/ExtroPOSv2/Docs/RELEASE_CHECKLIST.md)**: Production readiness gate.
+1. **Docs/AI_CONTEXT.md**: Project orientation (This file).
+2. **Docs/DEVELOPMENT_CONTRACT.md**: Supreme authority and iron rules.
+3. **Docs/governance/DEFINITION_OF_DONE.md**: Mandatory completion gate.
+4. **Docs/governance/RELEASE_CHECKLIST.md**: Production readiness gate.
 
 ## Project Map (Simplified)
 - **`Docs/`**: Engineering Governance, Contracts, and Operational Controls.
-  - `decisions/`: Architecture Decision Records (ADRs).
-  - `AI_SESSIONS.md`: Handover log for AI development.
+  - `architecture/`: System design and `decisions/` (ADRs).
+  - `product/`: Business rules and product strategy.
+  - `implementation/`: Technical setup (DB, Hardware, Security).
+  - `governance/`: AI instructions, DoD, and `AI_SESSIONS.md`.
+  - `roadmap/`: Future plans and `fnb_operational_stock.md`.
+  - `research/`: Field observations and workflow notes.
 - **`features/`**: Feature-level technical references.
 - **`app/src/main/java/com/extrotarget/extroposv2/`**:
   - `ui/`: Compose-based screens.
@@ -66,8 +70,8 @@ ExtroPOS v2 is a modular, high-performance, offline-first Android POS platform b
 ## Context Loading Priority
 For agents with limited context windows, load in this order:
 1. **Priority 1**: `Docs/AI_CONTEXT.md`, `Docs/DEVELOPMENT_CONTRACT.md`
-2. **Priority 2**: `Docs/ARCHITECTURE.md`, `Docs/DEFINITION_OF_DONE.md`
-3. **Priority 3**: Relevant ADRs in `Docs/decisions/`
+2. **Priority 2**: `Docs/architecture/ARCHITECTURE.md`, `Docs/governance/DEFINITION_OF_DONE.md`
+3. **Priority 3**: Relevant ADRs in `Docs/architecture/decisions/`
 4. **Priority 4**: Relevant Feature Docs in `features/`
 
 ## AI Mistake Prevention

@@ -48,7 +48,7 @@ ExtroPOS v2 is a **Shared Commerce Platform** built on Clean Architecture princi
 
 ## Change Impact Map
 When modifying these core areas, be aware of the following impacts:
-- **Sales Calculation**: Affects `BUSINESS_RULES.md`, reporting engine, receipt generation, and tax exports.
-- **Product Entity**: Affects `DATABASE.md`, inventory management, sales workflow, and Room migrations.
-- **Hardware Interface**: Affects `HARDWARE.md` and all industry-specific modules (Retail, F&B, etc.).
-- **Workspace/Profile**: Affects `SECURITY.md`, capability system, and initial onboarding.
+- **Sales Calculation**: Affects `../product/BUSINESS_RULES.md`, reporting engine, receipt generation, and tax exports.
+- **Product Entity**: Affects `../implementation/DATABASE.md`, inventory management, sales workflow, and Room migrations.
+- **Hardware Interface**: Affects `../implementation/HARDWARE.md` and all industry-specific modules (Retail, F&B, etc.).
+- **Workspace/Profile**: Affects `../implementation/SECURITY.md`, capability system, and initial onboarding.

@@ -50,7 +50,7 @@ Financial accuracy is non-negotiable.
 - **Security**: 
     - Use Android Keystore for encryption keys.
     - Zero secrets in source control (Git).
-    - Adhere to the "Never Store" list in `SECURITY.md`.
+    - Adhere to the "Never Store" list in `implementation/SECURITY.md`.
 - **Hardware (HAL)**:
     - Business logic must interact with generic interfaces (e.g., `PrinterInterface`).
     - Vendor-specific implementations (IMIN, Sunmi, Star) must be isolated behind the HAL.

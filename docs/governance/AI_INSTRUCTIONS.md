@@ -4,7 +4,7 @@
 Before writing any code, the AI agent MUST follow this sequence:
 1. **Read AI Context**: Consult `Docs/AI_CONTEXT.md` for a high-level project overview, AI role, and capability matrix.
 2. **Read Contract**: Consult `Docs/DEVELOPMENT_CONTRACT.md` for governing architectural and financial rules.
-3. **Check ADRs**: Review relevant Architecture Decision Records in `Docs/decisions/` to understand the "Why" behind the design.
+3. **Check ADRs**: Review relevant Architecture Decision Records in `Docs/architecture/decisions/` to understand the "Why" behind the design.
 4. **Identify Module**: Determine if the change belongs in `:core` or a specific feature using the **Module Ownership** rules.
 5. **Search Strategy**: Follow the search sequence defined in `Docs/AI_CONTEXT.md` to find existing logic.
 6. **Implement**: Apply changes following Clean Architecture and the ** iron rules** of the contract.

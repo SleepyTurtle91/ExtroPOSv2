@@ -16,4 +16,4 @@ The Sales feature is the primary interface for processing customer transactions.
 
 ---
 ## Compliance Section
-This feature must follow `Docs/DEVELOPMENT_CONTRACT.md`, `Docs/BUSINESS_RULES.md`, and `Docs/SECURITY.md`.
+This feature must follow `Docs/DEVELOPMENT_CONTRACT.md`, `Docs/product/BUSINESS_RULES.md`, and `Docs/implementation/SECURITY.md`.
