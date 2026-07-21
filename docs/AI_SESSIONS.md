@@ -11,6 +11,7 @@ This document serves as a handover log between AI agents and sessions to maintai
 - Implemented the `Docs/decisions/` (ADR) system with initial decisions (ADR 1-5).
 - Created a feature reference system in `/features/`.
 - Cleaned up redundant root documentation.
+- **Added `Docs/future_features/fnb_simple_stock_management.md` based on real-world POS installation feedback.**
 
 **Important for Next Session**:
 - All future development MUST follow the rules in `DEVELOPMENT_CONTRACT.md`.
